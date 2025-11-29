@@ -501,7 +501,6 @@ onMounted(() => {
 <style scoped>
 * {
   margin: 0;
-  padding: 60;
   box-sizing: border-box;
 }
 

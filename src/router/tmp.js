@@ -14,5 +14,4 @@ router.beforeEach((to, from, next) => {
 const username = localStorage.getItem('username');
 if (!username) {
   this.$router.push('/login');
-  return;
 }
