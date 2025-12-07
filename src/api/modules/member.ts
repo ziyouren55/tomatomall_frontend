@@ -43,44 +43,42 @@ const memberApi = {
     // ========== 管理员会员 API ==========
     // 获取所有会员等级
     getAllLevels(): Promise<ApiResponse<MemberLevel[]>> {
-        return request.get('/api/admin/member/levels')
+        return request.get('/admin/member/levels')
     },
 
     // 根据ID获取会员等级
     getLevelById(levelId: number): Promise<ApiResponse<MemberLevel>> {
-        return request.get(`/api/admin/member/levels/${levelId}`)
+        return request.get(`/admin/member/levels/${levelId}`)
     },
 
     // 创建会员等级
     createLevel(levelData: Partial<MemberLevel>): Promise<ApiResponse<MemberLevel>> {
-        return request.post('/api/admin/member/levels', levelData)
+        return request.post('/admin/member/levels', levelData)
     },
 
     // 更新会员等级
     updateLevel(levelId: number, levelData: Partial<MemberLevel>): Promise<ApiResponse<MemberLevel>> {
-        return request.put(`/api/admin/member/levels/${levelId}`, levelData)
+        return request.put(`/admin/member/levels/${levelId}`, levelData)
     },
 
     // 删除会员等级
     deleteLevel(levelId: number): Promise<ApiResponse<void>> {
-        return request.delete(`/api/admin/member/levels/${levelId}`)
+        return request.delete(`/admin/member/levels/${levelId}`)
     },
 
     // 手动升级用户会员等级
     upgradeUserLevel(userId: number, targetLevelId: number): Promise<ApiResponse<void>> {
-        return request.post(`/api/admin/member/upgrade/${userId}`, null, {
-            params: { targetLevelId }
-        })
+        return request.post(`/admin/member/upgrade/${userId}?targetLevelId=${targetLevelId}`)
     },
 
     // 查看用户积分记录
     getUserPointsHistory(userId: number): Promise<ApiResponse<PointsHistory[]>> {
-        return request.get(`/api/admin/member/points/${userId}`)
+        return request.get(`/admin/member/points/${userId}`)
     },
 
     // 手动调整用户积分
     adjustUserPoints(adjustmentData: AdjustmentData): Promise<ApiResponse<void>> {
-        return request.post('/api/admin/member/points/adjust', adjustmentData)
+        return request.post('/admin/member/points/adjust', adjustmentData)
     },
 
     // ========== 用户会员 API ==========

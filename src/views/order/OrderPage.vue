@@ -138,41 +138,7 @@
 // 导入订单服务 - 确保路径正确
 import { defineComponent } from 'vue'
 import api from '@/api';
-import axios, { AxiosError } from 'axios';
-
-// 创建axios实例，用于直接调用API
-const apiClient = axios.create({
-  baseURL: 'http://localhost:8080/api',
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
-
-// 请求拦截器 - 添加token
-apiClient.interceptors.request.use(
-  (config: any) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.token = token;
-    }
-    return config;
-  },
-  (error: any) => {
-    return Promise.reject(error);
-  }
-);
-
-// 响应拦截器 - 处理常见错误
-apiClient.interceptors.response.use(
-  (response: any) => {
-    return response.data;
-  },
-  (error: any) => {
-    console.error('API Error:', error);
-    return Promise.reject(error);
-  }
-);
+import { AxiosError } from 'axios';
 
 export default defineComponent({
   name: 'OrderPage',
@@ -198,8 +164,8 @@ export default defineComponent({
       this.errorMessage = '';
       
       try {
-        // 使用新的API直接获取订单列表
-        const response = await apiClient.get('/orders');
+        // 使用API模块获取当前用户的订单列表
+        const response = await api.order.getOrders();
         
         if (response.code === '200') {
           this.orders = response.data || [];
@@ -227,8 +193,8 @@ export default defineComponent({
       this.paymentLoading = orderId;
       
       try {
-        // 使用新的API直接调用支付接口
-        const response = await apiClient.post(`/orders/${orderId}/pay`);
+        // 使用API模块调用支付接口
+        const response = await api.order.payOrder(orderId);
         
         if (response.code === '200' && response.data && response.data.paymentForm) {
           // 创建一个新的窗口

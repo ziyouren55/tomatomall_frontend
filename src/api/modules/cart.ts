@@ -22,9 +22,18 @@ export interface UpdateCartItemData {
     quantity: number
 }
 
-export interface OrderData {
-    items: CartItem[]
-    couponId?: number
+export interface ReceiverInfo {
+    receiverName: string
+    phone: string
+    zipCode?: string
+    address: string
+    [key: string]: any
+}
+
+export interface OrderCheckoutData {
+    cartItemIds: (string | number)[]
+    paymentMethod: string
+    receiverInfoVO: ReceiverInfo
     [key: string]: any
 }
 
@@ -51,7 +60,7 @@ const cartApi = {
     },
 
     // 结算购物车（创建订单）
-    checkout(orderData: OrderData): Promise<ApiResponse<any>> {
+    checkout(orderData: OrderCheckoutData): Promise<ApiResponse<any>> {
         return request.post('/cart/checkout', orderData)
     }
 }

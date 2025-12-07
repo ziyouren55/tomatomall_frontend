@@ -15,8 +15,13 @@ export interface Order {
 }
 
 const orderApi = {
-    // 获取订单列表
+    // 获取当前用户的订单列表
     getOrders(): Promise<ApiResponse<Order[]>> {
+        return request.get('/orders/my')
+    },
+
+    // 获取所有订单（管理员）
+    getAllOrders(): Promise<ApiResponse<Order[]>> {
         return request.get('/orders')
     },
 

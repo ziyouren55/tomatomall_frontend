@@ -15,7 +15,7 @@ export interface Product {
 }
 
 export interface StockpileData {
-    stockpile: number
+    amount: number
     [key: string]: any
 }
 
@@ -48,6 +48,11 @@ const productApi = {
     // 获取产品库存
     getProductStockpile(productId: number): Promise<ApiResponse<StockpileData>> {
         return request.get(`/products/stockpile/${productId}`)
+    },
+
+    // 获取所有产品库存
+    getAllStockpile(): Promise<ApiResponse<StockpileData[]>> {
+        return request.get('/products/stockpile')
     },
 
     // 更新产品库存

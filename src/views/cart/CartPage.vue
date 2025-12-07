@@ -117,7 +117,7 @@
             <h3>收货地址</h3>
             <div class="form-group">
               <label for="name">收货人姓名</label>
-              <input id="name" v-model="shippingAddress.name" type="text" class="form-control">
+              <input id="name" v-model="shippingAddress.receiverName" type="text" class="form-control">
             </div>
             <div class="form-group">
               <label for="phone">联系电话</label>
@@ -211,7 +211,7 @@ interface Cart {
 }
 
 interface ShippingAddress {
-  name: string
+  receiverName: string
   phone: string
   zipCode: string
   address: string
@@ -232,7 +232,7 @@ export default defineComponent({
       showCheckoutModal: false,
       showPaymentForm: false,
       shippingAddress: {
-        name: '',
+        receiverName: '',
         phone: '',
         zipCode: '',
         address: ''
@@ -472,11 +472,16 @@ export default defineComponent({
           quantity: item.quantity
         }))
         
+        // 构建符合后端OrderCheckoutVO格式的数据
         const orderData = {
-          items: selectedCartItems,
-          cartItemIds: this.selectedItems,
-          receiverInfoVO: this.shippingAddress,
-          paymentMethod: this.paymentMethod
+          cartItemIds: this.selectedItems.map(id => String(id)), // 确保是字符串数组
+          paymentMethod: this.paymentMethod,
+          receiverInfoVO: {
+            receiverName: this.shippingAddress.receiverName,
+            phone: this.shippingAddress.phone,
+            zipCode: this.shippingAddress.zipCode || '',
+            address: this.shippingAddress.address
+          }
         };
         
         const response = await api.cart.checkout(orderData as any);
@@ -502,7 +507,7 @@ export default defineComponent({
     },
     
     validateShippingAddress() {
-      if (!this.shippingAddress.name) {
+      if (!this.shippingAddress.receiverName) {
         ElMessage({
           type: 'warning',
           message: '请填写收货人姓名'

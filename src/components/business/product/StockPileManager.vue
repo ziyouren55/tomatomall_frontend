@@ -262,41 +262,6 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import api from '@/api';
-import axios from 'axios';
-
-// 创建axios实例，用于直接调用API
-const apiClient = axios.create({
-  baseURL: 'http://localhost:8080/api',
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
-
-// 请求拦截器 - 添加token
-apiClient.interceptors.request.use(
-  (config: any) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.token = token;
-    }
-    return config;
-  },
-  (error: any) => {
-    return Promise.reject(error);
-  }
-);
-
-// 响应拦截器 - 处理常见错误
-apiClient.interceptors.response.use(
-  (response: any) => {
-    return response.data;
-  },
-  (error: any) => {
-    console.error('API Error:', error);
-    return Promise.reject(error);
-  }
-);
 
 export default defineComponent({
   name: 'StockpileManager',
@@ -328,8 +293,8 @@ export default defineComponent({
     async fetchAllStockpiles() {
       this.loading = true;
       try {
-        // 使用新的API获取所有库存
-        const response = await apiClient.get('/products/stockpile');
+        // 使用统一的API模块获取所有库存
+        const response = await api.product.getAllStockpile();
         if (response.code === '200') {
           this.stockpiles = response.data;
           
@@ -350,7 +315,7 @@ export default defineComponent({
         this.loading = false;
       }
     },
-    selectStockpile(stockpile) {
+    selectStockpile(stockpile: any) {
       this.selectedStockpile = stockpile;
       this.adjustment.amount = stockpile.amount;
       this.adjustment.frozen = stockpile.frozen;
@@ -382,10 +347,9 @@ export default defineComponent({
       }
       
       try {
+        // 后端只接受amount字段
         const updatedStockpile = {
-          amount: this.adjustment.amount,
-          frozen: this.adjustment.frozen,
-          productId: this.selectedStockpile.productId
+          amount: this.adjustment.amount
         };
         
         const response = await api.product.updateProductStockpile(this.selectedStockpile.productId, updatedStockpile);

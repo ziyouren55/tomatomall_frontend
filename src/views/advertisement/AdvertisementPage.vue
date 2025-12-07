@@ -165,81 +165,9 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
-import axios, { AxiosError } from 'axios'
+import { AxiosError } from 'axios'
 import type { Advertisement, AdvertisementFormData } from '@/types/api'
-
-// API服务配置
-const API_BASE_URL = 'http://localhost:8080/api'
-
-// 创建axios实例
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-})
-
-// 请求拦截器 - 添加token
-apiClient.interceptors.request.use(
-  config => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      config.headers.token = token
-    }
-    return config
-  },
-  error => {
-    return Promise.reject(error)
-  }
-)
-
-// 响应拦截器 - 处理常见错误
-apiClient.interceptors.response.use(
-  response => {
-    return response.data
-  },
-  (error: AxiosError) => {
-    if (error.response) {
-      // 处理401未授权的情况
-      if (error.response.status === 401) {
-        localStorage.removeItem('token')
-        window.location.href = '/login'
-        return
-      }
-      console.error('API Error:', error.response.data)
-      const errorData = error.response.data as any
-      showMessage(errorData?.message || '请求失败', 'error')
-    } else {
-      console.error('Network Error:', error.message)
-      showMessage('网络连接失败', 'error')
-    }
-    return Promise.reject(error)
-  }
-)
-
-// 广告服务API
-const advertisementService = {
-  // 获取所有广告
-  getAllAdvertisements() {
-    return apiClient.get('/advertisements')
-  },
-  
-  // 创建新广告
-  createAdvertisement(advertisementData: AdvertisementFormData) {
-    return apiClient.post('/advertisements', advertisementData)
-  },
-  
-  // 更新广告
-  updateAdvertisement(advertisementData: AdvertisementFormData) {
-    return apiClient.put('/advertisements', advertisementData)
-  },
-  
-  // 删除广告
-  deleteAdvertisement(id) {
-    return apiClient.delete(`/advertisements/${id}`)
-  }
-}
+import api from '@/api'
 
 // 响应式数据
 const advertisements = ref<Advertisement[]>([])
@@ -276,8 +204,8 @@ const message = reactive({
 const fetchAdvertisements = async () => {
   try {
     loading.value = true
-    const response = await advertisementService.getAllAdvertisements()
-    advertisements.value = (response.data || response || []) as Advertisement[]
+    const response = await api.advertisement.getAllAdvertisements()
+    advertisements.value = (response.data || []) as Advertisement[]
   } catch (error: unknown) {
     console.error('获取广告列表失败:', error)
     showMessage('获取广告列表失败', 'error')
@@ -424,11 +352,11 @@ const saveAdvertisement = async () => {
         id: currentAd.value.id,
         ...formData
       }
-      await advertisementService.updateAdvertisement(updateData)
+      await api.advertisement.updateAdvertisement(updateData)
       showMessage('广告更新成功', 'success')
     } else {
       // 新增广告
-      await advertisementService.createAdvertisement(formData)
+      await api.advertisement.createAdvertisement(formData)
       showMessage('广告创建成功', 'success')
     }
 
@@ -459,7 +387,7 @@ const batchDelete = async () => {
     
     // 批量删除API调用
     const deletePromises = selectedAds.value.map(id => 
-      advertisementService.deleteAdvertisement(id)
+      api.advertisement.deleteAdvertisement(id)
     )
     
     await Promise.all(deletePromises)
