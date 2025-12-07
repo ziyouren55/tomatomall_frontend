@@ -9,7 +9,8 @@ import store from './store'
 const app: App = createApp(AppComponent)
 app.use(ElementPlus)
 app.use(router)
-app.use(store)
+// Vuex 4 的 Store 类型与 Vue 3 的 Plugin 类型兼容，但 TypeScript 需要类型断言
+app.use(store as any)
 app.mount('#app')
 
 
