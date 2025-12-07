@@ -13,6 +13,7 @@ import member from './modules/member'
 import advertisement from './modules/advertisement'
 import review from './modules/review'
 import forum from './modules/forum'
+import image from './modules/image'
 
 export default {
     user,
@@ -23,6 +24,7 @@ export default {
     member,
     advertisement,
     review,
-    forum
+    forum,
+    image
 }
 

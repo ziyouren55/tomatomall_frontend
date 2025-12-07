@@ -57,15 +57,38 @@
         </div>
         
         <div class="form-group">
-          <label for="cover">封面图片URL</label>
-          <input 
-            type="text" 
-            id="cover" 
-            v-model="formData.cover" 
-            placeholder="https://example.com/image.jpg"
-          >
-          <div class="image-preview" v-if="formData.cover">
-            <img :src="formData.cover" alt="封面预览" @error="handleImageError">
+          <label for="cover">封面图片*</label>
+          <div class="image-upload-section">
+            <input 
+              type="file" 
+              id="cover" 
+              ref="fileInput"
+              @change="handleFileSelect"
+              accept="image/*"
+              style="display: none;"
+            >
+            <div class="upload-area" @click="triggerFileInput" :class="{ 'has-image': formData.cover }">
+              <div v-if="!formData.cover && !uploading" class="upload-placeholder">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <span>点击选择图片或拖拽图片到此处</span>
+              </div>
+              <div v-else-if="uploading" class="upload-loading">
+                <div class="spinner"></div>
+                <span>上传中...</span>
+              </div>
+              <div v-else class="image-preview-container">
+                <img :src="formData.cover" alt="封面预览" @error="handleImageError">
+                <div class="image-overlay">
+                  <button type="button" class="replace-btn" @click.stop="triggerFileInput">更换图片</button>
+                </div>
+              </div>
+            </div>
+            <div v-if="uploadError" class="upload-error">{{ uploadError }}</div>
+            <div class="upload-hint">支持 JPG、PNG、GIF 格式，文件大小不超过 5MB</div>
           </div>
         </div>
         
@@ -114,7 +137,9 @@
           detail: '',
           salesCount: 0
         },
-        showImagePreview: true
+        showImagePreview: true,
+        uploading: false,
+        uploadError: ''
       };
     },
     created() {
@@ -138,6 +163,56 @@
       },
       handleImageError() {
         this.showImagePreview = false;
+        this.uploadError = '图片加载失败，请重新上传';
+      },
+      triggerFileInput() {
+        const fileInput = this.$refs.fileInput;
+        if (fileInput && fileInput.click) {
+          fileInput.click();
+        }
+      },
+      async handleFileSelect(event) {
+        const target = event.target;
+        if (!target || !target.files || !target.files[0]) return;
+        
+        const file = target.files[0];
+        
+        // 验证文件类型
+        if (!file.type.startsWith('image/')) {
+          this.uploadError = '请选择图片文件';
+          return;
+        }
+        
+        // 验证文件大小（5MB）
+        if (file.size > 5 * 1024 * 1024) {
+          this.uploadError = '图片大小不能超过5MB';
+          return;
+        }
+        
+        this.uploadError = '';
+        this.uploading = true;
+        
+        try {
+          // 上传图片到OSS
+          const response = await api.image.uploadImage(file, 'product');
+          
+          if (response.code === '200' && response.data) {
+            this.formData.cover = response.data;
+            this.showImagePreview = true;
+          } else {
+            this.uploadError = response.msg || '图片上传失败，请重试';
+          }
+        } catch (err) {
+          console.error('图片上传出错:', err);
+          const error = err || {};
+          this.uploadError = (error.response && error.response.data && error.response.data.msg) || '图片上传失败，请稍后再试';
+        } finally {
+          this.uploading = false;
+          // 清空input，允许重复选择同一文件
+          if (target) {
+            target.value = '';
+          }
+        }
       },
       async submitForm() {
         try {
@@ -221,17 +296,131 @@
     resize: vertical;
   }
   
-  .image-preview {
-    margin-top: 10px;
-    max-width: 200px;
-    border: 1px solid #ddd;
-    padding: 5px;
-    border-radius: 4px;
+  .image-upload-section {
+    margin-top: 5px;
   }
   
-  .image-preview img {
+  .upload-area {
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background-color: #fafafa;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .upload-area:hover {
+    border-color: #2196f3;
+    background-color: #f0f7ff;
+  }
+  
+  .upload-area.has-image {
+    border: 2px solid #ddd;
+    padding: 0;
+    min-height: auto;
+  }
+  
+  .upload-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    color: #666;
+  }
+  
+  .upload-placeholder svg {
+    width: 48px;
+    height: 48px;
+    stroke-width: 1.5;
+    color: #999;
+  }
+  
+  .upload-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    color: #666;
+  }
+  
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #2196f3;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  .image-preview-container {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+  
+  .image-preview-container img {
     width: 100%;
     height: auto;
+    display: block;
+    border-radius: 8px;
+  }
+  
+  .image-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    border-radius: 8px;
+  }
+  
+  .image-preview-container:hover .image-overlay {
+    opacity: 1;
+  }
+  
+  .replace-btn {
+    padding: 8px 16px;
+    background-color: white;
+    color: #333;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+  }
+  
+  .replace-btn:hover {
+    background-color: #f0f0f0;
+  }
+  
+  .upload-error {
+    margin-top: 8px;
+    color: #f44336;
+    font-size: 0.875rem;
+  }
+  
+  .upload-hint {
+    margin-top: 8px;
+    color: #999;
+    font-size: 0.875rem;
   }
   
   .specifications-section {

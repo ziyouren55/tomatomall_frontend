@@ -41,6 +41,12 @@
             <!-- 用户名下拉菜单 -->
             <el-dropdown @command="handleUserCommand" trigger="hover" class="user-dropdown">
               <span class="user-info">
+                <img 
+                  v-if="userAvatar" 
+                  :src="userAvatar" 
+                  alt="用户头像" 
+                  class="user-avatar"
+                />
                 <span class="username">{{ username || '用户' }}</span>
                 <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <polyline points="6 9 12 15 18 9"></polyline>
@@ -133,6 +139,7 @@ const cartItemCount = ref<number>(0);
 const isLoggedIn = ref<boolean>(false);
 const isAdmin = ref<boolean>(false);
 const username = ref<string>('');
+const userAvatar = ref<string>('');
 let cartPollingInterval: ReturnType<typeof setInterval> | null = null;
 
 // 监听路由变化，在搜索页面时同步搜索关键词
@@ -204,6 +211,19 @@ const checkLoginStatus = () => {
   
   // Get username
   username.value = localStorage.getItem('username') || '';
+  
+  // Get user avatar from userInfo
+  userAvatar.value = '';
+  if (userInfoStr) {
+    try {
+      const userInfo = JSON.parse(userInfoStr);
+      if (userInfo.avatar) {
+        userAvatar.value = userInfo.avatar;
+      }
+    } catch (e) {
+      // Already handled above
+    }
+  }
 
   // Update cart count if logged in
   if (isLoggedIn.value) {
@@ -212,6 +232,7 @@ const checkLoginStatus = () => {
   } else {
     stopCartPolling();
     username.value = '';
+    userAvatar.value = '';
     isAdmin.value = false;
   }
 };
@@ -284,6 +305,7 @@ const logout = async () => {
     isAdmin.value = false;
     cartItemCount.value = 0;
     username.value = '';
+    userAvatar.value = '';
 
     // Stop cart polling
     stopCartPolling();
@@ -462,7 +484,7 @@ watch(() => route.path, () => {
 .user-info {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   color: #fff;
   font-size: 14px;
   padding: 6px 12px;
@@ -474,11 +496,23 @@ watch(() => route.path, () => {
   background-color: rgba(255, 255, 255, 0.1);
 }
 
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  flex-shrink: 0;
+}
+
 .username {
-  max-width: 100px;
+  max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1.5;
+  padding-top: 2px;
+  padding-bottom: 2px;
 }
 
 .dropdown-icon {

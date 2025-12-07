@@ -5,10 +5,20 @@
                 <div class="form-group">
           <label>头像</label>
           <div class="avatar-section">
-            <div class="avatar-preview" @click="triggerFileInput">
-              <img :src="registerForm.avatar" alt="头像预览" />
-              <div class="avatar-overlay">
-                <span>点击选择头像</span>
+            <div class="avatar-preview" @click="triggerFileInput" :class="{ 'uploading': uploadingAvatar }">
+              <img v-if="registerForm.avatar" :src="registerForm.avatar" alt="头像预览" />
+              <div v-else class="avatar-placeholder">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+              </div>
+              <div class="avatar-overlay" v-if="!uploadingAvatar">
+                <span>{{ registerForm.avatar ? '点击更换头像' : '点击选择头像' }}</span>
+              </div>
+              <div v-if="uploadingAvatar" class="avatar-uploading">
+                <div class="avatar-spinner"></div>
+                <span>上传中...</span>
               </div>
             </div>
             <input 
@@ -18,6 +28,7 @@
               accept="image/*"
               style="display: none;"
             />
+            <div v-if="avatarError" class="avatar-error">{{ avatarError }}</div>
           </div>
         </div>
         <div class="form-group">
@@ -134,6 +145,8 @@
         } as RegisterForm,
         errorMessage: '',
         isLoading: false,
+        uploadingAvatar: false,
+        avatarError: '',
         // 角色选项
         roleOptions: [
           { value: UserRole.USER, label: USER_ROLE_LABELS[UserRole.USER] },
@@ -180,7 +193,7 @@
         (this.$refs.fileInput as HTMLInputElement).click();
       },
       
-      handleFileSelect(event: Event): void {
+      async handleFileSelect(event: Event): Promise<void> {
         const target = event.target as HTMLInputElement
         if (!target || !target.files) return
         const file = target.files[0];
@@ -188,24 +201,39 @@
         
         // 验证文件类型
         if (!file.type.startsWith('image/')) {
-          this.errorMessage = '请选择图片文件';
+          this.avatarError = '请选择图片文件';
           return;
         }
         
         // 验证文件大小（限制为5MB）
         if (file.size > 5 * 1024 * 1024) {
-          this.errorMessage = '图片大小不能超过5MB';
+          this.avatarError = '图片大小不能超过5MB';
           return;
         }
         
-        // 创建文件读取器
-        const reader = new FileReader();
-        reader.onload = (e: ProgressEvent<FileReader>) => {
-          // 将文件转换为base64格式作为预览
-          this.registerForm.avatar = e.target?.result as string;
-          this.errorMessage = '';
-        };
-        reader.readAsDataURL(file);
+        this.avatarError = '';
+        this.uploadingAvatar = true;
+        
+        try {
+          // 上传图片到OSS
+          const response = await api.image.uploadImage(file, 'avatar');
+          
+          if (response.code === '200' && response.data) {
+            this.registerForm.avatar = response.data;
+            this.errorMessage = '';
+          } else {
+            this.avatarError = response.msg || '头像上传失败，请重试';
+          }
+        } catch (err: any) {
+          console.error('头像上传出错:', err);
+          this.avatarError = err.response?.data?.msg || '头像上传失败，请稍后再试';
+        } finally {
+          this.uploadingAvatar = false;
+          // 清空input，允许重复选择同一文件
+          if (target) {
+            target.value = '';
+          }
+        }
       },
       
       async handleRegister(): Promise<void> {
@@ -311,14 +339,35 @@
     transition: border-color 0.3s;
   }
   
-  .avatar-preview:hover {
+  .avatar-preview:hover:not(.uploading) {
     border-color: #4CAF50;
+  }
+  
+  .avatar-preview.uploading {
+    border-color: #2196f3;
+    cursor: wait;
   }
   
   .avatar-preview img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+  }
+  
+  .avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f5f5f5;
+    color: #999;
+  }
+  
+  .avatar-placeholder svg {
+    width: 48px;
+    height: 48px;
+    stroke-width: 1.5;
   }
   
   .avatar-overlay {
@@ -339,8 +388,45 @@
     padding: 0.25rem;
   }
   
-  .avatar-preview:hover .avatar-overlay {
+  .avatar-preview:hover:not(.uploading) .avatar-overlay {
     opacity: 1;
+  }
+  
+  .avatar-uploading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: #2196f3;
+    font-size: 0.75rem;
+  }
+  
+  .avatar-spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #2196f3;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  .avatar-error {
+    margin-top: 8px;
+    color: #f44336;
+    font-size: 0.875rem;
+    text-align: center;
   }
   
   button {

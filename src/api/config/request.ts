@@ -23,6 +23,16 @@ request.interceptors.request.use(
         if (token && config.headers) {
             config.headers.token = token
         }
+        
+        // 如果是FormData，让浏览器自动设置Content-Type（包括boundary）
+        // 如果手动设置了Content-Type，则使用设置的（但不要包含boundary）
+        if (config.data instanceof FormData) {
+            // 如果headers中没有明确设置Content-Type，删除默认的，让axios自动处理
+            if (config.headers['Content-Type'] === 'application/json') {
+                delete config.headers['Content-Type']
+            }
+        }
+        
         return config
     },
     (error: AxiosError) => {
@@ -50,9 +60,9 @@ request.interceptors.response.use(
             if (error.response.status === 401) {
                 const requestUrl = error.config?.url || ''
                 
-                // 公开接口（商品列表、商品详情等）的401错误不跳转登录页
-                // 让组件自己处理错误，这样未登录用户也能看到商品列表
-                const publicEndpoints = ['/products', '/forums', '/advertisements']
+                // 公开接口（商品列表、商品详情、图片上传等）的401错误不跳转登录页
+                // 让组件自己处理错误，这样未登录用户也能看到商品列表和上传图片（注册时上传头像）
+                const publicEndpoints = ['/products', '/forums', '/advertisements', '/images']
                 const isPublicEndpoint = publicEndpoints.some(endpoint => 
                     requestUrl.includes(endpoint) && !requestUrl.includes('/cart') && !requestUrl.includes('/orders')
                 )
