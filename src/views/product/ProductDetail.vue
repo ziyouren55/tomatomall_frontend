@@ -60,6 +60,7 @@ const loadingActions = ref<{
   addToCart: false
 })
 const cartItem = ref<CartItem | null>(null) // 存储购物车中的商品信息
+let unwatchRoute: (() => void) | null = null // 路由监听器
 
 // 获取商品详情
 const fetchProductDetail = async (): Promise<void> => {
@@ -79,33 +80,53 @@ const fetchProductDetail = async (): Promise<void> => {
       throw new Error('商品ID格式错误')
     }
 
-    // 并行获取商品详情、库存信息和购物车信息
-    const [productResponse, stockpileResponse, cartResponse] = await Promise.all([
-      api.product.getProductById(productIdNum),
-      api.product.getProductStockpile(productIdNum),
-      api.cart.getCartItems()
-    ])
-
-    product.value = productResponse.data || productResponse
+    // 先获取商品详情（必需）
+    const productResponse = await api.product.getProductById(productIdNum)
+    if (!productResponse.data) {
+      throw new Error('商品不存在')
+    }
+    
+    product.value = productResponse.data
     if (product.value && !product.value.id && productIdNum) {
       // 确保商品对象有id字段
       product.value.id = productIdNum as number
     }
     
-    stockpile.value = stockpileResponse.data || stockpileResponse
     console.log('获取到的商品信息:', product.value)
     
-    // 检查商品是否已在购物车中
-    if (cartResponse && cartResponse.code === '200' && cartResponse.data) {
-      const items = Array.isArray(cartResponse.data) ? cartResponse.data : []
-      const productIdStr = String(productIdNum)
-      const foundItem = items.find((item: CartItem) => item.productId === productIdStr && item.state === 'SHOW')
-      if (foundItem) {
-        cartItem.value = foundItem
-        console.log('商品已在购物车中:', foundItem)
+    // 并行获取库存信息和购物车信息（可选，失败不影响商品显示）
+    try {
+      const [stockpileResponse, cartResponse] = await Promise.allSettled([
+        api.product.getProductStockpile(productIdNum),
+        api.cart.getCartItems()
+      ])
+      
+      // 处理库存信息
+      if (stockpileResponse.status === 'fulfilled' && stockpileResponse.value.data) {
+        stockpile.value = stockpileResponse.value.data
+      } else {
+        console.warn('获取库存信息失败:', stockpileResponse.status === 'rejected' ? stockpileResponse.reason : '无数据')
+        stockpile.value = null
+      }
+      
+      // 处理购物车信息
+      if (cartResponse.status === 'fulfilled' && cartResponse.value && cartResponse.value.code === '200' && cartResponse.value.data) {
+    
+        const items = Array.isArray(cartResponse.value.data) ? cartResponse.value.data : []
+        const productIdStr = String(productIdNum)
+        const foundItem = items.find((item: CartItem) => item.productId === productIdStr && item.state === 'SHOW')
+        if (foundItem) {
+          cartItem.value = foundItem
+          console.log('商品已在购物车中:', foundItem)
+        } else {
+          cartItem.value = null
+        }
       } else {
         cartItem.value = null
       }
+    } catch (cartError) {
+      console.warn('获取购物车信息失败:', cartError)
+      cartItem.value = null
     }
     
   } catch (err: unknown) {
@@ -219,11 +240,8 @@ const handleAddToCart = async (quantity: number) => {
 // 页面挂载时获取数据
 onMounted(() => {
   fetchProductDetail()
-})
-
-// 监听路由变化，如果商品ID改变则重新获取数据
-let unwatchRoute: (() => void) | null = null
-onMounted(() => {
+  
+  // 监听路由变化，如果商品ID改变则重新获取数据
   unwatchRoute = route.params.id !== undefined ? 
     watch(() => route.params.id, (newId, oldId) => {
       if (newId !== oldId) {
