@@ -32,6 +32,12 @@ request.interceptors.request.use(
 
 /**
  * 响应拦截器 - 处理常见错误
+ * 
+ * 后端API拦截策略：
+ * 1. 后端验证token，如果无效或缺失，返回401
+ * 2. 前端收到401后，根据请求类型决定是否跳转登录页
+ * 3. 公开接口（如商品列表）的401错误不跳转，让组件自己处理
+ * 4. 需要登录的接口（如购物车、订单）的401错误才跳转登录页
  */
 request.interceptors.response.use(
     (response: AxiosResponse<ApiResponse>) => {
@@ -40,10 +46,35 @@ request.interceptors.response.use(
     },
     (error: AxiosError) => {
         if (error.response) {
-            // 处理401未授权的情况
+            // 处理401未授权的情况（后端拦截未登录请求）
             if (error.response.status === 401) {
+                const requestUrl = error.config?.url || ''
+                
+                // 公开接口（商品列表、商品详情等）的401错误不跳转登录页
+                // 让组件自己处理错误，这样未登录用户也能看到商品列表
+                const publicEndpoints = ['/products', '/forums', '/advertisements']
+                const isPublicEndpoint = publicEndpoints.some(endpoint => 
+                    requestUrl.includes(endpoint) && !requestUrl.includes('/cart') && !requestUrl.includes('/orders')
+                )
+                
+                // 如果是公开接口，不跳转登录页，直接返回错误让组件处理
+                if (isPublicEndpoint) {
+                    console.warn('公开接口返回401，但不跳转登录页:', requestUrl)
+                    return Promise.reject(error)
+                }
+                
+                // 需要登录的接口才跳转登录页
                 // 清除本地存储的token
                 removeToken()
+                localStorage.removeItem('isAdmin')
+                localStorage.removeItem('username')
+                
+                // 如果当前不在登录页，保存当前路径以便登录后返回
+                const currentPath = router.currentRoute.value.fullPath
+                if (currentPath !== '/login' && currentPath !== '/register') {
+                    sessionStorage.setItem('redirectPath', currentPath)
+                }
+                
                 // 重定向到登录页
                 router.push('/login')
             }

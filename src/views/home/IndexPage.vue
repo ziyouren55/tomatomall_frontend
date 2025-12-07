@@ -1,14 +1,18 @@
 <template>
   <div class="index-container">
-    <div class="header-section">
-      <h1>欢迎来到我们的商城</h1>
-      <p>精选好物，品质保证</p>
+    <!-- 轮播图/横幅区域（可选） -->
+    <div class="banner-section">
+      <div class="banner-content">
+        <h1 class="banner-title">欢迎来到番茄书城</h1>
+        <p class="banner-subtitle">精选好书，品质阅读</p>
+      </div>
     </div>
-    <div class="action-buttons">
-      <a href="/warehouse" class="action-button warehouse">进入仓库</a>
-      <a href="/profile" class="action-button profile">个人中心</a>
-    </div>
+    
+    <!-- 商品列表区域 -->
     <div class="products-section">
+      <div class="section-header">
+        <h2 class="section-title">热门商品</h2>
+      </div>
       <ProductList />
     </div>
   </div>
@@ -28,82 +32,56 @@ export default defineComponent({
 
 <style scoped>
 .index-container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 60px;
+  width: 100%;
   background-color: #f5f5f5;
 }
 
-.header-section {
+/* 横幅区域 */
+.banner-section {
+  width: 100%;
+  background: linear-gradient(135deg, #ff6b35 0%, #e53935 100%);
+  color: white;
+  padding: 60px 20px;
   text-align: center;
   margin-bottom: 30px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 40px 20px;
-  border-radius: 12px;
 }
 
-.header-section h1 {
-  font-size: 36px;
-  margin-bottom: 10px;
-  font-weight: 700;
-}
-
-.header-section p {
-  font-size: 18px;
-  opacity: 0.9;
-  max-width: 700px;
+.banner-content {
+  max-width: 1200px;
   margin: 0 auto;
 }
 
-.action-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-bottom: 30px;
+.banner-title {
+  font-size: 42px;
+  font-weight: 700;
+  margin: 0 0 16px 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.action-button {
-  display: inline-block;
-  padding: 12px 24px;
-  border-radius: 8px;
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 1rem;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+.banner-subtitle {
+  font-size: 20px;
+  margin: 0;
+  opacity: 0.95;
 }
 
-.action-button.warehouse {
-  background-color: #4CAF50;
-  color: white;
-}
-
-.action-button.warehouse:hover {
-  background-color: #45a049;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.action-button.profile {
-  border: 2px solid #4CAF50;
-  color: #4CAF50;
-  background-color: white;
-}
-
-.action-button.profile:hover {
-  background-color: #4CAF50;
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
+/* 商品区域 */
 .products-section {
-  margin-top: 30px;
-  background-color: white;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 20px 40px;
+}
+
+.section-header {
+  margin-bottom: 24px;
+}
+
+.section-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+  padding: 0 0 12px 0;
+  border-bottom: 2px solid #ff6b35;
+  display: inline-block;
 }
 </style>

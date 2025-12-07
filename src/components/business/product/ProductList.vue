@@ -66,14 +66,21 @@ export default defineComponent({
       this.error = null;
       try {
         const response = await api.product.getAllProducts();
-        if (response.code === '200') {
-          this.products = response.data;
+        if (response && response.code === '200' && response.data) {
+          this.products = Array.isArray(response.data) ? response.data : [];
         } else {
-          this.error = response.msg || '加载商品失败';
+          this.error = response?.msg || '加载商品失败';
         }
-      } catch (err) {
-        this.error = '网络错误，请稍后重试';
-        console.error(err);
+      } catch (err: any) {
+        // 如果是401错误，说明后端拦截了请求，但商品列表应该是公开的
+        // 这里不跳转登录页，而是显示错误信息
+        if (err?.response?.status === 401) {
+          this.error = '无法加载商品列表，请检查网络连接';
+          console.warn('商品列表API需要登录，但商品列表应该是公开的');
+        } else {
+          this.error = '网络错误，请稍后重试';
+        }
+        console.error('获取商品列表失败:', err);
       } finally {
         this.loading = false;
       }

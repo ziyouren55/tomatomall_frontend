@@ -75,8 +75,16 @@ export default defineComponent({
         if (response && response.code === '200') {
           // 保存用户名到本地存储，方便获取用户信息
           localStorage.setItem('username', this.loginForm.username)
-          // 登录成功，跳转到首页
-          this.$router.push('/')
+          
+          // 检查是否有重定向路径（从路由守卫保存的）
+          const redirectPath = sessionStorage.getItem('redirectPath') || '/'
+          sessionStorage.removeItem('redirectPath')
+          
+          // 登录成功，跳转到目标页面或首页
+          this.$router.push(redirectPath).then(() => {
+            // 触发导航栏状态更新
+            window.dispatchEvent(new Event('loginStatusChanged'))
+          })
         } else {
           this.errorMessage = response?.msg || '登录失败'
         }

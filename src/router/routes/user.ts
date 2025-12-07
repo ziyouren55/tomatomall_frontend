@@ -8,13 +8,13 @@ const userRoutes: RouteRecordRaw[] = [
         path: '/',
         name: 'Home',
         component: () => import('@/views/home/IndexPage.vue'),
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: false } // 首页不需要登录
     },
     {
         path: '/product/:id',
         name: 'productdetail',
         component: () => import('@/views/product/ProductDetail.vue'),
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: true } // 商品详情页需要登录
     },
     {
         path: '/profile',

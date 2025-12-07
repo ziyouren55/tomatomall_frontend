@@ -12,7 +12,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import NavigationBar from './components/common/NavigationBar.vue'
+import NavigationBar from './components/business/NavigationBar.vue'
 
 export default defineComponent({
   name: 'App',
@@ -40,8 +40,9 @@ export default defineComponent({
 
 .main-content {
   flex: 1;
-  padding: 20px;
-  margin-top: 60px; /* 为导航栏留出空间 */
+  padding: 0;
+  margin-top: 64px; /* 为导航栏留出空间 */
+  min-height: calc(100vh - 64px);
 }
 
 .footer {
