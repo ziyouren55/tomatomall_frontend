@@ -18,3 +18,6 @@ const publicRoutes: RouteRecordRaw[] = [
 
 export default publicRoutes
 
+
+
+

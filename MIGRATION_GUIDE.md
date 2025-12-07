@@ -4,7 +4,15 @@
 
 ## 📋 主要变更
 
-### 1. API 调用方式变更
+### 1. 技术栈升级
+
+**重要变更**：
+- ✅ **JavaScript → TypeScript**: 所有代码已迁移到 TypeScript
+- ✅ 添加了完整的类型定义 (`src/types/`)
+- ✅ 配置了 TypeScript 编译选项 (`tsconfig.json`)
+- ✅ 添加了 Vuex 类型声明 (`src/env.d.ts`)
+
+### 2. API 调用方式变更
 
 **旧方式** (`origin/src/api/services.js`):
 ```javascript
@@ -17,8 +25,8 @@ services.cart.getCartItems()
 userService.login(username, password)
 ```
 
-**新方式** (`changed/src/api/index.js`):
-```javascript
+**新方式** (`changed/src/api/index.ts`):
+```typescript
 import api from '@/api'
 
 // 使用
@@ -26,7 +34,7 @@ api.cart.getCartItems()
 api.user.login(username, password)
 ```
 
-### 2. 组件导入路径变更
+### 3. 组件导入路径变更
 
 **旧路径**:
 ```javascript
@@ -35,7 +43,7 @@ import NavigationBar from '../components/NavigationBar.vue'
 ```
 
 **新路径**:
-```javascript
+```typescript
 // 通用组件
 import NavigationBar from '@/components/common/NavigationBar.vue'
 import SearchBar from '@/components/common/SearchBar.vue'
@@ -45,7 +53,7 @@ import ProductList from '@/components/business/product/ProductList.vue'
 import ProductDetailCard from '@/components/business/product/ProductDetailCard.vue'
 ```
 
-### 3. 页面导入路径变更
+### 4. 页面导入路径变更
 
 **旧路径** (`origin/src/pages/`):
 ```javascript
@@ -54,7 +62,7 @@ import LoginPage from '../pages/LoginPage.vue'
 ```
 
 **新路径** (`changed/src/views/`):
-```javascript
+```typescript
 // 路由中使用懒加载（推荐）
 component: () => import('@/views/home/IndexPage.vue')
 component: () => import('@/views/auth/LoginPage.vue')
@@ -64,7 +72,7 @@ import IndexPage from '@/views/home/IndexPage.vue'
 import LoginPage from '@/views/auth/LoginPage.vue'
 ```
 
-### 4. 状态管理变更
+### 5. 状态管理变更
 
 **旧方式** (组件内管理):
 ```javascript
@@ -74,7 +82,7 @@ localStorage.setItem('token', newToken)
 ```
 
 **新方式** (使用 Vuex):
-```javascript
+```typescript
 // 在组件中
 import { useStore } from 'vuex'
 import { mapGetters, mapActions } from 'vuex'
@@ -97,7 +105,7 @@ export default {
 }
 ```
 
-### 5. 路由配置变更
+### 6. 路由配置变更
 
 **旧方式** (`origin/src/router/index.js`):
 ```javascript
@@ -111,8 +119,8 @@ const routes = [
 ```
 
 **新方式** (`changed/src/router/routes/`):
-```javascript
-// routes/user.js
+```typescript
+// routes/user.ts
 export default [
   {
     path: '/',
@@ -122,7 +130,7 @@ export default [
   }
 ]
 
-// routes/public.js
+// routes/public.ts
 export default [
   {
     path: '/login',
@@ -169,7 +177,34 @@ export default [
 
 ## 📝 更新步骤
 
-### 步骤 1: 更新 API 导入
+### 步骤 1: 添加 TypeScript 类型支持
+
+在迁移到 TypeScript 时，需要：
+
+1. **添加类型定义**：
+```typescript
+// 在组件中定义接口
+interface LoginForm {
+  username: string
+  password: string
+}
+
+interface ApiResponse<T = any> {
+  code: string
+  msg: string
+  data: T
+}
+```
+
+2. **使用类型注解**：
+```typescript
+// 函数参数和返回值
+async function login(credentials: LoginForm): Promise<ApiResponse> {
+  // ...
+}
+```
+
+### 步骤 2: 更新 API 导入
 
 在所有文件中，将：
 ```javascript
@@ -179,12 +214,12 @@ import { userService } from '../api/services'
 ```
 
 替换为：
-```javascript
+```typescript
 import api from '@/api'
 ```
 
 然后更新调用：
-```javascript
+```typescript
 // 旧: services.cart.getCartItems()
 // 新: api.cart.getCartItems()
 
@@ -192,46 +227,46 @@ import api from '@/api'
 // 新: api.user.login(username, password)
 ```
 
-### 步骤 2: 更新组件导入
+### 步骤 3: 更新组件导入
 
 将所有组件导入路径更新为新的目录结构：
-```javascript
+```typescript
 // 旧: import ProductList from '../components/ProductList.vue'
 // 新: import ProductList from '@/components/business/product/ProductList.vue'
 ```
 
-### 步骤 3: 更新页面导入
+### 步骤 4: 更新页面导入
 
 在路由文件中，使用懒加载：
-```javascript
+```typescript
 // 旧: import IndexPage from '../pages/IndexPage.vue'
 // 新: component: () => import('@/views/home/IndexPage.vue')
 ```
 
-### 步骤 4: 使用 Vuex Store
+### 步骤 5: 使用 Vuex Store
 
 在需要状态管理的组件中：
-```javascript
+```typescript
 // 添加
 import { mapGetters, mapActions } from 'vuex'
 
 // 在 computed 中使用
-computed: {
+computed = {
   ...mapGetters('user', ['isLoggedIn', 'isAdmin']),
   ...mapGetters('cart', ['cartItemCount'])
 }
 
 // 在 methods 中使用
-methods: {
+methods = {
   ...mapActions('user', ['login', 'logout']),
   ...mapActions('cart', ['fetchCartItems', 'addToCart'])
 }
 ```
 
-### 步骤 5: 更新工具函数
+### 步骤 6: 更新工具函数
 
 如果使用了本地存储，使用新的工具函数：
-```javascript
+```typescript
 // 旧: localStorage.getItem('token')
 // 新: import { getToken } from '@/utils/storage'
 //     const token = getToken()
@@ -254,8 +289,8 @@ methods: {
 
 ### 问题 1: 找不到模块 '@/api'
 
-**解决**: 确保 `vite.config.js` 中配置了路径别名：
-```javascript
+**解决**: 确保 `vite.config.ts` 中配置了路径别名：
+```typescript
 resolve: {
   alias: {
     '@': fileURLToPath(new URL('./src', import.meta.url))
@@ -263,21 +298,51 @@ resolve: {
 }
 ```
 
+同时确保 `tsconfig.json` 中配置了路径映射：
+```json
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}
+```
+
 ### 问题 2: Store 未定义
 
-**解决**: 确保在 `main.js` 中注册了 store：
-```javascript
+**解决**: 确保在 `main.ts` 中注册了 store：
+```typescript
 import store from './store'
 app.use(store)
 ```
 
 ### 问题 3: 路由守卫不生效
 
-**解决**: 确保在 `router/index.js` 中调用了 `setupRouterGuards(router)`
+**解决**: 确保在 `router/index.ts` 中调用了 `setupRouterGuards(router)`
+
+### 问题 4: TypeScript 类型错误
+
+**常见错误及解决方案**：
+
+1. **Vuex 类型错误**：
+   - 已在 `src/env.d.ts` 中添加 Vuex 类型声明
+   - 如果仍有错误，使用 `(mapActions as any)` 临时解决
+
+2. **Vue 组件类型错误**：
+   - 确保使用 `defineComponent` 定义组件
+   - 为 props 和 data 添加类型注解
+
+3. **API 响应类型错误**：
+   - 使用 `as any` 处理灵活的响应结构
+   - 或定义更精确的接口类型
 
 ## 📚 参考
 
 - [Vue 3 文档](https://vuejs.org/)
 - [Vue Router 文档](https://router.vuejs.org/)
 - [Vuex 文档](https://vuex.vuejs.org/)
+- [TypeScript 文档](https://www.typescriptlang.org/)
+- [Vue 3 + TypeScript 指南](https://vuejs.org/guide/typescript/overview.html)
 

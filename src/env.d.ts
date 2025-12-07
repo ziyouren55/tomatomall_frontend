@@ -39,6 +39,8 @@ declare module 'vuex' {
         dispatch: any
     }
 
+    export function createStore<S>(options: any): Store<S>
+
     export default Store
 }
 

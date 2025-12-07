@@ -1,14 +1,16 @@
-import { createStore } from 'vuex'
-import user from './modules/user'
-import cart from './modules/cart'
-import app from './modules/app'
+import { createStore, Store } from 'vuex'
+import userModule from './modules/user'
+import cartModule from './modules/cart'
+import appModule from './modules/app'
 import { RootState } from '@/types/store'
 
-export default createStore<RootState>({
+const store: Store<RootState> = createStore<RootState>({
     modules: {
-        user,
-        cart,
-        app
+        user: userModule,
+        cart: cartModule,
+        app: appModule
     }
 })
+
+export default store
 
