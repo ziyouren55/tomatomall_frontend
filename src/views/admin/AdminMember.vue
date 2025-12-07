@@ -164,16 +164,16 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
 import api from '@/api'
-import type { AxiosError } from 'axios'
+import type { MemberLevel } from '@/api/modules/member'
 
 // 状态管理
-const memberLevels = ref<any[]>([])
-const selectedLevels = ref<any[]>([])
+const memberLevels = ref<MemberLevel[]>([])
+const selectedLevels = ref<number[]>([])
 const loading = ref<boolean>(false)
 const submitting = ref<boolean>(false)
 const showCreateModal = ref<boolean>(false)
 const showEditModal = ref<boolean>(false)
-const editingLevel = ref<any>(null)
+const editingLevel = ref<MemberLevel | null>(null)
 
 // 表单数据
 const formData = reactive({
@@ -211,7 +211,7 @@ const fetchMemberLevels = async () => {
 }
 
 // 选择操作
-const toggleSelect = (levelId) => {
+const toggleSelect = (levelId: number) => {
   const index = selectedLevels.value.indexOf(levelId)
   if (index > -1) {
     selectedLevels.value.splice(index, 1)
@@ -229,7 +229,7 @@ const selectAll = () => {
 }
 
 // 编辑会员等级
-const editLevel = (level) => {
+const editLevel = (level: MemberLevel) => {
   editingLevel.value = level
   Object.assign(formData, {
     memberLevel: level.memberLevel,
@@ -275,7 +275,7 @@ const submitForm = async () => {
       isActive: formData.isActive
     }
 
-    if (isEditing.value) {
+    if (isEditing.value && editingLevel.value) {
       await api.member.updateLevel(editingLevel.value.id, payload)
       alert('更新成功！')
     } else {

@@ -291,11 +291,11 @@ methods = {
 
 **解决**: 确保 `vite.config.ts` 中配置了路径别名：
 ```typescript
-resolve: {
-  alias: {
-    '@': fileURLToPath(new URL('./src', import.meta.url))
-  }
-}
+// resolve: {
+//   alias: {
+//     '@': fileURLToPath(new URL('./src', import.meta.url))
+//   }
+// }
 ```
 
 同时确保 `tsconfig.json` 中配置了路径映射：

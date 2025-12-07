@@ -76,3 +76,80 @@ export interface AdvertisementFormData {
     product_id: number | string
 }
 
+/**
+ * 库存信息
+ */
+export interface Stockpile {
+    id: number
+    productId: number
+    productName?: string
+    amount: number
+    frozen: number
+    [key: string]: any
+}
+
+/**
+ * 购物车项（完整定义）
+ */
+export interface CartItem {
+    cartItemId: string
+    productId: string
+    title: string
+    price: number
+    description?: string
+    cover: string
+    detail?: string
+    quantity: number
+    state: string
+    [key: string]: any
+}
+
+/**
+ * 订单信息（完整定义）
+ */
+export interface Order {
+    orderId: number
+    userId: number
+    totalAmount: number
+    paymentMethod: string
+    createTime?: string
+    name: string
+    phone: string
+    address: string
+    status: string
+    cartItems?: CartItem[]
+    [key: string]: any
+}
+
+/**
+ * 用户信息（完整定义，基于AccountVO）
+ */
+export interface User {
+    id: number
+    username: string
+    name?: string
+    email?: string
+    telephone?: string
+    avatar?: string
+    role?: string
+    location?: string
+    memberLevelId?: number
+    isMember?: boolean
+    currentPoints?: number
+    totalPoints?: number
+    currentLevelId?: number
+    levelName?: string
+    [key: string]: any
+}
+
+/**
+ * 错误响应类型
+ */
+export interface ErrorResponse {
+    code?: string
+    msg?: string
+    message?: string
+    data?: any
+    [key: string]: any
+}
+

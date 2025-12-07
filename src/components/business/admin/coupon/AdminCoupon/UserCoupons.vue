@@ -24,15 +24,15 @@
           <td>{{ uc.couponId }}</td>
           <td>{{ uc.couponName }}</td>
           <td>{{ uc.discount }}%</td>
-          <td>{{ uc.status | statusText }}</td>
+          <td>{{ statusText(uc.status) }}</td>
           <td>{{ formatDate(uc.obtainTime) }}</td>
         </tr>
       </tbody>
     </table>
     
-    <div v-if="showIssueForm" class="mt-4">
+      <div v-if="showIssueForm" class="mt-4">
       <h3>发放优惠券</h3>
-      <IssueCouponForm :userId="userId" @issued="handleIssued" />
+      <IssueCouponForm :userId="parseInt(userId, 10)" @issued="handleIssued" />
     </div>
   </div>
 </template>
@@ -42,13 +42,23 @@ import { defineComponent } from 'vue'
 import api from '@/api';
 import IssueCouponForm from './IssueCouponForm.vue';
 
+interface UserCoupon {
+  id: number
+  couponId: number
+  couponName: string
+  discount: number
+  status: number
+  obtainTime: string | Date
+  [key: string]: any
+}
+
 export default defineComponent({
   name: 'UserCoupons',
   components: { IssueCouponForm },
   data() {
     return {
       userId: '',
-      userCoupons: [] as any[],
+      userCoupons: [] as UserCoupon[],
       showIssueForm: false
     };
   },
@@ -64,9 +74,17 @@ export default defineComponent({
     async fetchUserCoupons(): Promise<void> {
       if (!this.userId) return;
       
+      const userIdNum = typeof this.userId === 'string' ? parseInt(this.userId, 10) : this.userId;
+      if (isNaN(userIdNum)) {
+        alert('请输入有效的用户ID');
+        return;
+      }
+      
       try {
-        const response = await api.coupon.getUserCoupons(this.userId);
-        this.userCoupons = response.data;
+        const response = await api.coupon.getUserCoupons(userIdNum);
+        // 后端返回的可能是Coupon[]，但我们需要UserCoupon格式
+        // 这里使用类型断言，因为实际返回的数据结构可能不同
+        this.userCoupons = (response.data || []) as unknown as UserCoupon[];
         this.showIssueForm = true;
       } catch (error) {
         console.error('获取用户优惠券失败:', error);

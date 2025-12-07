@@ -8,9 +8,12 @@ import { ApiResponse } from '@/types/api'
 
 export interface MemberLevel {
     id: number
-    name: string
-    discount: number
+    memberLevel: number
+    levelName: string
     pointsRequired: number
+    discountRate: number
+    description?: string
+    isActive: boolean
     [key: string]: any
 }
 
@@ -25,8 +28,9 @@ export interface MemberInfo {
 export interface PointsHistory {
     id: number
     userId: number
-    points: number
-    type: string
+    pointsChange: number
+    recordType: string
+    referenceId?: number
     description?: string
     createTime?: string
     [key: string]: any

@@ -47,23 +47,33 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useStore } from 'vuex'
 import { ElMenu, ElMenuItem } from 'element-plus'
-import api from '@/api'
+import { getToken, removeToken } from '@/utils/storage'
 
 const router = useRouter()
 const route = useRoute()
-const store = useStore()
 
 const searchQuery = ref<string>('')
+const cartItemCount = ref<number>(0)
+const isLoggedIn = ref<boolean>(false)
+const isAdmin = ref<boolean>(false)
 let cartPollingInterval: ReturnType<typeof setInterval> | null = null
 
-// 从 store 获取状态
-const isLoggedIn = computed(() => store.getters['user/isLoggedIn'])
-const isAdmin = computed(() => store.getters['user/isAdmin'])
-const cartItemCount = computed(() => store.getters['cart/cartItemCount'])
+// 检查登录状态
+const checkLoginStatus = () => {
+  const token = getToken()
+  isLoggedIn.value = !!token
+  isAdmin.value = localStorage.getItem('isAdmin') === 'true'
+  
+  if (isLoggedIn.value) {
+    fetchCartCount()
+    startCartPolling()
+  } else {
+    stopCartPolling()
+  }
+}
 
 const performSearch = (): void => {
   if (!searchQuery.value.trim()) return
@@ -81,7 +91,9 @@ const fetchCartCount = async (): Promise<void> => {
   if (!isLoggedIn.value) return
 
   try {
-    await store.dispatch('cart/fetchCartItems')
+    // TODO: 使用api.cart.getCartItems()获取购物车数量
+    // const response = await api.cart.getCartItems()
+    // cartItemCount.value = response.data?.length || 0
   } catch (error) {
     console.error('Failed to fetch cart count:', error)
   }
@@ -103,27 +115,27 @@ const stopCartPolling = (): void => {
 
 const logout = async (): Promise<void> => {
   try {
-    // 调用 store 的 logout action
-    await store.dispatch('user/logout')
+    // 清除本地存储
+    removeToken()
+    localStorage.removeItem('isAdmin')
+    localStorage.removeItem('username')
+  } catch (error) {
+    console.error('Logout error:', error)
+  } finally {
+    // 更新组件状态
+    isLoggedIn.value = false
+    isAdmin.value = false
+    cartItemCount.value = 0
     // 停止购物车轮询
     stopCartPolling()
     // 重定向到首页
-    router.push('/')
-  } catch (error) {
-    console.error('Logout error:', error)
-    // 即使出错也执行清理
-    await store.dispatch('user/logout')
-    stopCartPolling()
     router.push('/')
   }
 }
 
 onMounted(() => {
-  // 如果已登录，获取购物车信息并开始轮询
-  if (isLoggedIn.value) {
-    fetchCartCount()
-    startCartPolling()
-  }
+  // 检查登录状态
+  checkLoginStatus()
 })
 
 onBeforeUnmount(() => {
@@ -132,10 +144,8 @@ onBeforeUnmount(() => {
 })
 
 watch(() => route.path, () => {
-  // 路由变化时，如果已登录，更新购物车信息
-  if (isLoggedIn.value) {
-    fetchCartCount()
-  }
+  // 路由变化时，检查登录状态
+  checkLoginStatus()
 })
 </script>
 

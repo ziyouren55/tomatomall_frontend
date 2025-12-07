@@ -1,18 +1,10 @@
 import request from '../config/request'
-import { ApiResponse } from '@/types/api'
+import { ApiResponse, Order } from '@/types/api'
 
 /**
  * 订单相关 API
+ * Order类型定义在types/api.ts中
  */
-
-export interface Order {
-    id: number
-    userId: number
-    totalAmount: number
-    status: string
-    createTime?: string
-    [key: string]: any
-}
 
 const orderApi = {
     // 获取当前用户的订单列表
@@ -31,7 +23,7 @@ const orderApi = {
     },
 
     // 发起支付
-    payOrder(orderId: number): Promise<ApiResponse<any>> {
+    payOrder(orderId: number): Promise<ApiResponse<{ paymentForm: string; orderId: string; paymentMethod: string; totalAmount: number }>> {
         return request.post(`/orders/${orderId}/pay`)
     }
 }

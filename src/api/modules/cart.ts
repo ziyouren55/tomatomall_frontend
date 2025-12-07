@@ -1,17 +1,10 @@
 import request from '../config/request'
-import { ApiResponse } from '@/types/api'
+import { ApiResponse, CartItem } from '@/types/api'
 
 /**
  * 购物车相关 API
+ * CartItem类型定义在types/api.ts中
  */
-
-export interface CartItem {
-    id: number
-    productId: number
-    quantity: number
-    product?: any
-    [key: string]: any
-}
 
 export interface AddToCartData {
     productId: number

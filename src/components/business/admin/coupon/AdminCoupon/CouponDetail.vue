@@ -114,17 +114,15 @@ export default defineComponent({
       return 'active';
     },
     canExchange(): boolean {
-      // 只有未拥有的优惠券才能兑换
+      // 只有未过期且有积分要求的优惠券才能兑换
       if (!this.coupon) return false;
-      return !this.coupon.isOwned && 
-             this.statusText !== '已过期' && 
+      return this.statusText !== '已过期' && 
              (this.coupon.pointsRequired || 0) > 0;
     },
     canUse(): boolean {
-      // 只有用户拥有的未使用优惠券才能使用
+      // 只有未使用且未过期的优惠券才能使用
       if (!this.coupon) return false;
-      return this.coupon.isOwned && 
-             this.statusText === '可使用';
+      return this.statusText === '可使用';
     }
   },
   mounted() {
@@ -136,7 +134,11 @@ export default defineComponent({
       this.error = null;
       
       try {
-        const response = await api.coupon.getCouponDetail(this.couponId);
+        const couponIdNum = typeof this.couponId === 'string' ? parseInt(this.couponId, 10) : this.couponId;
+        if (isNaN(couponIdNum as number)) {
+          throw new Error('优惠券ID格式错误');
+        }
+        const response = await api.coupon.getCouponDetail(couponIdNum as number);
         this.coupon = response.data;
       } catch (error) {
         this.error = '获取优惠券详情失败，请稍后重试';
@@ -145,15 +147,19 @@ export default defineComponent({
         this.loading = false;
       }
     },
-    formatDate(date) {
+    formatDate(date: string | undefined): string {
       if (!date) return '';
       return new Date(date).toLocaleString();
     },
     exchangeCoupon() {
-      this.$emit('exchange', this.coupon.id);
+      if (this.coupon?.id) {
+        this.$emit('exchange', this.coupon.id);
+      }
     },
     useCoupon() {
-      this.$emit('use', this.coupon.id);
+      if (this.coupon?.id) {
+        this.$emit('use', this.coupon.id);
+      }
     },
     goBack() {
       this.$router.go(-1);

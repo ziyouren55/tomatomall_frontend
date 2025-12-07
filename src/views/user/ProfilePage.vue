@@ -21,7 +21,7 @@
               <h2>{{ userProfile.name }}</h2>
               <p class="username">@{{ userProfile.username }}</p>
               <span class="role-badge" :class="userProfile.role">
-                {{ userProfile.role === 'admin' ? '商家' : '顾客' }}
+                {{ userProfile.role === 'ADMIN' ? '商家' : '顾客' }}
               </span>
             </div>
           </div>
@@ -135,7 +135,7 @@
   <script lang="ts">
   import { defineComponent } from 'vue'
   import api from '@/api';
-  import type { UserInfo } from '@/types/api'
+  import type { UserInfo, ErrorResponse } from '@/types/api'
   import type { AxiosError } from 'axios'
   
   interface EditForm {
@@ -197,8 +197,8 @@
             this.error = response.msg || '获取用户信息失败';
           }
         } catch (error: unknown) {
-          const axiosError = error as AxiosError
-          this.error = (axiosError.response?.data as any)?.msg || '获取用户信息失败，请稍后再试';
+          const axiosError = error as AxiosError<ErrorResponse>
+          this.error = axiosError.response?.data?.msg || '获取用户信息失败，请稍后再试';
           console.error('获取用户信息错误:', error);
         } finally {
           this.isLoading = false;
@@ -214,7 +214,7 @@
           email: this.userProfile.email || '',
           location: this.userProfile.location || '',
           password: '',
-          role: this.userProfile.role
+          role: this.userProfile.role || 'USER'
         };
       },
       
@@ -231,11 +231,15 @@
       },
       
       triggerFileInput() {
-        this.$refs.fileInput.click();
+        const fileInput = this.$refs.fileInput as HTMLInputElement | undefined
+        if (fileInput) {
+          fileInput.click()
+        }
       },
       
-      handleFileSelect(event: any): void {
-        const file = event.target.files[0];
+      handleFileSelect(event: Event): void {
+        const target = event.target as HTMLInputElement
+        const file = target.files?.[0]
         if (!file) return;
         
         // 验证文件类型
@@ -254,8 +258,11 @@
         const reader = new FileReader();
         reader.onload = (e) => {
           // 将文件转换为base64格式作为预览
-          this.editForm.avatar = e.target.result;
-          this.editError = '';
+          const result = e.target?.result
+          if (typeof result === 'string') {
+            this.editForm.avatar = result;
+            this.editError = '';
+          }
         };
         reader.readAsDataURL(file);
       },
@@ -295,11 +302,19 @@
         this.editError = '';
         
         // 创建要提交的数据对象
-        const updateData = { ...this.editForm };
+        const updateData: Partial<UserInfo> = { 
+          username: this.editForm.username,
+          name: this.editForm.name,
+          avatar: this.editForm.avatar,
+          telephone: this.editForm.telephone,
+          email: this.editForm.email,
+          location: this.editForm.location,
+          role: this.editForm.role as 'ADMIN' | 'USER' | undefined
+        };
         
-        // 如果密码为空，则不提交密码字段
-        if (!updateData.password) {
-          delete updateData.password;
+        // 如果密码不为空，则添加密码字段
+        if (this.editForm.password) {
+          (updateData as any).password = this.editForm.password;
         }
         
         try {
@@ -314,8 +329,8 @@
             this.editError = response.msg || '更新失败';
           }
         } catch (error: unknown) {
-          const axiosError = error as AxiosError
-          this.editError = (axiosError.response?.data as any)?.msg || '更新失败，请稍后再试';
+          const axiosError = error as AxiosError<ErrorResponse>
+          this.editError = axiosError.response?.data?.msg || '更新失败，请稍后再试';
           console.error('更新用户信息错误:', error);
         } finally {
           this.isSaving = false;

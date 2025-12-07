@@ -50,9 +50,14 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { ElMenu, ElMenuItem } from "element-plus";
 import api from '@/api';
 import { removeToken } from '@/utils/storage';
+import type { AxiosError } from 'axios';
+
+const router = useRouter();
+const route = useRoute();
 
 const searchQuery = ref<string>('');
 const cartItemCount = ref<number>(0);
@@ -63,7 +68,7 @@ let cartPollingInterval: ReturnType<typeof setInterval> | null = null;
 const performSearch = (): void => {
   if (!searchQuery.value.trim()) return;
 
-  window.$router.push({
+  router.push({
     path: '/',
     query: { search: searchQuery.value }
   });
@@ -95,12 +100,14 @@ const fetchCartCount = async () => {
   try {
     const response = await api.cart.getCartItems();
     if (response && response.data) {
-      cartItemCount.value = response.data.total || 0;
+      // response.data是CartItem[]数组，使用数组长度
+      cartItemCount.value = Array.isArray(response.data) ? response.data.length : 0;
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Failed to fetch cart count:', error);
     // If unauthorized, clear token and update login status
-    if (error.response && error.response.status === 401) {
+    const axiosError = error as AxiosError;
+    if (axiosError.response && axiosError.response.status === 401) {
       localStorage.removeItem('token');
       isLoggedIn.value = false;
     }
@@ -127,7 +134,7 @@ const logout = async () => {
     removeToken();
     localStorage.removeItem('isAdmin');
     localStorage.removeItem('username');
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Logout error:', error);
   } finally {
     // Update component state
@@ -139,7 +146,7 @@ const logout = async () => {
     stopCartPolling();
 
     // Redirect to home page
-    window.$router.push('/');
+    router.push('/');
   }
 };
 
@@ -153,7 +160,7 @@ onBeforeUnmount(() => {
   stopCartPolling();
 });
 
-watch(() => window.$route, () => {
+watch(() => route.path, () => {
   // Watch for route changes to update login status
   checkLoginStatus();
 });

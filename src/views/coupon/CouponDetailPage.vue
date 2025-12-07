@@ -3,7 +3,7 @@
     <NavigationBar />
     <div class="container">
       <CouponDetail 
-        :coupon-id="$route.params.id" 
+        :coupon-id="String($route.params.id)" 
         @exchange="handleExchange"
         @use="handleUse"
       />
@@ -16,6 +16,8 @@ import { defineComponent } from 'vue'
 import NavigationBar from '@/components/common/NavigationBar.vue';
 import CouponDetail from '@/components/business/admin/coupon/AdminCoupon/CouponDetail.vue';
 import api from '@/api';
+import type { AxiosError } from 'axios';
+import type { ErrorResponse } from '@/types/api';
 
 export default defineComponent({
   name: 'CouponDetailPage',
@@ -28,12 +30,14 @@ export default defineComponent({
     async handleExchange(couponId: number): Promise<void> {
       try {
         await api.coupon.exchangeCoupon(couponId);
-        this.$toast.success('优惠券兑换成功！');
+        // 使用alert替代$toast，或者可以导入ElMessage
+        alert('优惠券兑换成功！');
         // 刷新优惠券详情
         this.$emit('refresh');
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('兑换优惠券失败:', error);
-        this.$toast.error(`兑换失败: ${error.response?.data?.message || '未知错误'}`);
+        const axiosError = error as AxiosError<ErrorResponse>;
+        alert(`兑换失败: ${axiosError.response?.data?.message || '未知错误'}`);
       }
     },
     handleUse(couponId: number): void {

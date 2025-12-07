@@ -138,18 +138,19 @@
 // 导入订单服务 - 确保路径正确
 import { defineComponent } from 'vue'
 import api from '@/api';
-import { AxiosError } from 'axios';
+import type { AxiosError } from 'axios';
+import type { Order, ErrorResponse } from '@/types/api';
 
 export default defineComponent({
   name: 'OrderPage',
   data() {
     return {
-      orders: [] as any[],
+      orders: [] as Order[],
       loading: false,
       paymentLoading: null as number | null, // 记录正在支付的订单ID
       errorMessage: '',
       showPaymentForm: false,
-      paymentForm: null as any,
+      paymentForm: null as string | null,
       currentOrderId: null as number | null,
       formSubmitted: false
     };
@@ -175,8 +176,8 @@ export default defineComponent({
         }
       } catch (error: unknown) {
         console.error('获取订单列表失败:', error);
-        const axiosError = error as AxiosError
-        this.errorMessage = (axiosError.response?.data as any)?.message || '获取订单列表失败，请稍后重试';
+        const axiosError = error as AxiosError<ErrorResponse>
+        this.errorMessage = axiosError.response?.data?.message || axiosError.response?.data?.msg || '获取订单列表失败，请稍后重试';
         this.orders = [];
       } finally {
         this.loading = false;
@@ -219,8 +220,8 @@ export default defineComponent({
         }
       } catch (error: unknown) {
         console.error('支付失败:', error);
-        const axiosError = error as AxiosError
-        alert((axiosError.response?.data as any)?.message || '支付失败，请稍后重试');
+        const axiosError = error as AxiosError<ErrorResponse>
+        alert(axiosError.response?.data?.message || axiosError.response?.data?.msg || '支付失败，请稍后重试');
       } finally {
         this.paymentLoading = null;
       }
@@ -239,7 +240,7 @@ export default defineComponent({
     // 查看订单详情
     async viewOrderDetails(orderId: number): Promise<void> {
       try {
-        const response = await api.order.getOrderById(orderId);
+        await api.order.getOrderById(orderId);
         
         // 可以跳转到订单详情页面
         this.$router.push({
@@ -252,13 +253,13 @@ export default defineComponent({
         
       } catch (error: unknown) {
         console.error('获取订单详情失败:', error);
-        const axiosError = error as AxiosError
-        alert((axiosError.response?.data as any)?.message || '获取订单详情失败');
+        const axiosError = error as AxiosError<ErrorResponse>
+        alert(axiosError.response?.data?.message || axiosError.response?.data?.msg || '获取订单详情失败');
       }
     },
     
     // 格式化日期
-    formatDate(dateString: string): string {
+    formatDate(dateString: string | undefined): string {
       if (!dateString) return '';
       
       const date = new Date(dateString);
@@ -273,7 +274,7 @@ export default defineComponent({
     
     // 获取状态文本
     getStatusText(status: string): string {
-      const statusMap = {
+      const statusMap: Record<string, string> = {
         'PENDING': '待支付',
         'PAID': '已支付',
         'SUCCESS': '支付成功',
@@ -288,7 +289,7 @@ export default defineComponent({
     
     // 获取状态样式类
     getStatusClass(status: string): string {
-      const classMap = {
+      const classMap: Record<string, string> = {
         'PENDING': 'status-pending',
         'PAID': 'status-success',
         'SUCCESS': 'status-success',
@@ -302,7 +303,7 @@ export default defineComponent({
     },
     
     submitPaymentForm() {
-      const formElement = document.querySelector('.payment-modal form');
+      const formElement = document.querySelector('.payment-modal form') as HTMLFormElement | null;
       if (formElement) {
         this.formSubmitted = true;
         formElement.submit();
@@ -310,11 +311,14 @@ export default defineComponent({
     },
     
     // 处理图片加载错误
-    handleImageError(event: any) {
+    handleImageError(event: Event) {
+      const target = event.target as HTMLImageElement | null;
+      if (!target) return;
+      
       // 防止无限循环
-      event.target.onerror = null;
+      target.onerror = null;
       // 设置占位符图片
-      event.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect width="100" height="100" fill="%23ddd"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999"%3E暂无图片%3C/text%3E%3C/svg%3E';
+      target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect width="100" height="100" fill="%23ddd"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999"%3E暂无图片%3C/text%3E%3C/svg%3E';
     }
   }
 });

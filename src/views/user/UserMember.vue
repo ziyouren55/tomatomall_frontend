@@ -49,7 +49,7 @@
                     <div class="text-right">
                       <div :class="[
                         'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-white',
-                        getLevelColor(user.currentLevelId)
+                        getLevelColor(user.currentLevelId || 1)
                       ]">
                         <Crown class="w-3 h-3 mr-1" />
                         {{ user.levelName }}
@@ -250,13 +250,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { User, Crown, Coins, History, Search } from 'lucide-vue-next'
+import type { User as UserType } from '@/types/api'
+import type { MemberLevel, PointsHistory } from '@/api/modules/member'
+import api from '@/api'
 
 // 响应式数据
-const users = ref<any[]>([])
-const levels = ref<any[]>([])
-const selectedUser = ref<any>(null)
-const userDetails = ref<any>(null)
-const pointsHistory = ref<any[]>([])
+const users = ref<UserType[]>([])
+const levels = ref<MemberLevel[]>([])
+const selectedUser = ref<UserType | null>(null)
+const userDetails = ref<UserType | null>(null)
+const pointsHistory = ref<PointsHistory[]>([])
 const loading = ref<boolean>(false)
 const showLevelModal = ref<boolean>(false)
 const showPointsModal = ref<boolean>(false)
@@ -269,13 +272,13 @@ const pointsReason = ref<string>('')
 const filteredUsers = computed(() => {
   return users.value.filter(user => 
     user.username.toLowerCase().includes(searchTerm.value.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.value.toLowerCase())
+    (user.email && user.email.toLowerCase().includes(searchTerm.value.toLowerCase()))
   )
 })
 
 // 方法
-const getLevelColor = (levelId) => {
-  const colors = {
+const getLevelColor = (levelId: number) => {
+  const colors: Record<number, string> = {
     1: 'bg-amber-600',
     2: 'bg-gray-400',
     3: 'bg-yellow-500',
@@ -284,8 +287,8 @@ const getLevelColor = (levelId) => {
   return colors[levelId] || 'bg-gray-400'
 }
 
-const getRecordTypeColor = (type) => {
-  const colors = {
+const getRecordTypeColor = (type: string) => {
+  const colors: Record<string, string> = {
     'PURCHASE': 'bg-green-100 text-green-800',
     'REVIEW': 'bg-blue-100 text-blue-800',
     'EXCHANGE': 'bg-red-100 text-red-800',
@@ -295,7 +298,7 @@ const getRecordTypeColor = (type) => {
   return colors[type] || 'bg-gray-100 text-gray-800'
 }
 
-const handleUserClick = async (user) => {
+const handleUserClick = async (user: UserType) => {
   selectedUser.value = user
   loading.value = true
   
@@ -309,12 +312,12 @@ const handleUserClick = async (user) => {
       }
     }
 
-    const mockHistory = [
-      { id: 1, pointsChange: 100, recordType: 'PURCHASE', description: '购买商品获得积分', createTime: '2024-06-20' },
-      { id: 2, pointsChange: 50, recordType: 'REVIEW', description: '发表评价获得积分', createTime: '2024-06-18' },
-      { id: 3, pointsChange: -200, recordType: 'EXCHANGE', description: '兑换优惠券', createTime: '2024-06-15' },
-      { id: 4, pointsChange: 150, recordType: 'FORUM_POST', description: '论坛发帖获得积分', createTime: '2024-06-12' },
-      { id: 5, pointsChange: 300, recordType: 'SYSTEM', description: '系统奖励积分', createTime: '2024-06-10' },
+    const mockHistory: PointsHistory[] = [
+      { id: 1, userId: user.id, pointsChange: 100, recordType: 'PURCHASE', description: '购买商品获得积分', createTime: '2024-06-20' },
+      { id: 2, userId: user.id, pointsChange: 50, recordType: 'REVIEW', description: '发表评价获得积分', createTime: '2024-06-18' },
+      { id: 3, userId: user.id, pointsChange: -200, recordType: 'EXCHANGE', description: '兑换优惠券', createTime: '2024-06-15' },
+      { id: 4, userId: user.id, pointsChange: 150, recordType: 'FORUM_POST', description: '论坛发帖获得积分', createTime: '2024-06-12' },
+      { id: 5, userId: user.id, pointsChange: 300, recordType: 'SYSTEM', description: '系统奖励积分', createTime: '2024-06-10' },
     ]
     
     pointsHistory.value = mockHistory
@@ -322,11 +325,19 @@ const handleUserClick = async (user) => {
   }, 500)
 }
 
-const confirmLevelUpgrade = () => {
-  showLevelModal.value = false
-  // 这里调用升级接口
-  console.log('升级用户等级:', selectedUser.value?.username, '目标等级ID:', targetLevelId.value)
-  targetLevelId.value = null
+const confirmLevelUpgrade = async () => {
+  if (!selectedUser.value || !targetLevelId.value) return
+  
+  try {
+    await api.member.upgradeUserLevel(selectedUser.value.id, targetLevelId.value)
+    showLevelModal.value = false
+    // 刷新用户列表
+    // TODO: 刷新用户数据
+    targetLevelId.value = null
+  } catch (error) {
+    console.error('升级用户等级失败:', error)
+    alert('升级失败，请稍后重试')
+  }
 }
 
 const confirmPointsAdjustment = () => {
@@ -351,11 +362,11 @@ onMounted(() => {
     { id: 5, username: 'eve', email: 'eve@example.com', currentPoints: 5200, totalPoints: 8000, currentLevelId: 4, levelName: '钻石会员' },
   ]
 
-  const mockLevels = [
-    { id: 1, memberLevel: 1, levelName: '铜牌会员', pointsRequired: 0, discountRate: 0.95 },
-    { id: 2, memberLevel: 2, levelName: '银牌会员', pointsRequired: 1000, discountRate: 0.90 },
-    { id: 3, memberLevel: 3, levelName: '金牌会员', pointsRequired: 2500, discountRate: 0.85 },
-    { id: 4, memberLevel: 4, levelName: '钻石会员', pointsRequired: 5000, discountRate: 0.80 },
+  const mockLevels: MemberLevel[] = [
+    { id: 1, memberLevel: 1, levelName: '铜牌会员', pointsRequired: 0, discountRate: 0.95, isActive: true },
+    { id: 2, memberLevel: 2, levelName: '银牌会员', pointsRequired: 1000, discountRate: 0.90, isActive: true },
+    { id: 3, memberLevel: 3, levelName: '金牌会员', pointsRequired: 2500, discountRate: 0.85, isActive: true },
+    { id: 4, memberLevel: 4, levelName: '钻石会员', pointsRequired: 5000, discountRate: 0.80, isActive: true },
   ]
 
   users.value = mockUsers

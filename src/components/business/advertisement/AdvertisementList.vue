@@ -96,7 +96,6 @@
   import api from '@/api';
   import AdvertisementForm from './AdvertisementDialog.vue';
   import type { Advertisement, AdvertisementFormData } from '@/types/api';
-  import type { AxiosError } from 'axios';
   
   const router = useRouter();
   const advertisements = ref<Advertisement[]>([]);
@@ -110,8 +109,13 @@
   });
   const adToDelete = ref<Advertisement | null>(null);
       
-      let advertisementModal: any = null;
-      let confirmDeleteModal: any = null;
+      interface BootstrapModal {
+        show(): void;
+        hide(): void;
+      }
+      
+      let advertisementModal: BootstrapModal | null = null;
+      let confirmDeleteModal: BootstrapModal | null = null;
   
       onMounted(async () => {
         fetchAdvertisements();
@@ -120,11 +124,12 @@
         // Assuming Bootstrap 5 is being used
         const modalElement = document.getElementById('advertisementModal');
         const confirmElement = document.getElementById('confirmDeleteModal');
-        if (modalElement && (window as any).bootstrap) {
-          advertisementModal = new (window as any).bootstrap.Modal(modalElement);
+        const bootstrap = (window as { bootstrap?: { Modal: new (element: HTMLElement) => BootstrapModal } }).bootstrap;
+        if (modalElement && bootstrap) {
+          advertisementModal = new bootstrap.Modal(modalElement);
         }
-        if (confirmElement && (window as any).bootstrap) {
-          confirmDeleteModal = new (window as any).bootstrap.Modal(confirmElement);
+        if (confirmElement && bootstrap) {
+          confirmDeleteModal = new bootstrap.Modal(confirmElement);
         }
       });
       
@@ -132,10 +137,10 @@
         loading.value = true;
         try {
           const response = await api.advertisement.getAllAdvertisements();
-          if (response.data && (response.data as any).code === 200) {
-            advertisements.value = (response.data as any).data as Advertisement[];
+          if (response.code === '200') {
+            advertisements.value = response.data || [];
           } else {
-            console.error('Failed to fetch advertisements:', (response.data as any)?.msg);
+            console.error('Failed to fetch advertisements:', response.msg);
           }
         } catch (error: unknown) {
           console.error('Error fetching advertisements:', error);
@@ -158,7 +163,9 @@
           imgUrl: '',
           productId: ''
         };
-        advertisementModal.show();
+        if (advertisementModal) {
+          advertisementModal.show();
+        }
       };
       
       const editAdvertisement = (ad: Advertisement) => {
@@ -180,13 +187,13 @@
         if (!adToDelete.value) return;
         try {
           const response = await api.advertisement.deleteAdvertisement(adToDelete.value.id);
-          if (response.data && (response.data as any).code === 200) {
+          if (response.code === '200') {
             fetchAdvertisements();
             if (confirmDeleteModal) {
               confirmDeleteModal.hide();
             }
           } else {
-            console.error('Failed to delete advertisement:', (response.data as any)?.msg);
+            console.error('Failed to delete advertisement:', response.msg);
           }
         } catch (error: unknown) {
           console.error('Error deleting advertisement:', error);
@@ -202,14 +209,14 @@
             response = await api.advertisement.createAdvertisement(advertisementData);
           }
           
-          if (response.data && (response.data as any).code === 200) {
+          if (response.code === '200') {
             fetchAdvertisements();
             if (advertisementModal) {
               advertisementModal.hide();
             }
           } else {
-            console.error('Failed to save advertisement:', (response.data as any)?.msg);
-            alert(`操作失败: ${(response.data as any)?.msg || '未知错误'}`);
+            console.error('Failed to save advertisement:', response.msg);
+            alert(`操作失败: ${response.msg || '未知错误'}`);
           }
         } catch (error: unknown) {
           console.error('Error saving advertisement:', error);
@@ -220,19 +227,6 @@
       const closeModal = () => {
         if (advertisementModal) {
           advertisementModal.hide();
-        }
-      };
-      
-      const showCreateForm = () => {
-        editMode.value = false;
-        currentAdvertisement.value = {
-          title: '',
-          content: '',
-          imgUrl: '',
-          productId: ''
-        };
-        if (advertisementModal) {
-          advertisementModal.show();
         }
       };
   </script>

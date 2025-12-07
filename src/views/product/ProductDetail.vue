@@ -42,13 +42,16 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import ProductDetailCard from '@/components/business/product/ProductDetailCard.vue'
 import api from '@/api'
+import type { Stockpile, CartItem } from '@/types/api'
+import type { Product } from '@/api/modules/product'
+import type { AxiosError } from 'axios'
 
 const route = useRoute()
 const router = useRouter()
 
 // 响应式数据
-const product = ref<any>(null)
-const stockpile = ref<any>(null)
+const product = ref<Product | null>(null)
+const stockpile = ref<Stockpile | null>(null)
 const loading = ref<boolean>(true)
 const error = ref<string>('')
 const loadingActions = ref<{
@@ -56,7 +59,7 @@ const loadingActions = ref<{
 }>({
   addToCart: false
 })
-const cartItem = ref<any>(null) // 存储购物车中的商品信息
+const cartItem = ref<CartItem | null>(null) // 存储购物车中的商品信息
 
 // 获取商品详情
 const fetchProductDetail = async (): Promise<void> => {
@@ -69,26 +72,34 @@ const fetchProductDetail = async (): Promise<void> => {
       throw new Error('商品ID不能为空')
     }
 
+    // 处理productId可能是string或string[]的情况
+    const productIdStr = Array.isArray(productId) ? productId[0] : productId
+    const productIdNum = typeof productIdStr === 'string' ? parseInt(productIdStr, 10) : productIdStr
+    if (isNaN(productIdNum as number)) {
+      throw new Error('商品ID格式错误')
+    }
+
     // 并行获取商品详情、库存信息和购物车信息
     const [productResponse, stockpileResponse, cartResponse] = await Promise.all([
-      api.product.getProductById(productId),
-      api.product.getProductStockpile(productId),
+      api.product.getProductById(productIdNum),
+      api.product.getProductStockpile(productIdNum),
       api.cart.getCartItems()
     ])
 
     product.value = productResponse.data || productResponse
-    if (product.value && !product.value.id && productId) {
+    if (product.value && !product.value.id && productIdNum) {
       // 确保商品对象有id字段
-      product.value.id = productId
+      product.value.id = productIdNum as number
     }
     
     stockpile.value = stockpileResponse.data || stockpileResponse
     console.log('获取到的商品信息:', product.value)
     
     // 检查商品是否已在购物车中
-    if (cartResponse && cartResponse.code === '200' && cartResponse.data && cartResponse.data.cartItems) {
-      const items = cartResponse.data.cartItems
-      const foundItem = items.find(item => item.productId === productId && item.state === 'SHOW')
+    if (cartResponse && cartResponse.code === '200' && cartResponse.data) {
+      const items = Array.isArray(cartResponse.data) ? cartResponse.data : []
+      const productIdStr = String(productIdNum)
+      const foundItem = items.find((item: CartItem) => item.productId === productIdStr && item.state === 'SHOW')
       if (foundItem) {
         cartItem.value = foundItem
         console.log('商品已在购物车中:', foundItem)
@@ -97,18 +108,19 @@ const fetchProductDetail = async (): Promise<void> => {
       }
     }
     
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('获取商品详情失败:', err)
-    if (err.response?.status === 404) {
+    const axiosError = err as AxiosError
+    if (axiosError.response?.status === 404) {
       error.value = '商品不存在'
-    } else if (err.response?.status === 401) {
+    } else if (axiosError.response?.status === 401) {
       error.value = '请先登录'
       // 可以重定向到登录页
       setTimeout(() => {
         router.push('/login')
       }, 2000)
     } else {
-      error.value = err.message || '网络错误，请检查您的网络连接'
+      error.value = (err as Error).message || '网络错误，请检查您的网络连接'
     }
   } finally {
     loading.value = false
@@ -116,18 +128,29 @@ const fetchProductDetail = async (): Promise<void> => {
 }
 
 // 处理加入购物车
-const handleAddToCart = async (quantity) => {
+const handleAddToCart = async (quantity: number) => {
   try {
     loadingActions.value.addToCart = true
     
     // 获取商品ID，确保它存在
+    if (!product.value) {
+      throw new Error('商品信息不存在')
+    }
+    
     const productId = product.value.id || route.params.id
     if (!productId) {
       throw new Error('商品ID不能为空')
     }
     
+    // 处理productId可能是string或string[]的情况
+    const productIdStr = Array.isArray(productId) ? productId[0] : String(productId)
+    const productIdNum = typeof productIdStr === 'string' ? parseInt(productIdStr, 10) : productIdStr
+    if (isNaN(productIdNum as number)) {
+      throw new Error('商品ID格式错误')
+    }
+    
     console.log('添加到购物车的商品:', product.value)
-    console.log('商品ID:', productId)
+    console.log('商品ID:', productIdNum)
     console.log('数量:', quantity)
     
     let response
@@ -137,8 +160,9 @@ const handleAddToCart = async (quantity) => {
     if (cartItem.value && cartItem.value.state === 'SHOW') {
       // 已在购物车中，更新数量
       const newQuantity = cartItem.value.quantity + quantity
+      const cartItemIdNum = parseInt(cartItem.value.cartItemId, 10)
       console.log('更新购物车项，新数量:', newQuantity)
-      response = await api.cart.updateCartItemQuantity(cartItem.value.cartItemId, newQuantity)
+      response = await api.cart.updateCartItemQuantity(cartItemIdNum, newQuantity)
       
       if (response && response.code === '200') {
         ElMessage({
@@ -148,7 +172,7 @@ const handleAddToCart = async (quantity) => {
       }
     } else {
       // 不在购物车中，添加新项
-      response = await api.cart.addToCart(productId, quantity)
+      response = await api.cart.addToCart(productIdNum, quantity)
       
       if (response && response.code === '200') {
         ElMessage({
@@ -167,19 +191,20 @@ const handleAddToCart = async (quantity) => {
       throw new Error(response?.msg || '添加购物车失败')
     }
     
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('加入购物车失败:', err)
     
+    const axiosError = err as AxiosError
     let errorMessage = '加入购物车失败'
-    if (err.response?.status === 401) {
+    if (axiosError.response?.status === 401) {
       errorMessage = '请先登录'
       setTimeout(() => {
         router.push('/login')
       }, 1500)
-    } else if (err.response?.status === 400) {
-      errorMessage = err.response.data?.message || '库存不足'
-    } else if (err.message) {
-      errorMessage = err.message
+    } else if (axiosError.response?.status === 400) {
+      errorMessage = (axiosError.response.data as any)?.message || '库存不足'
+    } else if ((err as Error).message) {
+      errorMessage = (err as Error).message
     }
     
     ElMessage({
@@ -197,7 +222,7 @@ onMounted(() => {
 })
 
 // 监听路由变化，如果商品ID改变则重新获取数据
-let unwatchRoute = null
+let unwatchRoute: (() => void) | null = null
 onMounted(() => {
   unwatchRoute = route.params.id !== undefined ? 
     watch(() => route.params.id, (newId, oldId) => {

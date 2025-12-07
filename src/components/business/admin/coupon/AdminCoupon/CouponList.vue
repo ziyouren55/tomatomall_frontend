@@ -31,12 +31,13 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import api from '@/api';
+import type { Coupon } from '@/types/api';
 
 export default defineComponent({
   name: 'CouponList',
   data() {
     return {
-      coupons: [] as any[]
+      coupons: [] as Coupon[]
     };
   },
   mounted() {
@@ -60,7 +61,8 @@ export default defineComponent({
     createNew(): void {
       this.$router.push('/admin/coupons/create');
     },
-    formatDate(date: string | Date): string {
+    formatDate(date: string | Date | undefined): string {
+      if (!date) return '长期有效';
       return new Date(date).toLocaleDateString();
     }
   }

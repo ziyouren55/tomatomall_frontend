@@ -23,6 +23,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import api from '@/api';
+import type { Coupon } from '@/types/api';
 
 export default defineComponent({
   name: 'IssueCouponForm',
@@ -35,7 +36,7 @@ export default defineComponent({
   emits: ['issued'],
   data() {
     return {
-      availableCoupons: [] as any[],
+      availableCoupons: [] as Coupon[],
       issueData: {
         couponId: null as number | null,
         remark: ''
@@ -60,20 +61,26 @@ export default defineComponent({
     async issueCoupon() {
       if (!this.userId || !this.issueData.couponId) return;
       
+      const userIdNum = typeof this.userId === 'string' ? parseInt(this.userId, 10) : this.userId;
+      if (isNaN(userIdNum as number)) {
+        alert('用户ID格式错误');
+        return;
+      }
+      
       try {
         const issueVO = {
-          userId: this.userId,
+          userId: userIdNum as number,
           couponId: this.issueData.couponId,
           remark: this.issueData.remark
         };
         
         await api.coupon.issueCouponToUser(issueVO);
         this.$emit('issued');
-        this.$toast.success('优惠券发放成功');
+        alert('优惠券发放成功');
         this.issueData.remark = '';
       } catch (error) {
         console.error('发放优惠券失败:', error);
-        this.$toast.error('发放失败，请重试');
+        alert('发放失败，请重试');
       }
     }
   }

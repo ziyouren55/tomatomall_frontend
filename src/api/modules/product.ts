@@ -1,5 +1,5 @@
 import request from '../config/request'
-import { ApiResponse } from '@/types/api'
+import { ApiResponse, Stockpile } from '@/types/api'
 
 /**
  * 产品相关 API
@@ -7,17 +7,26 @@ import { ApiResponse } from '@/types/api'
 
 export interface Product {
     id?: number
-    name: string
+    title?: string
+    name?: string
     price: number
+    rate?: number
     description?: string
+    cover?: string
+    detail?: string
+    salesCount?: number
     stockpile?: number
     [key: string]: any
 }
 
 export interface StockpileData {
     amount: number
+    frozen?: number
     [key: string]: any
 }
+
+// 导出Stockpile类型
+export type { Stockpile }
 
 const productApi = {
     // 获取所有产品
@@ -46,12 +55,12 @@ const productApi = {
     },
 
     // 获取产品库存
-    getProductStockpile(productId: number): Promise<ApiResponse<StockpileData>> {
+    getProductStockpile(productId: number): Promise<ApiResponse<Stockpile>> {
         return request.get(`/products/stockpile/${productId}`)
     },
 
     // 获取所有产品库存
-    getAllStockpile(): Promise<ApiResponse<StockpileData[]>> {
+    getAllStockpile(): Promise<ApiResponse<Stockpile[]>> {
         return request.get('/products/stockpile')
     },
 

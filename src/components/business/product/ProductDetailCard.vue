@@ -43,11 +43,11 @@
         </div>
         <div class="product-rating">
           <div class="rating-stars">
-            <span v-for="i in 5" :key="i" class="star" :class="{ 'filled': i <= Math.floor(product.rate / 2) }">
+            <span v-for="i in 5" :key="i" class="star" :class="{ 'filled': i <= Math.floor((product.rate || 0) / 2) }">
               ★
             </span>
           </div>
-          <span class="rating-score">{{ product.rate }}/10分</span>
+          <span class="rating-score">{{ product.rate || 0 }}/10分</span>
           <span class="rating-count">(1024条评价)</span>
         </div>
 
@@ -81,10 +81,10 @@
             <button 
               class="btn btn-cart" 
               @click="addToCart"
-              :disabled="isOutOfStock || loadingActions.addToCart"
-              :class="{ 'loading': loadingActions.addToCart }"
+              :disabled="isOutOfStock || (loadingActions?.addToCart || false)"
+              :class="{ 'loading': loadingActions?.addToCart || false }"
             >
-              <span v-if="loadingActions.addToCart">加入中...</span>
+              <span v-if="loadingActions?.addToCart">加入中...</span>
               <span v-else-if="isOutOfStock">缺货</span>
               <span v-else-if="props.cartItem">更新购物车 ({{ props.cartItem.quantity }}+{{ quantity }})</span>
               <span v-else>加入购物车</span>
@@ -99,20 +99,22 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import type { Stockpile, CartItem } from '@/types/api'
+import type { Product } from '@/api/modules/product'
 
 // 接收商品数据和相关状态
 const props = defineProps<{
-  product: any
-  stockpile?: any
+  product: Product
+  stockpile?: Stockpile | null
   loadingActions?: {
     addToCart?: boolean
   }
-  cartItem?: any
+  cartItem?: CartItem | null
 }>()
 
 // 定义事件
 const emit = defineEmits<{
-  'add-to-cart': [productId: number, quantity: number]
+  'add-to-cart': [quantity: number]
 }>()
 
 // 商品数量
@@ -167,12 +169,12 @@ const isOutOfStock = computed(() => {
 })
 
 // 格式化价格（整数部分）
-const formatPrice = (price) => {
+const formatPrice = (price: number) => {
   return Math.floor(price).toLocaleString()
 }
 
 // 获取价格小数部分
-const getPriceDecimal = (price) => {
+const getPriceDecimal = (price: number) => {
   const decimal = (price % 1).toFixed(2).substring(2)
   return decimal
 }

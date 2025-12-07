@@ -66,12 +66,19 @@ export default defineComponent({
   methods: {
     async fetchCoupon(): Promise<void> {
       try {
-        const response = await api.coupon.getCouponById(this.couponId);
-        this.formData = { ...response.data };
-        // 转换日期格式
-        if (this.formData.expiryDate) {
-          this.formData.expiryDate = this.formatDateForInput(this.formData.expiryDate);
+        const couponIdNum = typeof this.couponId === 'string' ? parseInt(this.couponId, 10) : this.couponId;
+        if (isNaN(couponIdNum as number)) {
+          throw new Error('优惠券ID格式错误');
         }
+        const response = await api.coupon.getCouponById(couponIdNum as number);
+        const couponData = response.data;
+        // 安全地赋值，确保所有必需字段都有值
+        this.formData = {
+          name: couponData.name || '',
+          discount: couponData.discount || 10,
+          expiryDate: couponData.expiryDate ? this.formatDateForInput(couponData.expiryDate) : '',
+          description: couponData.description || ''
+        };
       } catch (error) {
         console.error('获取优惠券失败:', error);
       }
@@ -79,16 +86,17 @@ export default defineComponent({
     async submitForm(): Promise<void> {
       try {
         if (this.isEditMode) {
-          await api.coupon.updateCoupon(this.couponId, this.formData);
-          this.$toast.success('优惠券更新成功');
+          const couponIdNum = typeof this.couponId === 'string' ? parseInt(this.couponId, 10) : this.couponId;
+          await api.coupon.updateCoupon(couponIdNum as number, this.formData);
+          alert('优惠券更新成功');
         } else {
           await api.coupon.createCoupon(this.formData);
-          this.$toast.success('优惠券创建成功');
+          alert('优惠券创建成功');
         }
         this.$router.push('/admin/coupons');
       } catch (error) {
         console.error('操作失败:', error);
-        this.$toast.error('操作失败，请重试');
+        alert('操作失败，请重试');
       }
     },
     cancel(): void {
