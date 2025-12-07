@@ -123,6 +123,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { ElMenu, ElMenuItem } from "element-plus";
 import api from '@/api';
 import { removeToken } from '@/utils/storage';
+import { UserRole } from '@/utils/constants';
 import type { AxiosError } from 'axios';
 
 const router = useRouter();
@@ -152,8 +153,26 @@ const checkLoginStatus = () => {
   const token = localStorage.getItem('token');
   isLoggedIn.value = !!token;
 
-  // Check if user is admin (from local storage or other source)
-  isAdmin.value = localStorage.getItem('isAdmin') === 'true';
+  // Check if user is admin - 优先从 userInfo 获取，否则从 isAdmin flag 获取
+  let adminCheck = false;
+  const userInfoStr = localStorage.getItem('userInfo');
+  
+  if (userInfoStr) {
+    try {
+      const userInfo = JSON.parse(userInfoStr);
+      // 使用枚举检查角色
+      adminCheck = userInfo.role === UserRole.ADMIN || userInfo.role === 'ADMIN';
+    } catch (e) {
+      console.error('Failed to parse userInfo:', e);
+    }
+  }
+  
+  // 如果没有从 userInfo 获取到，尝试从 isAdmin flag（向后兼容）
+  if (!adminCheck) {
+    adminCheck = localStorage.getItem('isAdmin') === 'true';
+  }
+  
+  isAdmin.value = adminCheck;
   
   // Get username
   username.value = localStorage.getItem('username') || '';
@@ -165,6 +184,7 @@ const checkLoginStatus = () => {
   } else {
     stopCartPolling();
     username.value = '';
+    isAdmin.value = false;
   }
 };
 

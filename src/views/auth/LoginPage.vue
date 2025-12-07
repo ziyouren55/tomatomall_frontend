@@ -34,6 +34,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import { mapActions } from 'vuex'
+import api from '@/api'
 
 interface LoginForm {
   username: string
@@ -75,6 +76,22 @@ export default defineComponent({
         if (response && response.code === '200') {
           // 保存用户名到本地存储，方便获取用户信息
           localStorage.setItem('username', this.loginForm.username)
+          
+          // 登录成功后获取用户信息，以便设置管理员标志
+          try {
+            const userDetailsResponse = await api.user.getUserDetails(this.loginForm.username)
+            if (userDetailsResponse && userDetailsResponse.code === '200' && userDetailsResponse.data) {
+              // 保存用户信息到 localStorage，供 NavigationBar 使用
+              localStorage.setItem('userInfo', JSON.stringify(userDetailsResponse.data))
+              
+              // 同时更新 store（如果使用 store）
+              const getUserDetailsAction = this.$store.dispatch('user/getUserDetails', this.loginForm.username)
+              await getUserDetailsAction
+            }
+          } catch (userInfoError) {
+            console.warn('Failed to fetch user details after login:', userInfoError)
+            // 即使获取用户信息失败，也不阻止登录流程
+          }
           
           // 检查是否有重定向路径（从路由守卫保存的）
           const redirectPath = sessionStorage.getItem('redirectPath') || '/'

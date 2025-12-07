@@ -2,8 +2,24 @@
 <template>
     <div class="admin-product-manager">
       <div class="page-header">
-        <h1>产品管理</h1>
-        <button class="add-product-btn" @click="showAddProductForm">增添产品</button>
+        <div class="header-left">
+          <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="9" y1="3" x2="9" y2="21"></line>
+            <line x1="3" y1="9" x2="21" y2="9"></line>
+          </svg>
+          <div>
+            <h1>产品管理</h1>
+            <p class="header-subtitle">管理所有产品信息</p>
+          </div>
+        </div>
+        <button class="add-product-btn" @click="showAddProductForm">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          添加产品
+        </button>
       </div>
       
       <div v-if="showForm" class="form-container">
@@ -21,13 +37,25 @@
       </div>
       
       <div v-if="loading" class="loading">
+        <div class="loading-spinner"></div>
         <p>正在加载产品...</p>
       </div>
       <div v-else-if="error" class="error">
+        <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
         <p>{{ error }}</p>
       </div>
       <div v-else-if="products.length === 0" class="no-products">
-        <p>暂无产品。添加您的第一个产品！</p>
+        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="9" y1="3" x2="9" y2="21"></line>
+          <line x1="3" y1="9" x2="21" y2="9"></line>
+        </svg>
+        <p>暂无产品</p>
+        <p class="empty-hint">点击上方"添加产品"按钮创建您的第一个产品</p>
       </div>
       <div v-else class="product-table-container">
         <table class="product-table">
@@ -57,27 +85,60 @@
               <td>¥{{ product.price.toFixed(2) }}</td>
               <td>{{ product.rate }}</td>
               <td class="actions">
-                <button class="view-btn" @click="viewProduct(product.id)">查看</button>
-                <button class="edit-btn" @click="editProduct(product)">编辑</button>
-                <button class="inventory-btn" @click="manageInventory(product)">库存</button>
-                <button class="delete-btn" @click="confirmDelete(product)">删除</button>
+                <button class="view-btn" @click="viewProduct(product.id)" title="查看详情">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
+                <button class="edit-btn" @click="editProduct(product)" title="编辑产品">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                </button>
+                <button class="inventory-btn" @click="manageInventory(product)" title="管理库存">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <rect x="3" y="8" width="18" height="4" rx="1"></rect>
+                    <path d="M12 8v13M3 8V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                </button>
+                <button class="delete-btn" @click="confirmDelete(product)" title="删除产品">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                </button>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
       
-      <!-- Stockpile Management Modal -->
+      <!-- Stockpile Management Modal - 简化版 -->
       <div v-if="showStockpileModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content stockpile-modal">
           <div class="modal-header">
-            <h2>管理库存: {{ currentProduct?.title }}</h2>
-            <button class="close-btn" @click="closeStockpileModal">&times;</button>
+            <div class="modal-title">
+              <svg class="modal-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <rect x="3" y="8" width="18" height="4" rx="1"></rect>
+                <path d="M12 8v13M3 8V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              <h2>调整库存</h2>
+            </div>
+            <button class="close-btn" @click="closeStockpileModal">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
           </div>
           <div class="modal-body">
-            <StockpileManager 
+            <SimpleStockpileEditor 
               :productId="currentProduct?.id"
+              :productTitle="currentProduct?.title"
               @updated="handleStockpileUpdated"
+              @close="closeStockpileModal"
             />
           </div>
         </div>
@@ -107,12 +168,14 @@
   import api from '@/api';
   import ProductForm from './ProductForm.vue';
   import StockpileManager from './StockPileManager.vue';
+  import SimpleStockpileEditor from './SimpleStockpileEditor.vue';
   
   export default {
     name: 'AdminProductManager',
     components: {
       ProductForm,
-      StockpileManager
+      StockpileManager,
+      SimpleStockpileEditor
     },
     data() {
       return {
@@ -242,37 +305,80 @@
   };
   </script>
   
-  <style scoped>
-  .admin-product-manager {
-    padding: 20px;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-  
-  .page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-  }
-  
-  .page-header h1 {
-    margin: 0;
-  }
-  
-  .add-product-btn {
-    padding: 10px 20px;
-    background-color: #4caf50;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 1rem;
-  }
-  
-  .add-product-btn:hover {
-    background-color: #388e3c;
-  }
+<style scoped>
+.admin-product-manager {
+  padding: 0;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 20px 32px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #f0f0f0;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-icon {
+  width: 40px;
+  height: 40px;
+  color: #ff6b35;
+  stroke-width: 2;
+}
+
+.page-header h1 {
+  margin: 0 0 4px 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.header-subtitle {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.add-product-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.add-product-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+}
+
+.add-product-btn:active {
+  transform: translateY(0);
+}
+
+.btn-icon {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2.5;
+}
   
   .form-container {
     margin-bottom: 30px;
@@ -294,115 +400,248 @@
     color: #c62828;
   }
   
-  .product-table-container {
-    overflow-x: auto;
-  }
+.product-table-container {
+  overflow-x: auto;
+  overflow-y: visible;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  /* 始终显示滚动条，避免悬停时出现/消失 */
+  scrollbar-width: thin;
+  scrollbar-color: #c0c0c0 #f0f0f0;
+}
+
+/* Webkit浏览器滚动条样式 */
+.product-table-container::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.product-table-container::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 4px;
+}
+
+.product-table-container::-webkit-scrollbar-thumb {
+  background: #c0c0c0;
+  border-radius: 4px;
+}
+
+.product-table-container::-webkit-scrollbar-thumb:hover {
+  background: #a0a0a0;
+}
+
+.product-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+.product-table thead {
+  background: linear-gradient(135deg, #ff6b35 0%, #e53935 100%);
+  color: white;
+}
+
+.product-table th {
+  padding: 16px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.5px;
+}
+
+.product-table tbody tr {
+  border-bottom: 1px solid #f0f0f0;
+  transition: all 0.2s ease;
+}
+
+.product-table tbody tr:hover {
+  background-color: #fafafa;
+  transform: scale(1.01);
+}
+
+.product-table td {
+  padding: 16px;
+  color: #333;
+}
   
-  .product-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-  }
+.product-image {
+  width: 80px;
+}
+
+.product-image img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid #f0f0f0;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.product-image img:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.no-image {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+  border-radius: 8px;
+  font-size: 0.7rem;
+  color: #999;
+  text-align: center;
+  border: 2px solid #e0e0e0;
+}
+
+.product-table td:nth-child(4) {
+  font-weight: 600;
+  color: #ff6b35;
+  font-size: 1.05rem;
+}
+
+.product-table td:nth-child(5) {
+  color: #666;
+}
   
-  .product-table th,
-  .product-table td {
-    padding: 12px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
-  }
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+}
+
+.actions button svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2;
+}
+
+.view-btn {
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  color: #1976d2;
+}
+
+.edit-btn {
+  background: linear-gradient(135deg, #fff9c4 0%, #fff59d 100%);
+  color: #f57f17;
+}
+
+.inventory-btn {
+  background: linear-gradient(135deg, #e0f2f1 0%, #b2dfdb 100%);
+  color: #00796b;
+}
+
+.delete-btn {
+  background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+  color: #c62828;
+}
+
+.view-btn:hover {
+  background: linear-gradient(135deg, #bbdefb 0%, #90caf9 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(25, 118, 210, 0.3);
+}
+
+.edit-btn:hover {
+  background: linear-gradient(135deg, #fff59d 0%, #fff176 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(245, 127, 23, 0.3);
+}
+
+.inventory-btn:hover {
+  background: linear-gradient(135deg, #b2dfdb 0%, #80cbc4 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 121, 107, 0.3);
+}
+
+.delete-btn:hover {
+  background: linear-gradient(135deg, #ffcdd2 0%, #ef9a9a 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(198, 40, 40, 0.3);
+}
   
-  .product-table th {
-    background-color: #f5f5f5;
-    font-weight: 600;
-  }
-  
-  .product-table tr:hover {
-    background-color: #f9f9f9;
-  }
-  
-  .product-image {
-    width: 60px;
-  }
-  
-  .product-image img {
-    width: 50px;
-    height: 50px;
-    object-fit: cover;
-    border-radius: 4px;
-  }
-  
-  .no-image {
-    width: 50px;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: #f5f5f5;
-    border-radius: 4px;
-    font-size: 0.7rem;
-    color: #666;
-    text-align: center;
-  }
-  
-  .actions {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  
-  .actions button {
-    padding: 6px 10px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.8rem;
-  }
-  
-  .view-btn {
-    background-color: #e3f2fd;
-    color: #1976d2;
-  }
-  
-  .edit-btn {
-    background-color: #fff9c4;
-    color: #f57f17;
-  }
-  
-  .inventory-btn {
-    background-color: #e0f2f1;
-    color: #00796b;
-  }
-  
-  .delete-btn {
-    background-color: #ffebee;
-    color: #c62828;
-  }
-  
-  .view-btn:hover {
-    background-color: #bbdefb;
-  }
-  
-  .edit-btn:hover {
-    background-color: #fff59d;
-  }
-  
-  .inventory-btn:hover {
-    background-color: #b2dfdb;
-  }
-  
-  .delete-btn:hover {
-    background-color: #ffcdd2;
-  }
-  
-  .loading, .error, .no-products {
-    padding: 50px;
-    text-align: center;
-    color: #666;
-  }
-  
-  .error {
-    color: #c62828;
-  }
+.loading {
+  padding: 80px 20px;
+  text-align: center;
+  color: #666;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #ff6b35;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error {
+  padding: 60px 20px;
+  text-align: center;
+  color: #c62828;
+  background: #ffebee;
+  border-radius: 8px;
+  border: 2px solid #f44336;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.error-icon {
+  width: 48px;
+  height: 48px;
+  stroke-width: 2;
+}
+
+.no-products {
+  padding: 80px 20px;
+  text-align: center;
+  color: #666;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.empty-icon {
+  width: 64px;
+  height: 64px;
+  stroke-width: 1.5;
+  opacity: 0.5;
+  margin-bottom: 8px;
+}
+
+.empty-hint {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  color: #999;
+}
   
   /* Modal styles */
   .modal {
@@ -420,12 +659,18 @@
   
   .modal-content {
     background-color: white;
-    border-radius: 8px;
+    border-radius: 12px;
     width: 90%;
     max-width: 600px;
     max-height: 90vh;
     overflow-y: auto;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  }
+  
+  .stockpile-modal {
+    max-width: 700px;
+    max-height: 85vh;
+    overflow-y: auto;
   }
   
   .delete-confirmation {
@@ -436,25 +681,59 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px 20px;
-    border-bottom: 1px solid #eee;
+    padding: 20px 24px;
+    border-bottom: 2px solid #f0f0f0;
+    background: linear-gradient(135deg, #ff6b35 0%, #e53935 100%);
+    color: white;
+    border-radius: 12px 12px 0 0;
+  }
+  
+  .modal-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .modal-icon {
+    width: 24px;
+    height: 24px;
+    stroke-width: 2;
   }
   
   .modal-header h2 {
     margin: 0;
     font-size: 1.5rem;
+    font-weight: 600;
+    color: white;
   }
   
   .close-btn {
-    background: none;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.2);
     border: none;
-    font-size: 1.5rem;
+    border-radius: 50%;
     cursor: pointer;
-    color: #666;
+    color: white;
+    transition: all 0.3s ease;
+  }
+  
+  .close-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+  }
+  
+  .close-btn svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2.5;
   }
   
   .modal-body {
-    padding: 20px;
+    padding: 24px;
   }
   
   .warning {
