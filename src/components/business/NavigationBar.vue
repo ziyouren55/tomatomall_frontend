@@ -120,7 +120,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { ElMenu, ElMenuItem } from "element-plus";
 import api from '@/api';
 import { removeToken } from '@/utils/storage';
 import { UserRole } from '@/utils/constants';
@@ -136,16 +135,45 @@ const isAdmin = ref<boolean>(false);
 const username = ref<string>('');
 let cartPollingInterval: ReturnType<typeof setInterval> | null = null;
 
+// 监听路由变化，在搜索页面时同步搜索关键词
+watch(() => route.path, () => {
+  if (route.path === '/search' && route.query.keyword) {
+    const keyword = route.query.keyword;
+    if (typeof keyword === 'string') {
+      searchQuery.value = keyword;
+    }
+  }
+}, { immediate: true });
+
+watch(() => route.query.keyword, (newKeyword) => {
+  if (route.path === '/search' && newKeyword && typeof newKeyword === 'string') {
+    searchQuery.value = newKeyword;
+  }
+});
+
 const performSearch = (): void => {
   if (!searchQuery.value.trim()) return;
 
-  router.push({
-    path: '/',
-    query: { search: searchQuery.value }
-  });
-
-  // Clear search query after search
-  searchQuery.value = '';
+  // 如果当前在搜索页面，则更新当前页面的搜索结果
+  if (route.path === '/search') {
+    router.push({
+      path: '/search',
+      query: { keyword: searchQuery.value.trim() }
+    });
+  } else {
+    // 如果不在搜索页面，则在新标签页中打开搜索结果
+    const keyword = encodeURIComponent(searchQuery.value.trim());
+    const resolved = router.resolve({
+      path: '/search',
+      query: { keyword: searchQuery.value.trim() }
+    });
+    
+    const searchUrl = `${window.location.origin}${resolved.path}?keyword=${keyword}`;
+    window.open(searchUrl, '_blank');
+    
+    // 清空搜索框（因为是在新标签页打开）
+    searchQuery.value = '';
+  }
 };
 
 const checkLoginStatus = () => {

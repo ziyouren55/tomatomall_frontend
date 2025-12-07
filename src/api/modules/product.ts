@@ -28,6 +28,15 @@ export interface StockpileData {
 // 导出Stockpile类型
 export type { Stockpile }
 
+// 搜索结果接口
+export interface SearchResult {
+    products: Product[]
+    total: number
+    page: number
+    pageSize: number
+    totalPages: number
+}
+
 const productApi = {
     // 获取所有产品
     getAllProducts(): Promise<ApiResponse<Product[]>> {
@@ -67,6 +76,28 @@ const productApi = {
     // 更新产品库存
     updateProductStockpile(productId: number, stockpile: StockpileData): Promise<ApiResponse<StockpileData>> {
         return request.patch(`/products/stockpile/${productId}`, stockpile)
+    },
+
+    // 搜索商品
+    searchProducts(
+        keyword: string,
+        page: number = 0,
+        pageSize: number = 20,
+        sortBy?: string,
+        sortOrder?: string
+    ): Promise<ApiResponse<SearchResult>> {
+        const params: any = {
+            keyword,
+            page,
+            pageSize
+        }
+        if (sortBy) {
+            params.sortBy = sortBy
+        }
+        if (sortOrder) {
+            params.sortOrder = sortOrder
+        }
+        return request.get('/products/search', { params })
     }
 }
 

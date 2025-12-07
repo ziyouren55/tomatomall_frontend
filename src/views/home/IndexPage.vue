@@ -11,9 +11,9 @@
     <!-- 商品列表区域 -->
     <div class="products-section">
       <div class="section-header">
-        <h2 class="section-title">热门商品</h2>
+        <h2 class="section-title">{{ searchKeyword ? '搜索结果' : '热门商品' }}</h2>
       </div>
-      <ProductList />
+      <ProductList :searchKeyword="searchKeyword" />
     </div>
   </div>
 </template>
@@ -26,6 +26,12 @@ export default defineComponent({
   name: 'IndexPage',
   components: {
     ProductList
+  },
+  computed: {
+    searchKeyword(): string {
+      const search = this.$route.query.search
+      return typeof search === 'string' ? search : ''
+    }
   }
 });
 </script>

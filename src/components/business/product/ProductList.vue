@@ -1,16 +1,21 @@
 <!-- src/components/ProductList.vue -->
 <template>
   <div class="product-list">
+    <!-- 搜索结果提示 -->
+    <div v-if="searchKeyword && !loading && products.length > 0" class="search-info">
+      <p>找到 <strong>{{ products.length }}</strong> 个相关商品（关键词：<strong>{{ searchKeyword }}</strong>）</p>
+    </div>
     <div v-if="loading" class="loading">
       <div class="loading-spinner"></div>
-      <p>正在加载商品...</p>
+      <p>{{ searchKeyword ? '正在搜索商品...' : '正在加载商品...' }}</p>
     </div>
     <div v-else-if="error" class="error">
       <p>{{ error }}</p>
       <button @click="fetchProducts" class="retry-btn">重试</button>
     </div>
     <div v-else-if="products.length === 0" class="no-products">
-      <p>暂无商品</p>
+      <p v-if="searchKeyword">未找到相关商品，请尝试其他关键词</p>
+      <p v-else>暂无商品</p>
     </div>
     <div v-else class="products-grid">
       <div v-for="product in products" :key="product.id" class="product-card" @click="viewProduct(product.id)"
@@ -50,12 +55,26 @@ import api from '@/api';
 
 export default defineComponent({
   name: 'ProductList',
+  props: {
+    searchKeyword: {
+      type: String,
+      default: ''
+    }
+  },
   data() {
     return {
       products: [] as any[],
       loading: true,
       error: null as string | null
     };
+  },
+  watch: {
+    searchKeyword: {
+      handler() {
+        this.fetchProducts();
+      },
+      immediate: false
+    }
   },
   mounted() {
     this.fetchProducts();
@@ -65,11 +84,23 @@ export default defineComponent({
       this.loading = true;
       this.error = null;
       try {
-        const response = await api.product.getAllProducts();
-        if (response && response.code === '200' && response.data) {
-          this.products = Array.isArray(response.data) ? response.data : [];
+        let response;
+        if (this.searchKeyword && this.searchKeyword.trim()) {
+          // 如果有搜索关键词，调用搜索接口
+          response = await api.product.searchProducts(this.searchKeyword.trim(), 0, 100);
+          if (response && response.code === '200' && response.data) {
+            this.products = Array.isArray(response.data.products) ? response.data.products : [];
+          } else {
+            this.error = response?.msg || '搜索商品失败';
+          }
         } else {
-          this.error = response?.msg || '加载商品失败';
+          // 没有搜索关键词，获取所有商品
+          response = await api.product.getAllProducts();
+          if (response && response.code === '200' && response.data) {
+            this.products = Array.isArray(response.data) ? response.data : [];
+          } else {
+            this.error = response?.msg || '加载商品失败';
+          }
         }
       } catch (err: any) {
         // 如果是401错误，说明后端拦截了请求，但商品列表应该是公开的
@@ -350,5 +381,25 @@ export default defineComponent({
   padding: 60px 20px;
   color: #999;
   font-size: 16px;
+}
+
+/* 搜索结果提示 */
+.search-info {
+  margin-bottom: 20px;
+  padding: 12px 20px;
+  background-color: #f0f7ff;
+  border-left: 4px solid #ff6b35;
+  border-radius: 4px;
+}
+
+.search-info p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.search-info strong {
+  color: #ff6b35;
+  font-weight: 600;
 }
 </style>

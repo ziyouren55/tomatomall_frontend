@@ -13,6 +13,12 @@ const publicRoutes: RouteRecordRaw[] = [
         path: '/register',
         name: 'Register',
         component: () => import('@/views/auth/RegisterPage.vue')
+    },
+    {
+        path: '/search',
+        name: 'Search',
+        component: () => import('@/views/search/SearchPage.vue'),
+        meta: { requiresAuth: false } // 搜索页面不需要登录
     }
 ]
 
