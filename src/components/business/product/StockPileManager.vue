@@ -9,6 +9,92 @@
   border-bottom: 2px solid #f0f0f0;
 }
 
+/* 搜索区域 */
+.search-section {
+  margin-bottom: 24px;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.search-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+}
+
+.search-icon {
+  position: absolute;
+  left: 16px;
+  width: 20px;
+  height: 20px;
+  color: #999;
+  stroke-width: 2;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.search-input {
+  flex: 1;
+  padding: 12px 16px 12px 48px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  border-color: #ff6b35;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+.clear-search-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: #f5f5f5;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #666;
+  transition: all 0.3s ease;
+}
+
+.clear-search-btn:hover {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.clear-search-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.5;
+}
+
+.search-info {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.search-info strong {
+  color: #ff6b35;
+  font-weight: 600;
+}
+
+.result-count {
+  color: #999;
+  font-size: 0.85rem;
+}
+
 .content-header h3 {
   margin: 0 0 8px 0;
   color: #333;
@@ -710,18 +796,50 @@
         <h3>产品库存管理</h3>
         <p class="subtitle">查看和管理所有产品的库存信息</p>
       </div>
+
+      <!-- 搜索框 -->
+      <div class="search-section">
+        <div class="search-container">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+          <input 
+            type="text" 
+            v-model="searchKeyword" 
+            @input="handleSearchInput"
+            placeholder="搜索产品名称..."
+            class="search-input"
+          />
+          <button 
+            v-if="searchKeyword" 
+            @click="clearSearch" 
+            class="clear-search-btn"
+            title="清除搜索"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div v-if="searchKeyword && filteredStockpiles.length !== stockpiles.length" class="search-info">
+          <span>搜索关键词: <strong>{{ searchKeyword }}</strong></span>
+          <span class="result-count">找到 {{ filteredStockpiles.length }} / {{ stockpiles.length }} 个库存项</span>
+        </div>
+      </div>
       
       <!-- 库存列表 - 批量管理模式 -->
       <div class="stockpile-list">
-        <div v-if="stockpiles.length === 0" class="empty-state">
+        <div v-if="filteredStockpiles.length === 0" class="empty-state">
           <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
           </svg>
-          <p>暂无库存信息</p>
+          <p>{{ searchKeyword ? '未找到匹配的库存信息' : '暂无库存信息' }}</p>
         </div>
         <div v-else class="stockpile-grid">
           <div 
-            v-for="item in stockpiles" 
+            v-for="item in filteredStockpiles" 
             :key="item.productId" 
             class="stockpile-card"
             :class="{ 'editing': editingStockpiles.has(item.productId) }"
@@ -1008,13 +1126,49 @@ export default defineComponent({
       },
       updateMessage: '',
       updateSuccess: false,
-      editingStockpiles: new Map<number, { amount: number; frozen: number }>() // 批量编辑状态
+      editingStockpiles: new Map<number, { amount: number; frozen: number }>(), // 批量编辑状态
+      searchKeyword: '',
+      searchTimer: null as any
     };
+  },
+  computed: {
+    filteredStockpiles(): any[] {
+      if (!this.searchKeyword.trim()) {
+        return this.stockpiles;
+      }
+      
+      const keyword = this.searchKeyword.toLowerCase().trim();
+      return this.stockpiles.filter(item => {
+        const product = this.getProductInfo(item.productId);
+        if (!product) return false;
+        
+        const productName = (product.title || '').toLowerCase();
+        const productId = String(item.productId);
+        
+        return productName.includes(keyword) || productId.includes(keyword);
+      });
+    }
   },
   mounted() {
     this.fetchAllStockpiles();
   },
   methods: {
+    handleSearchInput() {
+      // 防抖：如果用户停止输入500ms后自动搜索（前端过滤，无需API调用）
+      if (this.searchTimer) {
+        clearTimeout(this.searchTimer);
+      }
+      
+      // 搜索是实时的，通过computed属性自动过滤
+      // 这里可以添加其他逻辑，比如高亮等
+    },
+    clearSearch() {
+      this.searchKeyword = '';
+      if (this.searchTimer) {
+        clearTimeout(this.searchTimer);
+        this.searchTimer = null;
+      }
+    },
     async fetchAllStockpiles() {
       this.loading = true;
       try {

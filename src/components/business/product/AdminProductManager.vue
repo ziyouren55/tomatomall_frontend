@@ -36,6 +36,42 @@
         {{ message }}
       </div>
       
+      <!-- 搜索框 -->
+      <div class="search-section">
+        <div class="search-container">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+          <input 
+            type="text" 
+            v-model="searchKeyword" 
+            @input="handleSearchInput"
+            @keyup.enter="performSearch"
+            placeholder="搜索产品名称、描述..."
+            class="search-input"
+          />
+          <button 
+            v-if="searchKeyword" 
+            @click="clearSearch" 
+            class="clear-search-btn"
+            title="清除搜索"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+          <button @click="performSearch" class="search-btn" :disabled="searching">
+            {{ searching ? '搜索中...' : '搜索' }}
+          </button>
+        </div>
+        <div v-if="isSearchMode" class="search-info">
+          <span>搜索关键词: <strong>{{ searchKeyword }}</strong></span>
+          <span class="result-count">找到 {{ products.length }} 个产品</span>
+        </div>
+      </div>
+      
       <div v-if="loading" class="loading">
         <div class="loading-spinner"></div>
         <p>正在加载产品...</p>
@@ -188,7 +224,11 @@
         messageType: 'success',
         showStockpileModal: false,
         showDeleteModal: false,
-        currentProduct: null
+        currentProduct: null,
+        searchKeyword: '',
+        isSearchMode: false,
+        searching: false,
+        searchTimer: null
       };
     },
     mounted() {
@@ -211,6 +251,65 @@
           this.loading = false;
         }
       },
+      async performSearch() {
+        if (!this.searchKeyword.trim()) {
+          this.clearSearch();
+          return;
+        }
+        
+        this.searching = true;
+        this.isSearchMode = true;
+        this.loading = true;
+        this.error = null;
+        
+        try {
+          const response = await api.product.searchProducts(
+            this.searchKeyword.trim(),
+            0, // page
+            1000, // pageSize - 仓库管理需要显示所有结果
+            null, // sortBy
+            null  // sortOrder
+          );
+          
+          if (response.code === '200' && response.data) {
+            this.products = response.data.products || [];
+          } else {
+            this.error = response.msg || '搜索失败';
+            this.products = [];
+          }
+        } catch (err) {
+          console.error('搜索产品出错:', err);
+          this.error = '搜索产品时发生错误，请稍后再试';
+          this.products = [];
+        } finally {
+          this.loading = false;
+          this.searching = false;
+        }
+      },
+      handleSearchInput() {
+        // 防抖：如果用户停止输入500ms后自动搜索
+        if (this.searchTimer) {
+          clearTimeout(this.searchTimer);
+        }
+        
+        if (!this.searchKeyword.trim()) {
+          this.clearSearch();
+          return;
+        }
+        
+        this.searchTimer = setTimeout(() => {
+          this.performSearch();
+        }, 500);
+      },
+      clearSearch() {
+        this.searchKeyword = '';
+        this.isSearchMode = false;
+        if (this.searchTimer) {
+          clearTimeout(this.searchTimer);
+          this.searchTimer = null;
+        }
+        this.fetchProducts();
+      },
       showAddProductForm() {
         this.selectedProduct = null;
         this.showForm = true;
@@ -229,7 +328,12 @@
         this.showForm = false;
         this.messageType = 'success';
         this.message = this.selectedProduct ? '产品更新成功！' : '产品创建成功！';
-        this.fetchProducts(); // Refresh the product list
+        // Refresh the product list (保持当前搜索状态)
+        if (this.isSearchMode) {
+          this.performSearch();
+        } else {
+          this.fetchProducts();
+        }
         
         // Clear message after 3 seconds
         setTimeout(() => {
@@ -274,8 +378,12 @@
             this.messageType = 'success';
             this.message = '产品删除成功！';
             
-            // Refresh product list
-            this.fetchProducts();
+            // Refresh product list (保持当前搜索状态)
+            if (this.isSearchMode) {
+              this.performSearch();
+            } else {
+              this.fetchProducts();
+            }
           } else {
             this.messageType = 'error';
             this.message = response.msg || '删除产品失败';
@@ -378,6 +486,115 @@
   width: 20px;
   height: 20px;
   stroke-width: 2.5;
+}
+
+/* 搜索区域 */
+.search-section {
+  margin-bottom: 24px;
+  padding: 20px 32px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.search-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+}
+
+.search-icon {
+  position: absolute;
+  left: 16px;
+  width: 20px;
+  height: 20px;
+  color: #999;
+  stroke-width: 2;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.search-input {
+  flex: 1;
+  padding: 12px 16px 12px 48px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  border-color: #ff6b35;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+.clear-search-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: #f5f5f5;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #666;
+  transition: all 0.3s ease;
+}
+
+.clear-search-btn:hover {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.clear-search-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.5;
+}
+
+.search-btn {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #ff6b35 0%, #e53935 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(255, 107, 53, 0.3);
+}
+
+.search-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
+}
+
+.search-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.search-info {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.search-info strong {
+  color: #ff6b35;
+  font-weight: 600;
+}
+
+.result-count {
+  color: #999;
+  font-size: 0.85rem;
 }
   
   .form-container {
