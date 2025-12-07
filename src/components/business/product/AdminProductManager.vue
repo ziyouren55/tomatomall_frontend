@@ -151,6 +151,58 @@
         </table>
       </div>
       
+      <!-- 分页器 -->
+      <div v-if="!loading && products.length > 0 && !isSearchMode" class="pagination-container">
+        <div class="pagination-info">
+          显示第 {{ (currentPage * pageSize) + 1 }} - {{ Math.min((currentPage + 1) * pageSize, total) }} 条，共 {{ total }} 条
+        </div>
+        <div class="pagination">
+          <button 
+            class="page-btn" 
+            :disabled="currentPage === 0" 
+            @click="changePage(0)"
+            title="首页"
+          >
+            ««
+          </button>
+          <button 
+            class="page-btn" 
+            :disabled="currentPage === 0" 
+            @click="changePage(currentPage - 1)"
+            title="上一页"
+          >
+            ‹
+          </button>
+          
+          <template v-for="page in visiblePages" :key="page">
+            <button 
+              class="page-btn" 
+              :class="{ active: page === currentPage }"
+              @click="changePage(page)"
+            >
+              {{ page + 1 }}
+            </button>
+          </template>
+          
+          <button 
+            class="page-btn" 
+            :disabled="currentPage >= totalPages - 1" 
+            @click="changePage(currentPage + 1)"
+            title="下一页"
+          >
+            ›
+          </button>
+          <button 
+            class="page-btn" 
+            :disabled="currentPage >= totalPages - 1" 
+            @click="changePage(totalPages - 1)"
+            title="末页"
+          >
+            »»
+          </button>
+        </div>
+      </div>
+      
       <!-- Stockpile Management Modal - 简化版 -->
       <div v-if="showStockpileModal" class="modal">
         <div class="modal-content stockpile-modal">
@@ -228,8 +280,31 @@
         searchKeyword: '',
         isSearchMode: false,
         searching: false,
-        searchTimer: null
+        searchTimer: null,
+        // 分页相关
+        currentPage: 0,
+        pageSize: 20,
+        total: 0,
+        totalPages: 0
       };
+    },
+    computed: {
+      visiblePages() {
+        const pages = [];
+        const maxVisible = 7; // 最多显示7个页码按钮
+        let start = Math.max(0, this.currentPage - Math.floor(maxVisible / 2));
+        let end = Math.min(this.totalPages - 1, start + maxVisible - 1);
+        
+        // 如果右侧空间不足，向左调整
+        if (end - start < maxVisible - 1) {
+          start = Math.max(0, end - maxVisible + 1);
+        }
+        
+        for (let i = start; i <= end; i++) {
+          pages.push(i);
+        }
+        return pages;
+      }
     },
     mounted() {
       this.fetchProducts();
@@ -238,9 +313,16 @@
       async fetchProducts() {
         this.loading = true;
         try {
-          const response = await api.product.getAllProducts();
-          if (response.code === '200') {
-            this.products = response.data;
+          const response = await api.product.getAllProducts(
+            this.currentPage,
+            this.pageSize
+          );
+          if (response.code === '200' && response.data) {
+            this.products = Array.isArray(response.data.products) 
+              ? response.data.products 
+              : [];
+            this.total = response.data.total || 0;
+            this.totalPages = response.data.totalPages || 0;
           } else {
             this.error = response.msg || '加载产品失败';
           }
@@ -249,6 +331,14 @@
           console.error(err);
         } finally {
           this.loading = false;
+        }
+      },
+      changePage(page) {
+        if (page >= 0 && page < this.totalPages && page !== this.currentPage) {
+          this.currentPage = page;
+          this.fetchProducts();
+          // 滚动到顶部
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       },
       async performSearch() {
@@ -261,26 +351,33 @@
         this.isSearchMode = true;
         this.loading = true;
         this.error = null;
+        this.currentPage = 0; // 搜索时重置页码
         
         try {
           const response = await api.product.searchProducts(
             this.searchKeyword.trim(),
             0, // page
-            1000, // pageSize - 仓库管理需要显示所有结果
+            100, // pageSize - 搜索时显示更多结果
             null, // sortBy
             null  // sortOrder
           );
           
           if (response.code === '200' && response.data) {
             this.products = response.data.products || [];
+            this.total = response.data.total || 0;
+            this.totalPages = response.data.totalPages || 0;
           } else {
             this.error = response.msg || '搜索失败';
             this.products = [];
+            this.total = 0;
+            this.totalPages = 0;
           }
         } catch (err) {
           console.error('搜索产品出错:', err);
           this.error = '搜索产品时发生错误，请稍后再试';
           this.products = [];
+          this.total = 0;
+          this.totalPages = 0;
         } finally {
           this.loading = false;
           this.searching = false;
@@ -308,6 +405,7 @@
           clearTimeout(this.searchTimer);
           this.searchTimer = null;
         }
+        this.currentPage = 0;
         this.fetchProducts();
       },
       showAddProductForm() {
@@ -625,6 +723,8 @@
   /* 始终显示滚动条，避免悬停时出现/消失 */
   scrollbar-width: thin;
   scrollbar-color: #c0c0c0 #f0f0f0;
+  /* 确保表格宽度固定，避免内容变化导致滚动条抖动 */
+  min-width: 100%;
 }
 
 /* Webkit浏览器滚动条样式 */
@@ -649,6 +749,7 @@
 
 .product-table {
   width: 100%;
+  min-width: 800px; /* 设置最小宽度，确保表格有足够空间，避免hover时触发滚动条 */
   border-collapse: collapse;
   background: white;
 }
@@ -669,16 +770,29 @@
 .product-table tbody tr {
   border-bottom: 1px solid #f0f0f0;
   transition: all 0.2s ease;
+  position: relative;
 }
 
 .product-table tbody tr:hover {
   background-color: #fafafa;
-  transform: scale(1.01);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  /* 使用translateY代替scale，避免改变元素宽度导致滚动条抖动 */
+  transform: translateY(-1px);
 }
 
 .product-table td {
   padding: 16px;
   color: #333;
+  /* 确保单元格内容不会溢出导致宽度变化 */
+  overflow: hidden;
+  word-wrap: break-word;
+}
+
+/* 标题列允许换行显示完整内容 */
+.product-table td:nth-child(3) {
+  white-space: normal;
+  word-break: break-word;
+  max-width: 300px;
 }
   
 .product-image {
@@ -988,5 +1102,71 @@
   
   .delete-confirm-btn:hover {
     background-color: #d32f2f;
+  }
+  
+  /* 分页器样式 */
+  .pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 32px;
+    margin-top: 24px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
+  
+  .pagination-info {
+    color: #666;
+    font-size: 0.9rem;
+  }
+  
+  .pagination {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  
+  .page-btn {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 12px;
+    border: 2px solid #e0e0e0;
+    background: white;
+    color: #333;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .page-btn:hover:not(:disabled) {
+    border-color: #ff6b35;
+    color: #ff6b35;
+    background: #fff5f2;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(255, 107, 53, 0.2);
+  }
+  
+  .page-btn.active {
+    background: linear-gradient(135deg, #ff6b35 0%, #e53935 100%);
+    color: white;
+    border-color: #ff6b35;
+    box-shadow: 0 2px 6px rgba(255, 107, 53, 0.3);
+  }
+  
+  .page-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #f5f5f5;
+  }
+  
+  .page-btn:disabled:hover {
+    transform: none;
+    box-shadow: none;
   }
   </style>

@@ -3,17 +3,17 @@
   <div class="product-list">
     <!-- 搜索结果提示 -->
     <div v-if="searchKeyword && !loading && products.length > 0" class="search-info">
-      <p>找到 <strong>{{ products.length }}</strong> 个相关商品（关键词：<strong>{{ searchKeyword }}</strong>）</p>
+      <p>找到 <strong>{{ total }}</strong> 个相关商品（关键词：<strong>{{ searchKeyword }}</strong>）</p>
     </div>
-    <div v-if="loading" class="loading">
+    <div v-if="loading && currentPage === 0" class="loading">
       <div class="loading-spinner"></div>
       <p>{{ searchKeyword ? '正在搜索商品...' : '正在加载商品...' }}</p>
     </div>
     <div v-else-if="error" class="error">
       <p>{{ error }}</p>
-      <button @click="fetchProducts" class="retry-btn">重试</button>
+      <button @click="resetAndFetch" class="retry-btn">重试</button>
     </div>
-    <div v-else-if="products.length === 0" class="no-products">
+    <div v-else-if="products.length === 0 && !loadingMore" class="no-products">
       <p v-if="searchKeyword">未找到相关商品，请尝试其他关键词</p>
       <p v-else>暂无商品</p>
     </div>
@@ -46,6 +46,19 @@
         </div>
       </div>
     </div>
+    
+    <!-- 加载更多指示器 -->
+    <div v-if="loadingMore" class="loading-more">
+      <div class="loading-spinner-small"></div>
+      <p>加载更多商品...</p>
+    </div>
+    <div v-if="reachedLimit && products.length > 0" class="limit-reached">
+      <p>已显示前 {{ products.length }} 个商品</p>
+      <p class="limit-hint">为了更好的浏览体验，我们限制了显示数量。请使用搜索功能查找更多商品。</p>
+    </div>
+    <div v-else-if="!hasMore && products.length > 0 && !reachedLimit" class="no-more">
+      <p>没有更多商品了</p>
+    </div>
   </div>
 </template>
 
@@ -65,46 +78,129 @@ export default defineComponent({
     return {
       products: [] as any[],
       loading: true,
-      error: null as string | null
+      loadingMore: false,
+      error: null as string | null,
+      currentPage: 0,
+      pageSize: 20,
+      hasMore: true,
+      total: 0,
+      maxPages: 2, // 最多加载10页（200个商品），避免无限滚动导致数据过多
+      reachedLimit: false // 是否达到上限
     };
   },
   watch: {
     searchKeyword: {
       handler() {
-        this.fetchProducts();
+        this.resetAndFetch();
       },
       immediate: false
     }
   },
   mounted() {
     this.fetchProducts();
+    // 添加滚动监听
+    window.addEventListener('scroll', this.handleScroll);
+  },
+  beforeUnmount() {
+    // 移除滚动监听
+    window.removeEventListener('scroll', this.handleScroll);
   },
   methods: {
-    async fetchProducts(): Promise<void> {
-      this.loading = true;
+    resetAndFetch() {
+      this.currentPage = 0;
+      this.products = [];
+      this.hasMore = true;
+      this.total = 0;
+      this.reachedLimit = false;
+      this.fetchProducts();
+    },
+    async fetchProducts(append = false): Promise<void> {
+      // 如果正在加载或没有更多数据，则不加载
+      if (this.loadingMore || (!this.hasMore && append) || this.reachedLimit) {
+        return;
+      }
+      
+      // 检查是否达到最大页数限制
+      if (this.currentPage >= this.maxPages) {
+        this.reachedLimit = true;
+        this.hasMore = false;
+        return;
+      }
+
+      if (append) {
+        this.loadingMore = true;
+      } else {
+        this.loading = true;
+      }
       this.error = null;
+
       try {
         let response;
         if (this.searchKeyword && this.searchKeyword.trim()) {
-          // 如果有搜索关键词，调用搜索接口
-          response = await api.product.searchProducts(this.searchKeyword.trim(), 0, 100);
+          // 搜索模式：使用搜索接口
+          response = await api.product.searchProducts(
+            this.searchKeyword.trim(), 
+            this.currentPage, 
+            this.pageSize
+          );
           if (response && response.code === '200' && response.data) {
-            this.products = Array.isArray(response.data.products) ? response.data.products : [];
+            const newProducts = Array.isArray(response.data.products) 
+              ? response.data.products 
+              : [];
+            if (append) {
+              this.products.push(...newProducts);
+            } else {
+              this.products = newProducts;
+            }
+            this.total = response.data.total || 0;
+            // 检查是否还有更多数据，同时检查是否达到最大页数限制
+            const hasMoreData = newProducts.length === this.pageSize && 
+                               this.products.length < this.total;
+            const withinLimit = (this.currentPage + 1) < this.maxPages;
+            this.hasMore = hasMoreData && withinLimit;
+            
+            // 如果达到上限但还有数据，标记为达到上限
+            if (!withinLimit && hasMoreData) {
+              this.reachedLimit = true;
+            }
           } else {
             this.error = response?.msg || '搜索商品失败';
           }
         } else {
-          // 没有搜索关键词，获取所有商品
-          response = await api.product.getAllProducts();
+          // 普通模式：使用分页接口
+          response = await api.product.getAllProducts(
+            this.currentPage, 
+            this.pageSize
+          );
           if (response && response.code === '200' && response.data) {
-            this.products = Array.isArray(response.data) ? response.data : [];
+            const newProducts = Array.isArray(response.data.products) 
+              ? response.data.products 
+              : [];
+            if (append) {
+              this.products.push(...newProducts);
+            } else {
+              this.products = newProducts;
+            }
+            this.total = response.data.total || 0;
+            // 检查是否还有更多数据，同时检查是否达到最大页数限制
+            const hasMoreData = newProducts.length === this.pageSize && 
+                               this.products.length < this.total;
+            const withinLimit = (this.currentPage + 1) < this.maxPages;
+            this.hasMore = hasMoreData && withinLimit;
+            
+            // 如果达到上限但还有数据，标记为达到上限
+            if (!withinLimit && hasMoreData) {
+              this.reachedLimit = true;
+            }
           } else {
             this.error = response?.msg || '加载商品失败';
           }
         }
+        
+        if (this.hasMore) {
+          this.currentPage++;
+        }
       } catch (err: any) {
-        // 如果是401错误，说明后端拦截了请求，但商品列表应该是公开的
-        // 这里不跳转登录页，而是显示错误信息
         if (err?.response?.status === 401) {
           this.error = '无法加载商品列表，请检查网络连接';
           console.warn('商品列表API需要登录，但商品列表应该是公开的');
@@ -114,6 +210,22 @@ export default defineComponent({
         console.error('获取商品列表失败:', err);
       } finally {
         this.loading = false;
+        this.loadingMore = false;
+      }
+    },
+    handleScroll() {
+      // 如果达到上限，不再加载
+      if (this.reachedLimit) {
+        return;
+      }
+      
+      // 滚动到底部时加载更多（距离底部100px时触发）
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+
+      if (scrollTop + windowHeight >= documentHeight - 100) {
+        this.fetchProducts(true);
       }
     },
     viewProduct(id: string | number): void {
@@ -401,5 +513,60 @@ export default defineComponent({
 .search-info strong {
   color: #ff6b35;
   font-weight: 600;
+}
+
+/* 加载更多样式 */
+.loading-more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+.loading-spinner-small {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #4CAF50;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 12px;
+}
+
+.no-more {
+  text-align: center;
+  padding: 30px 20px;
+  color: #999;
+  font-size: 14px;
+}
+
+/* 达到上限提示 */
+.limit-reached {
+  text-align: center;
+  padding: 40px 20px;
+  background: linear-gradient(135deg, #fff5f2 0%, #ffe0d6 100%);
+  border-radius: 8px;
+  margin-top: 20px;
+  border: 2px solid #ff6b35;
+}
+
+.limit-reached p {
+  margin: 8px 0;
+  color: #333;
+  font-size: 14px;
+}
+
+.limit-reached p:first-child {
+  font-weight: 600;
+  color: #ff6b35;
+  font-size: 16px;
+}
+
+.limit-hint {
+  color: #666 !important;
+  font-size: 13px !important;
+  margin-top: 12px !important;
 }
 </style>

@@ -781,6 +781,72 @@
     min-width: 600px;
   }
 }
+
+/* 分页器样式 */
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  margin-top: 24px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.pagination-info {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.pagination {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.page-btn {
+  min-width: 36px;
+  height: 36px;
+  padding: 0 12px;
+  border: 2px solid #e0e0e0;
+  background: white;
+  color: #333;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-btn:hover:not(:disabled) {
+  border-color: #ff6b35;
+  color: #ff6b35;
+  background: #fff5f2;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(255, 107, 53, 0.2);
+}
+
+.page-btn.active {
+  background: linear-gradient(135deg, #ff6b35 0%, #e53935 100%);
+  color: white;
+  border-color: #ff6b35;
+  box-shadow: 0 2px 6px rgba(255, 107, 53, 0.3);
+}
+
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f5f5f5;
+}
+
+.page-btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
 </style>
 <!-- src/components/StockpileManager.vue -->
 <template>
@@ -1096,6 +1162,58 @@
       <div v-if="updateMessage" class="update-message" :class="{ success: updateSuccess, error: !updateSuccess }">
         {{ updateMessage }}
       </div>
+      
+      <!-- 分页器 -->
+      <div v-if="!loading && stockpiles.length > 0" class="pagination-container">
+        <div class="pagination-info">
+          显示第 {{ (currentPage * pageSize) + 1 }} - {{ Math.min((currentPage + 1) * pageSize, total) }} 条，共 {{ total }} 条
+        </div>
+        <div class="pagination">
+          <button 
+            class="page-btn" 
+            :disabled="currentPage === 0" 
+            @click="changePage(0)"
+            title="首页"
+          >
+            ««
+          </button>
+          <button 
+            class="page-btn" 
+            :disabled="currentPage === 0" 
+            @click="changePage(currentPage - 1)"
+            title="上一页"
+          >
+            ‹
+          </button>
+          
+          <template v-for="page in visiblePages" :key="page">
+            <button 
+              class="page-btn" 
+              :class="{ active: page === currentPage }"
+              @click="changePage(page)"
+            >
+              {{ page + 1 }}
+            </button>
+          </template>
+          
+          <button 
+            class="page-btn" 
+            :disabled="currentPage >= totalPages - 1" 
+            @click="changePage(currentPage + 1)"
+            title="下一页"
+          >
+            ›
+          </button>
+          <button 
+            class="page-btn" 
+            :disabled="currentPage >= totalPages - 1" 
+            @click="changePage(totalPages - 1)"
+            title="末页"
+          >
+            »»
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -1128,7 +1246,12 @@ export default defineComponent({
       updateSuccess: false,
       editingStockpiles: new Map<number, { amount: number; frozen: number }>(), // 批量编辑状态
       searchKeyword: '',
-      searchTimer: null as any
+      searchTimer: null as any,
+      // 分页相关
+      currentPage: 0,
+      pageSize: 50, // 库存管理页面可以显示更多
+      total: 0,
+      totalPages: 0
     };
   },
   computed: {
@@ -1147,6 +1270,22 @@ export default defineComponent({
         
         return productName.includes(keyword) || productId.includes(keyword);
       });
+    },
+    visiblePages(): number[] {
+      const pages: number[] = [];
+      const maxVisible = 7; // 最多显示7个页码按钮
+      let start = Math.max(0, this.currentPage - Math.floor(maxVisible / 2));
+      let end = Math.min(this.totalPages - 1, start + maxVisible - 1);
+      
+      // 如果右侧空间不足，向左调整
+      if (end - start < maxVisible - 1) {
+        start = Math.max(0, end - maxVisible + 1);
+      }
+      
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+      return pages;
     }
   },
   mounted() {
@@ -1172,12 +1311,14 @@ export default defineComponent({
     async fetchAllStockpiles() {
       this.loading = true;
       try {
-        // 使用统一的API模块获取所有库存
-        const response = await api.product.getAllStockpile();
-        if (response.code === '200') {
-          this.stockpiles = response.data;
+        // 使用分页API获取库存
+        const response = await api.product.getAllStockpile(this.currentPage, this.pageSize);
+        if (response.code === '200' && response.data) {
+          this.stockpiles = Array.isArray(response.data.data) ? response.data.data : [];
+          this.total = response.data.total || 0;
+          this.totalPages = response.data.totalPages || 0;
           
-          // 获取所有产品的详细信息
+          // 获取所有产品的详细信息（只获取当前页的产品）
           await this.fetchProductsInfo();
           
           // 如果有传入productId，则自动选中对应的库存
@@ -1197,15 +1338,31 @@ export default defineComponent({
         this.loading = false;
       }
     },
+    changePage(page: number) {
+      if (page >= 0 && page < this.totalPages && page !== this.currentPage) {
+        this.currentPage = page;
+        this.fetchAllStockpiles();
+        // 滚动到顶部
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    },
     
     async fetchProductsInfo() {
-      // 获取所有产品信息
+      // 获取当前页的产品信息（只获取当前页库存对应的产品）
       try {
-        const productsResponse = await api.product.getAllProducts();
+        // 获取当前页库存对应的产品ID列表
+        const productIds = this.stockpiles.map(s => s.productId).filter(id => id != null);
+        if (productIds.length === 0) return;
+        
+        // 由于API不支持按ID列表查询，我们使用分页获取产品
+        // 这里可以优化：如果产品数量不多，可以一次性获取所有产品
+        // 或者后端提供按ID列表查询的接口
+        const productsResponse = await api.product.getAllProducts(0, 1000);
         if (productsResponse.code === '200' && productsResponse.data) {
-          // 将产品信息存储到Map中，方便快速查找
-          productsResponse.data.forEach((product: any) => {
-            if (product.id) {
+          const products = productsResponse.data.products || [];
+          // 只存储当前页需要的产品信息
+          products.forEach((product: any) => {
+            if (product.id && productIds.includes(product.id)) {
               this.products.set(product.id, product);
             }
           });

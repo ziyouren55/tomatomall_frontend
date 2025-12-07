@@ -37,10 +37,27 @@ export interface SearchResult {
     totalPages: number
 }
 
+// 分页结果接口（用于库存）
+export interface PageResult<T> {
+    data: T[]
+    total: number
+    page: number
+    pageSize: number
+    totalPages: number
+}
+
 const productApi = {
-    // 获取所有产品
-    getAllProducts(): Promise<ApiResponse<Product[]>> {
-        return request.get('/products')
+    // 获取所有产品（分页）
+    getAllProducts(
+        page: number = 0,
+        pageSize: number = 20,
+        sortBy?: string,
+        sortOrder?: string
+    ): Promise<ApiResponse<SearchResult>> {
+        const params: any = { page, pageSize };
+        if (sortBy) params.sortBy = sortBy;
+        if (sortOrder) params.sortOrder = sortOrder;
+        return request.get('/products', { params });
     },
 
     // 根据ID获取产品
@@ -68,9 +85,14 @@ const productApi = {
         return request.get(`/products/stockpile/${productId}`)
     },
 
-    // 获取所有产品库存
-    getAllStockpile(): Promise<ApiResponse<Stockpile[]>> {
-        return request.get('/products/stockpile')
+    // 获取所有产品库存（分页）
+    getAllStockpile(
+        page: number = 0,
+        pageSize: number = 20
+    ): Promise<ApiResponse<PageResult<Stockpile>>> {
+        return request.get('/products/stockpile', { 
+            params: { page, pageSize } 
+        });
     },
 
     // 更新产品库存
