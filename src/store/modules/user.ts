@@ -3,6 +3,7 @@ import api from '@/api'
 import { setToken, removeToken, getToken, setAdminFlag, removeAdminFlag } from '@/utils/storage'
 import { UserState, RootState } from '@/types/store'
 import { LoginResponse, UserDetailsResponse } from '@/types/api'
+import { UserRole } from '@/utils/constants'
 
 const userModule: Module<UserState, RootState> = {
     namespaced: true,
@@ -21,7 +22,8 @@ const userModule: Module<UserState, RootState> = {
 
         SET_USER_INFO(state: UserState, userInfo: any) {
             state.userInfo = userInfo
-            const isAdmin = userInfo?.role === 'ADMIN' || localStorage.getItem('isAdmin') === 'true'
+            // 使用枚举进行比较
+            const isAdmin = userInfo?.role === UserRole.ADMIN
             state.isAdmin = isAdmin
             setAdminFlag(isAdmin)
         },

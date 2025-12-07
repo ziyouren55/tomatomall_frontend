@@ -1,3 +1,5 @@
+import { UserRole } from '@/utils/constants'
+
 /**
  * API 响应基础结构
  */
@@ -23,7 +25,7 @@ export interface UserInfo {
     id?: number
     username: string
     email?: string
-    role?: 'ADMIN' | 'USER'
+    role?: UserRole
     [key: string]: any
 }
 
@@ -131,7 +133,7 @@ export interface User {
     email?: string
     telephone?: string
     avatar?: string
-    role?: string
+    role?: UserRole
     location?: string
     memberLevelId?: number
     isMember?: boolean

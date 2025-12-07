@@ -20,8 +20,8 @@
             <div class="user-info">
               <h2>{{ userProfile.name }}</h2>
               <p class="username">@{{ userProfile.username }}</p>
-              <span class="role-badge" :class="userProfile.role">
-                {{ userProfile.role === 'ADMIN' ? '商家' : '顾客' }}
+              <span class="role-badge" :class="(userProfile.role || 'USER').toLowerCase()">
+                {{ getRoleLabel(userProfile.role) }}
               </span>
             </div>
           </div>
@@ -74,8 +74,8 @@
               <div class="form-group">
                 <label for="edit-role">角色 <span class="required">*</span></label>
                 <select id="edit-role" v-model="editForm.role">
-                  <option value="user">顾客</option>
-                  <option value="admin">商家</option>
+                  <option :value="UserRole.USER">{{ USER_ROLE_LABELS[UserRole.USER] }}</option>
+                  <option :value="UserRole.ADMIN">{{ USER_ROLE_LABELS[UserRole.ADMIN] }}</option>
                 </select>
               </div>
               <div class="form-group">
@@ -137,6 +137,7 @@
   import api from '@/api';
   import type { UserInfo, ErrorResponse } from '@/types/api'
   import type { AxiosError } from 'axios'
+  import { UserRole, USER_ROLE_LABELS, getRoleLabel as getRoleLabelUtil, normalizeRole } from '@/utils/constants'
   
   interface EditForm {
     username: string
@@ -146,7 +147,7 @@
     email: string
     location: string
     password: string
-    role: string
+    role: UserRole
   }
   
   export default defineComponent({
@@ -165,16 +166,23 @@
           email: '',
           location: '',
           password: '',
-          role: ''
+          role: UserRole.USER
         } as EditForm,
         editError: '',
-        isSaving: false
+        isSaving: false,
+        // 在模板中使用的常量
+        UserRole,
+        USER_ROLE_LABELS
       };
     },
     created() {
       this.fetchUserProfile();
     },
     methods: {
+      getRoleLabel(role: string | UserRole | undefined | null): string {
+        // 使用导入的 getRoleLabel 工具函数
+        return getRoleLabelUtil(role);
+      },
       async fetchUserProfile(): Promise<void> {
         this.isLoading = true;
         this.error = null;
@@ -214,7 +222,7 @@
           email: this.userProfile.email || '',
           location: this.userProfile.location || '',
           password: '',
-          role: this.userProfile.role || 'USER'
+          role: this.userProfile.role ? (typeof this.userProfile.role === 'string' ? normalizeRole(this.userProfile.role) : this.userProfile.role) : UserRole.USER
         };
       },
       
@@ -309,7 +317,7 @@
           telephone: this.editForm.telephone,
           email: this.editForm.email,
           location: this.editForm.location,
-          role: this.editForm.role as 'ADMIN' | 'USER' | undefined
+          role: this.editForm.role
         };
         
         // 如果密码不为空，则添加密码字段

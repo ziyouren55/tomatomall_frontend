@@ -51,8 +51,13 @@
         <div class="form-group">
           <label for="role">角色 <span class="required">*</span></label>
           <select id="role" v-model="registerForm.role">
-            <option value="user">顾客</option>
-            <option value="admin">商家</option>
+            <option 
+              v-for="option in roleOptions" 
+              :key="option.value" 
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
           </select>
         </div>
         <div class="form-group">
@@ -96,13 +101,14 @@
   <script lang="ts">
   import { defineComponent } from 'vue'
   import api from '@/api';
+  import { UserRole, USER_ROLE_LABELS } from '@/utils/constants';
   
   interface RegisterForm {
     username: string
     password: string
     name: string
     avatar: string
-    role: 'user' | 'admin'
+    role: UserRole
     telephone: string
     email: string
     location: string
@@ -119,7 +125,7 @@
           password: '',
           name: '',
           avatar: 'https://tse2-mm.cn.bing.net/th/id/OIP-C.UfPq2yu1ycxTGG9LfpogugHaHY?rs=1&pid=ImgDetMain&cb=idpwebpc2',
-          role: 'user' as 'user' | 'admin',
+          role: UserRole.USER,
           telephone: '',
           email: '',
           location: '',
@@ -127,7 +133,12 @@
           isMember: true,
         } as RegisterForm,
         errorMessage: '',
-        isLoading: false
+        isLoading: false,
+        // 角色选项
+        roleOptions: [
+          { value: UserRole.USER, label: USER_ROLE_LABELS[UserRole.USER] },
+          { value: UserRole.ADMIN, label: USER_ROLE_LABELS[UserRole.ADMIN] }
+        ]
       };
     },
     methods: {
@@ -207,10 +218,10 @@
         
         try {
           console.log(this.registerForm);
-          // 转换 role 为 API 期望的格式
+          // 直接使用枚举值，不需要转换
           const registerData = {
             ...this.registerForm,
-            role: this.registerForm.role === 'admin' ? 'ADMIN' : 'USER' as 'ADMIN' | 'USER'
+            role: this.registerForm.role  // 已经是 UserRole.USER 或 UserRole.ADMIN
           }
           const response = await api.user.register(registerData);
           
