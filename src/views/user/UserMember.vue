@@ -5,36 +5,36 @@
         <div class="title">
           <span class="dot"></span>
           <h1>您还不是会员</h1>
-        </div>
+      </div>
         <p class="sub">完成下单或联系客服开通后可查看会员权益与积分。</p>
         <div class="non-member-actions">
           <button class="refresh" @click="refreshAll" :disabled="loading">
             <RefreshCcw class="w-4 h-4" />
             <span>{{ loading ? '刷新中...' : '重新检测' }}</span>
           </button>
-        </div>
+                </div>
       </section>
-
+              
       <section v-else class="card overview">
         <div class="overview-left">
           <div class="title">
             <span class="dot"></span>
             <h1>我的会员</h1>
-          </div>
+                      </div>
           <p class="sub">查看等级、积分与权益</p>
           <div class="current">
             <div class="badge">
               <Crown class="icon" />
               <span>{{ memberInfo?.level?.levelName || '铜牌会员' }}</span>
-            </div>
+                      </div>
             <div class="discount">折扣 {{ discountLabel }}</div>
-          </div>
+                    </div>
           <div class="progress">
             <div class="progress-head">
               <span>升级进度</span>
               <span v-if="nextLevel">距 {{ nextLevel?.levelName }} 还差 {{ leftPoints }} 分</span>
               <span v-else>已是最高等级</span>
-            </div>
+                      </div>
             <div class="progress-bar">
               <div class="progress-inner" :style="{ width: progressValue + '%' }"></div>
             </div>
@@ -44,26 +44,26 @@
           <div class="metric">
             <p class="label">当前积分</p>
             <p class="value">{{ pointsInfo?.currentPoints ?? 0 }}</p>
-          </div>
+              </div>
           <div class="divider"></div>
           <div class="metric">
             <p class="label">累计积分</p>
             <p class="value">{{ pointsInfo?.totalPoints ?? 0 }}</p>
-          </div>
+                  </div>
           <button class="refresh" @click="refreshAll" :disabled="loading">
             <RefreshCcw class="w-4 h-4" />
             <span>{{ loading ? '刷新中...' : '刷新' }}</span>
           </button>
-        </div>
+                  </div>
       </section>
-
+                
       <div v-if="!nonMember" class="grid">
         <!-- 等级与权益 -->
         <section class="card levels">
           <div class="section-head">
             <h2>会员等级与权益</h2>
             <p>了解各等级的门槛与折扣</p>
-          </div>
+                  </div>
           <div class="level-list">
             <div
               v-for="level in levels"
@@ -94,14 +94,14 @@
           </div>
           <div v-if="loading" class="loading">
             <div class="spinner"></div>
-          </div>
+              </div>
           <div v-else-if="pointsHistory.length === 0" class="empty">暂无积分记录</div>
           <div v-else class="history-list">
-            <div
-              v-for="record in pointsHistory"
-              :key="record.id"
+                <div 
+                  v-for="record in pointsHistory" 
+                  :key="record.id" 
               class="history-item"
-            >
+                >
               <div>
                 <div class="history-top">
                   <span class="type">{{ record.recordType }}</span>

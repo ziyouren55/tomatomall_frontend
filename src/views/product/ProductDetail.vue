@@ -16,15 +16,24 @@
         </div>
       </div>
       
-      <!-- 商品详情 -->
-      <ProductDetailCard 
-        v-else-if="product" 
-        :product="product" 
-        :stockpile="stockpile"
-        :loading-actions="loadingActions"
-        :cart-item="cartItem"
-        @add-to-cart="handleAddToCart"
-      />
+      <!-- 商品详情与书评 -->
+      <template v-else-if="product">
+        <ProductDetailCard 
+          :product="product" 
+          :stockpile="stockpile"
+          :loading-actions="loadingActions"
+          :cart-item="cartItem"
+          @add-to-cart="handleAddToCart"
+        />
+
+        <section class="product-review-container">
+          <div class="section-header">
+            <h2>书评</h2>
+            <router-link :to="`/bookcomment?productId=${product.id}`" class="more-link">去书评中心</router-link>
+          </div>
+          <BookCommentList v-if="product?.id" :product-id="product.id" />
+        </section>
+      </template>
       
       <!-- 商品不存在 -->
       <div v-else class="not-found-container">
@@ -41,6 +50,7 @@ import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import ProductDetailCard from '@/components/business/product/ProductDetailCard.vue'
+import BookCommentList from '@/components/business/review/BookCommentList.vue'
 import api from '@/api'
 import type { Stockpile, CartItem } from '@/types/api'
 import type { Product } from '@/api/modules/product'

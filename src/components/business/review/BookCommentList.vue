@@ -20,15 +20,6 @@
             required
           ></textarea>
         </div>
-        <div class="form-group">
-          <label>发布者姓名：</label>
-          <input 
-            type="text" 
-            v-model="newReview.name" 
-            placeholder="请输入您的姓名"
-            required
-          />
-        </div>
         <div class="form-actions">
           <button type="submit" class="submit-btn" :disabled="isSubmitting">
             {{ isSubmitting ? '发布中...' : '发布书评' }}
@@ -55,6 +46,7 @@
           <div class="review-header">
             <div class="author-info">
               <span class="author-name">{{ review.name }}</span>
+              <span class="publish-time" v-if="review.createTime">发布于：{{ review.createTime }}</span>
             </div>
             <button 
               v-if="canDeleteReview(review)" 
@@ -69,6 +61,12 @@
             <p>{{ review.commentText }}</p>
           </div>
           
+        </div>
+
+        <div class="pagination" v-if="total > pageSize">
+          <button :disabled="page === 0" @click="changePage(-1)">上一页</button>
+          <span>第 {{ page + 1 }} / {{ Math.max(1, Math.ceil(total / pageSize)) }} 页</span>
+          <button :disabled="(page + 1) * pageSize >= total" @click="changePage(1)">下一页</button>
         </div>
       </div>
     </div>
@@ -96,9 +94,11 @@ export default defineComponent({
       showAddForm: false,
       isSubmitting: false,
       newReview: {
-        commentText: '',
-        name: ''
-      }
+        commentText: ''
+      },
+      page: 0,
+      pageSize: 10,
+      total: 0
     };
   },
   mounted() {
@@ -108,8 +108,10 @@ export default defineComponent({
     async loadReviews(): Promise<void> {
       this.loading = true;
       try {
-        const response = await api.review.getBookComments(this.productId);
-        this.reviews = response.data || [];
+        const response = await api.review.getBookComments(this.productId, this.page, this.pageSize);
+        const pageData = response.data;
+        this.reviews = pageData?.content || [];
+        this.total = pageData?.totalElements || this.reviews.length;
       } catch (error: unknown) {
         console.error('加载书评失败:', error);
         ElMessage.error('加载书评失败');
@@ -119,8 +121,8 @@ export default defineComponent({
     },
     
     async submitReview(): Promise<void> {
-      if (!this.newReview.commentText.trim() || !this.newReview.name.trim()) {
-        ElMessage.warning('请填写完整信息');
+      if (!this.newReview.commentText.trim()) {
+        ElMessage.warning('请填写书评内容');
         return;
       }
       
@@ -141,8 +143,7 @@ export default defineComponent({
     cancelForm(): void {
       this.showAddForm = false;
       this.newReview = {
-        commentText: '',
-        name: ''
+        commentText: ''
       };
     },
     
@@ -182,6 +183,14 @@ export default defineComponent({
         // 使用占位符图片
         target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect width="100" height="100" fill="%23ddd"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999"%3E暂无图片%3C/text%3E%3C/svg%3E';
       }
+    },
+
+    changePage(delta: number): void {
+      const newPage = this.page + delta;
+      const maxPage = Math.max(0, Math.ceil(this.total / this.pageSize) - 1);
+      if (newPage < 0 || newPage > maxPage) return;
+      this.page = newPage;
+      this.loadReviews();
     }
   }
 });
@@ -344,6 +353,35 @@ export default defineComponent({
 
 .delete-btn:hover {
   background: #c82333;
+}
+
+.pagination {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  font-size: 14px;
+  color: #666;
+}
+
+.pagination button {
+  padding: 6px 12px;
+  border: 1px solid #d0d7de;
+  background: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.pagination button:disabled {
+  cursor: not-allowed;
+  color: #bbb;
+  border-color: #eee;
+}
+
+.pagination button:not(:disabled):hover {
+  background: #f3f4f6;
 }
 
 .review-content {

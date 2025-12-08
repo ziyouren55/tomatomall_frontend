@@ -38,6 +38,7 @@
 
           <!-- 已登录状态 -->
           <template v-else>
+            <router-link to="/bookcomment" class="nav-link desktop-link">书评</router-link>
             <!-- 用户名下拉菜单 -->
             <el-dropdown @command="handleUserCommand" trigger="hover" class="user-dropdown">
               <span class="user-info">
@@ -70,6 +71,16 @@
                         <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
                       </svg>
                       我的订单
+                    </span>
+                  </el-dropdown-item>
+                  <el-dropdown-item command="bookcomment" v-if="isLoggedIn">
+                    <span class="menu-item">
+                      <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M21 15V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10"></path>
+                        <path d="M7 22h10l-2-3H9l-2 3z"></path>
+                        <path d="M7 9h10M7 6h10M7 12h10"></path>
+                      </svg>
+                      书评
                     </span>
                   </el-dropdown-item>
                   <el-dropdown-item command="member" v-if="isLoggedIn">
@@ -279,6 +290,9 @@ const handleUserCommand = (command: string) => {
     case 'order':
       router.push('/order');
       break;
+    case 'bookcomment':
+      router.push('/bookcomment');
+      break;
     case 'member':
       router.push('/member');
       break;
@@ -469,6 +483,10 @@ watch(() => route.path, () => {
 
 .nav-link:hover {
   background-color: rgba(255, 255, 255, 0.1);
+}
+
+.desktop-link {
+  font-weight: 600;
 }
 
 .divider {

@@ -8,7 +8,6 @@ import { ApiResponse } from '@/types/api'
 
 export interface BookCommentData {
     commentText: string
-    name: string
 }
 
 export interface BookComment {
@@ -16,6 +15,16 @@ export interface BookComment {
     productId: number
     commentText: string
     name: string
+    userId?: number
+    createTime?: string
+}
+
+export interface PageResult<T> {
+    content: T[]
+    totalElements: number
+    totalPages: number
+    number: number
+    size: number
 }
 
 const reviewApi = {
@@ -24,9 +33,9 @@ const reviewApi = {
         return request.post(`/bookComment/${productId}`, commentData)
     },
 
-    // 获取指定产品的书评列表（后端返回Set，前端接收为数组）
-    getBookComments(productId: number): Promise<ApiResponse<BookComment[]>> {
-        return request.get(`/bookComment/${productId}`)
+    // 获取指定产品的书评列表（分页）
+    getBookComments(productId: number, page = 0, size = 10): Promise<ApiResponse<PageResult<BookComment>>> {
+        return request.get(`/bookComment/${productId}`, { params: { page, size } })
     },
 
     // 删除书评
