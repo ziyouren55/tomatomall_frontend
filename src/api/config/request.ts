@@ -50,9 +50,9 @@ request.interceptors.request.use(
  * 4. 需要登录的接口（如购物车、订单）的401错误才跳转登录页
  */
 request.interceptors.response.use(
-    (response: AxiosResponse<ApiResponse>) => {
-        // 直接返回 response.data，因为后端已经包装了数据结构
-        return response.data
+    (response: AxiosResponse<any>): any => {
+        // 保持向后兼容，直接返回包装后的数据
+        return response.data as ApiResponse
     },
     (error: AxiosError) => {
         if (error.response) {

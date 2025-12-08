@@ -1,19 +1,19 @@
 <template>
   <div class="book-review-page">
     <NavigationBar />
-
+    
     <div class="container">
       <header class="hero">
         <div class="hero-text">
           <p class="eyebrow">书评中心</p>
           <h1>发现好书 · 分享观点</h1>
           <p class="subtitle">选择图书，查看并发布对应的书评</p>
-        </div>
+      </div>
         <div class="hero-actions">
           <router-link class="cta ghost" to="/">返回首页</router-link>
         </div>
       </header>
-
+        
       <div class="main-grid">
         <!-- 左侧：书评列表 -->
         <section class="panel review-panel">
@@ -43,42 +43,42 @@
               <p class="hint">点击卡片以查看该书书评</p>
             </div>
             <div class="search-box">
-              <input
-                type="text"
-                v-model="searchKeyword"
-                placeholder="搜索图书名称..."
-                @input="searchProducts"
-              />
+          <input 
+            type="text" 
+            v-model="searchKeyword" 
+            placeholder="搜索图书名称..."
+            @input="searchProducts"
+          />
             </div>
-          </div>
-
+        </div>
+        
           <div class="products-grid" :class="{ loading: loadingProducts }">
             <div v-if="loadingProducts" class="loading">正在加载图书列表...</div>
             <template v-else>
-              <div
-                v-for="product in filteredProducts"
-                :key="product.id"
-                class="product-card"
-                :class="{ active: selectedProductId === product.id }"
-                @click="selectProduct(product.id)"
-              >
-                <div class="product-image">
-                  <img
+          <div 
+            v-for="product in filteredProducts" 
+            :key="product.id"
+            class="product-card"
+            :class="{ active: selectedProductId === product.id }"
+            @click="selectProduct(product.id)"
+          >
+            <div class="product-image">
+              <img 
                     :src="product.cover || product.imageUrl || placeholderImg"
                     :alt="product.title || product.name"
-                    @error="handleImageError"
-                  />
-                </div>
-                <div class="product-info">
+                @error="handleImageError"
+              />
+            </div>
+            <div class="product-info">
                   <h4>{{ product.title || product.name }}</h4>
-                  <p class="product-author">{{ product.author || '未知作者' }}</p>
+              <p class="product-author">{{ product.author || '未知作者' }}</p>
                   <p class="product-price" v-if="product.price">¥{{ product.price }}</p>
                 </div>
-              </div>
+            </div>
               <div v-if="filteredProducts.length === 0" class="no-products">暂无图书数据</div>
             </template>
-          </div>
-
+        </div>
+        
           <div class="selector-actions">
             <div class="pagination">
               <button class="btn ghost" :disabled="page === 0 || loadingProducts" @click="fetchPage(page - 1)">
@@ -88,9 +88,9 @@
               <button class="btn" :disabled="page + 1 >= totalPages || loadingProducts" @click="fetchPage(page + 1)">
                 下一页
               </button>
-            </div>
+        </div>
             <p class="hint">共 {{ total }} 本</p>
-          </div>
+        </div>
         </section>
       </div>
     </div>
@@ -185,7 +185,7 @@ export default defineComponent({
         this.loadingProducts = false;
       }
     },
-
+    
     searchProducts(): void {
       const keyword = this.searchKeyword.trim();
       if (!keyword) {
