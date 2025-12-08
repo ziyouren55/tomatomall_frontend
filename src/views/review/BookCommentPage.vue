@@ -4,12 +4,14 @@
 
     <div class="container">
       <header class="hero">
-        <div>
+        <div class="hero-text">
           <p class="eyebrow">书评中心</p>
           <h1>发现好书 · 分享观点</h1>
-          <p class="subtitle">快速选择图书并查看对应书评</p>
+          <p class="subtitle">选择图书，查看并发布对应的书评</p>
         </div>
-        <router-link class="cta" to="/">返回首页</router-link>
+        <div class="hero-actions">
+          <router-link class="cta ghost" to="/">返回首页</router-link>
+        </div>
       </header>
 
       <div class="main-grid">
@@ -78,10 +80,16 @@
           </div>
 
           <div class="selector-actions">
-            <button class="btn" :disabled="!hasMore || loadingProducts" @click="() => loadMore()">
-              {{ loadingProducts ? '加载中...' : hasMore ? '加载更多' : '没有更多了' }}
-            </button>
-            <p class="hint">已加载 {{ products.length }} 本</p>
+            <div class="pagination">
+              <button class="btn ghost" :disabled="page === 0 || loadingProducts" @click="fetchPage(page - 1)">
+                上一页
+              </button>
+              <span class="page-text">第 {{ page + 1 }} / {{ totalPages }} 页</span>
+              <button class="btn" :disabled="page + 1 >= totalPages || loadingProducts" @click="fetchPage(page + 1)">
+                下一页
+              </button>
+            </div>
+            <p class="hint">共 {{ total }} 本</p>
           </div>
         </section>
       </div>
@@ -111,8 +119,11 @@ export default defineComponent({
       loadingProducts: false,
       placeholderImg: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="120" height="160"%3E%3Crect width="120" height="160" fill="%23f2f3f5"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999"%3E暂无图片%3C/text%3E%3C/svg%3E',
       page: 0,
-      pageSize: 24,
-      total: 0
+      pageSize: 12,
+      total: 0,
+      totalPages: 1,
+      searchMode: false,
+      currentKeyword: ''
     };
   },
   computed: {
@@ -137,10 +148,9 @@ export default defineComponent({
     async loadProducts(): Promise<void> {
       this.loadingProducts = true;
       try {
-        this.page = 0;
-        this.total = 0;
-        this.products = [];
-        await this.loadMore(true);
+        this.searchMode = false;
+        this.currentKeyword = '';
+        await this.fetchPage(0);
       } catch (error) {
         console.error('加载产品列表失败:', error);
         ElMessage.error('加载图书列表失败');
@@ -149,21 +159,24 @@ export default defineComponent({
       }
     },
     
-    async loadMore(reset = false): Promise<void> {
-      if (reset) {
-        this.page = 0;
-        this.products = [];
-        this.filteredProducts = [];
-      }
+    async fetchPage(targetPage: number): Promise<void> {
+      this.page = targetPage;
       try {
         this.loadingProducts = true;
-        const resp = await api.product.getAllProducts(this.page, this.pageSize);
+        const keyword = this.searchKeyword.trim();
+        const isSearching = keyword.length > 0;
+        const resp = isSearching
+          ? await api.product.searchProducts(keyword, this.page, this.pageSize)
+          : await api.product.getAllProducts(this.page, this.pageSize);
+
         const data = (resp as any).data;
         const list = Array.isArray(data?.products) ? data.products : [];
         const total = data?.total ?? list.length;
+        this.searchMode = isSearching;
+        this.currentKeyword = keyword;
         this.total = total;
-        this.page += 1;
-        this.products = reset ? list : [...this.products, ...list];
+        this.totalPages = data?.totalPages ?? Math.max(1, Math.ceil(total / this.pageSize));
+        this.products = list;
         this.filteredProducts = [...this.products];
       } catch (error) {
         console.error('加载产品列表失败:', error);
@@ -174,17 +187,16 @@ export default defineComponent({
     },
 
     searchProducts(): void {
-      if (!this.searchKeyword.trim()) {
-        this.filteredProducts = [...this.products];
+      const keyword = this.searchKeyword.trim();
+      if (!keyword) {
+        // 退出搜索模式，恢复已加载列表
+        this.searchMode = false;
+        this.currentKeyword = '';
+        this.fetchPage(0);
         return;
       }
-
-      const keyword = this.searchKeyword.toLowerCase();
-      this.filteredProducts = this.products.filter(product => {
-        const name = (product.title || product.name || '').toString().toLowerCase();
-        const author = (product.author || '').toString().toLowerCase();
-        return name.includes(keyword) || author.includes(keyword);
-      });
+      // 搜索直接拉取远端数据（全量搜索，分页）
+      this.fetchPage(0);
     },
     
     selectProduct(productId: number): void {
@@ -209,91 +221,111 @@ export default defineComponent({
 <style scoped>
 .book-review-page {
   min-height: 100vh;
-  background: #f8f9fa;
+  background: #f6f7fb;
 }
 
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 60px;
+  padding: 40px 24px 60px;
 }
 
-.page-header {
-  text-align: center;
-  margin-bottom: 40px;
-  padding: 40px 0;
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+.hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding: 24px 28px;
+  background: linear-gradient(135deg, #f97316, #ef4444);
+  border-radius: 12px;
+  color: #fff;
 }
 
-.page-header h1 {
-  margin: 0 0 10px 0;
-  color: #333;
-  font-size: 2.5em;
+.hero-text h1 {
+  margin: 4px 0 8px 0;
+  font-size: 28px;
+  font-weight: 700;
 }
 
 .subtitle {
   margin: 0;
-  color: #666;
-  font-size: 1.1em;
+  color: #f3f4f6;
+  font-size: 14px;
 }
 
-.product-selector {
+.eyebrow {
+  letter-spacing: 2px;
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.main-grid {
+  display: grid;
+  grid-template-columns: 7fr 5fr;
+  gap: 20px;
+}
+
+.panel {
   background: white;
   border-radius: 10px;
-  padding: 30px;
-  margin-bottom: 30px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  padding: 18px 20px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.05);
 }
 
-.selector-header {
-  margin-bottom: 20px;
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.selector-header h3 {
-  margin: 0 0 5px 0;
-  color: #333;
-}
-
-.selector-header p {
+.panel-head h3 {
   margin: 0;
-  color: #666;
+  color: #111827;
+  font-size: 18px;
+  font-weight: 700;
 }
 
-.product-search {
-  margin-bottom: 20px;
+.hint {
+  margin: 4px 0 0 0;
+  color: #6b7280;
+  font-size: 12px;
 }
 
-.search-input {
-  width: 100%;
-  padding: 12px 15px;
-  border: 2px solid #e9ecef;
+.search-box input {
+  width: 220px;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
-  font-size: 16px;
-  transition: border-color 0.3s;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #007bff;
+  font-size: 14px;
+  box-sizing: border-box;
 }
 
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(3, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 8px;
+  min-height: 240px;
+  grid-auto-rows: 200px;
 }
 
 .product-card {
-  background: #f8f9fa;
-  border: 2px solid transparent;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
   border-radius: 10px;
-  padding: 15px;
+  padding: 10px;
   cursor: pointer;
   transition: all 0.3s;
   text-align: center;
+  height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 .product-card:hover {
@@ -302,117 +334,148 @@ export default defineComponent({
 }
 
 .product-card.active {
-  border-color: #007bff;
-  background: #e7f3ff;
+  border-color: #2563eb;
+  background: #eef2ff;
 }
 
 .product-image {
-  margin-bottom: 15px;
+  margin-bottom: 8px;
+  flex: 0 0 auto;
 }
 
 .product-image img {
-  width: 80px;
-  height: 100px;
+  width: 68px;
+  height: 86px;
   object-fit: cover;
   border-radius: 5px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .product-info h4 {
-  margin: 0 0 5px 0;
+  margin: 0 0 4px 0;
   color: #333;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .product-author {
   margin: 0 0 5px 0;
   color: #666;
-  font-size: 12px;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .product-price {
-  margin: 0;
+  margin: 0 0 2px 0;
   color: #e74c3c;
   font-weight: bold;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .no-products {
   text-align: center;
-  padding: 40px;
+  padding: 24px;
   color: #666;
 }
 
 .loading {
   text-align: center;
-  padding: 40px;
+  padding: 24px;
   color: #666;
 }
 
-.review-section {
-  background: white;
-  border-radius: 10px;
-  padding: 30px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+.review-body {
+  margin-top: 12px;
 }
 
-.selected-product-info {
-  margin-bottom: 30px;
-  padding-bottom: 20px;
-  border-bottom: 2px solid #e9ecef;
-}
-
-.selected-product-info h3 {
-  margin: 0 0 5px 0;
-  color: #333;
-}
-
-.selected-product-info p {
-  margin: 0;
-  color: #666;
-}
-
-.no-selection {
-  background: white;
-  border-radius: 10px;
-  padding: 60px 30px;
+.empty-state {
   text-align: center;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-
-.no-selection-content h3 {
-  margin: 0 0 10px 0;
-  color: #333;
-}
-
-.no-selection-content p {
-  margin: 0;
+  padding: 30px 10px;
   color: #666;
+}
+
+.more-link {
+  color: #2563eb;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.more-link:hover {
+  text-decoration: underline;
+}
+
+.selector-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.page-text {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.btn {
+  padding: 10px 16px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.btn:not(:disabled):hover {
+  background: #1d4ed8;
+}
+
+.cta {
+  padding: 10px 14px;
+  background: #fff;
+  color: #ef4444;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.cta.ghost {
+  background: rgba(255,255,255,0.16);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.25);
 }
 
 @media (max-width: 768px) {
   .container {
-    padding: 10px;
+    padding: 16px;
   }
-  
+  .hero {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
   .products-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 15px;
-  }
-  
-  .product-selector,
-  .review-section,
-  .no-selection {
-    padding: 20px;
-  }
-  
-  .page-header {
-    padding: 30px 20px;
-  }
-  
-  .page-header h1 {
-    font-size: 2em;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   }
 }
 </style>

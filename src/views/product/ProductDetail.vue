@@ -18,13 +18,13 @@
       
       <!-- 商品详情与书评 -->
       <template v-else-if="product">
-        <ProductDetailCard 
-          :product="product" 
-          :stockpile="stockpile"
-          :loading-actions="loadingActions"
-          :cart-item="cartItem"
-          @add-to-cart="handleAddToCart"
-        />
+      <ProductDetailCard 
+        :product="product" 
+        :stockpile="stockpile"
+        :loading-actions="loadingActions"
+        :cart-item="cartItem"
+        @add-to-cart="handleAddToCart"
+      />
 
         <section class="product-review-container">
           <div class="section-header">

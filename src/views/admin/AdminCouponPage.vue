@@ -9,7 +9,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import NavigationBar from '@/components/common/NavigationBar.vue';
+import NavigationBar from '@/components/business/NavigationBar.vue';
 
 export default defineComponent({
   name: 'AdminCouponPage',

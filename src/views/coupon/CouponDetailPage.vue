@@ -13,7 +13,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import NavigationBar from '@/components/common/NavigationBar.vue';
+import NavigationBar from '@/components/business/NavigationBar.vue';
 import CouponDetail from '@/components/business/admin/coupon/AdminCoupon/CouponDetail.vue';
 import api from '@/api';
 import type { AxiosError } from 'axios';
