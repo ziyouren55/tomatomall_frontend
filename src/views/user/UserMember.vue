@@ -1,379 +1,614 @@
 <template>
-  <div class="min-h-screen bg-gray-50 p-6">
-    <div class="max-w-7xl mx-auto">
-      <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">会员管理系统</h1>
-        <p class="text-gray-600">管理用户会员等级和积分</p>
-      </div>
+  <div class="page">
+    <div class="content">
+      <section v-if="nonMember" class="card non-member">
+        <div class="title">
+          <span class="dot"></span>
+          <h1>您还不是会员</h1>
+        </div>
+        <p class="sub">完成下单或联系客服开通后可查看会员权益与积分。</p>
+        <div class="non-member-actions">
+          <button class="refresh" @click="refreshAll" :disabled="loading">
+            <RefreshCcw class="w-4 h-4" />
+            <span>{{ loading ? '刷新中...' : '重新检测' }}</span>
+          </button>
+        </div>
+      </section>
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- 用户列表 -->
-        <div class="lg:col-span-2">
-          <div class="bg-white rounded-lg shadow-sm">
-            <div class="p-6 border-b border-gray-200">
-              <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-semibold text-gray-900">用户列表</h2>
-                <div class="relative">
-                  <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input
-                    type="text"
-                    placeholder="搜索用户..."
-                    v-model="searchTerm"
-                    class="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-              
-              <div class="space-y-3">
-                <div 
-                  v-for="user in filteredUsers"
-                  :key="user.id"
-                  @click="handleUserClick(user)"
-                  :class="[
-                    'p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md',
-                    selectedUser?.id === user.id 
-                      ? 'border-blue-500 bg-blue-50' 
-                      : 'border-gray-200 hover:border-gray-300'
-                  ]"
-                >
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-3">
-                      <div class="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-                        <User class="w-5 h-5 text-gray-600" />
-                      </div>
-                      <div>
-                        <h3 class="font-semibold text-gray-900">{{ user.username }}</h3>
-                        <p class="text-sm text-gray-600">{{ user.email }}</p>
-                      </div>
-                    </div>
-                    <div class="text-right">
-                      <div :class="[
-                        'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-white',
-                        getLevelColor(user.currentLevelId || 1)
-                      ]">
-                        <Crown class="w-3 h-3 mr-1" />
-                        {{ user.levelName }}
-                      </div>
-                      <p class="text-sm text-gray-600 mt-1">积分: {{ user.currentPoints }}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+      <section v-else class="card overview">
+        <div class="overview-left">
+          <div class="title">
+            <span class="dot"></span>
+            <h1>我的会员</h1>
+          </div>
+          <p class="sub">查看等级、积分与权益</p>
+          <div class="current">
+            <div class="badge">
+              <Crown class="icon" />
+              <span>{{ memberInfo?.level?.levelName || '铜牌会员' }}</span>
+            </div>
+            <div class="discount">折扣 {{ discountLabel }}</div>
+          </div>
+          <div class="progress">
+            <div class="progress-head">
+              <span>升级进度</span>
+              <span v-if="nextLevel">距 {{ nextLevel?.levelName }} 还差 {{ leftPoints }} 分</span>
+              <span v-else>已是最高等级</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-inner" :style="{ width: progressValue + '%' }"></div>
             </div>
           </div>
         </div>
+        <div class="overview-right">
+          <div class="metric">
+            <p class="label">当前积分</p>
+            <p class="value">{{ pointsInfo?.currentPoints ?? 0 }}</p>
+          </div>
+          <div class="divider"></div>
+          <div class="metric">
+            <p class="label">累计积分</p>
+            <p class="value">{{ pointsInfo?.totalPoints ?? 0 }}</p>
+          </div>
+          <button class="refresh" @click="refreshAll" :disabled="loading">
+            <RefreshCcw class="w-4 h-4" />
+            <span>{{ loading ? '刷新中...' : '刷新' }}</span>
+          </button>
+        </div>
+      </section>
 
-        <!-- 用户详情 -->
-        <div class="space-y-6">
-          <template v-if="selectedUser">
-            <div class="bg-white rounded-lg shadow-sm p-6">
-              <h3 class="text-lg font-semibold text-gray-900 mb-4">用户详情</h3>
-              <div v-if="loading" class="flex items-center justify-center h-32">
-                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div v-if="!nonMember" class="grid">
+        <!-- 等级与权益 -->
+        <section class="card levels">
+          <div class="section-head">
+            <h2>会员等级与权益</h2>
+            <p>了解各等级的门槛与折扣</p>
+          </div>
+          <div class="level-list">
+            <div
+              v-for="level in levels"
+              :key="level.id"
+              class="level-item"
+              :class="level.id === pointsInfo?.currentLevelId ? 'active' : ''"
+            >
+              <div class="level-top">
+                <div class="level-name">
+                  <Crown class="icon crown" />
+                  <span>{{ level.levelName }}</span>
+                </div>
+                <span class="tag">
+                  {{ level.id === pointsInfo?.currentLevelId ? '当前等级' : `门槛 ${level.pointsRequired} 分` }}
+                </span>
               </div>
-              <div v-else-if="userDetails" class="space-y-4">
-                <div class="flex items-center space-x-3">
-                  <div class="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
-                    <User class="w-6 h-6 text-gray-600" />
-                  </div>
-                  <div>
-                    <h4 class="font-semibold text-gray-900">{{ userDetails.username }}</h4>
-                    <p class="text-sm text-gray-600">{{ userDetails.email }}</p>
-                  </div>
-                </div>
-                
-                <div class="grid grid-cols-2 gap-4">
-                  <div class="text-center p-3 bg-blue-50 rounded-lg">
-                    <Coins class="w-6 h-6 text-blue-600 mx-auto mb-1" />
-                    <p class="text-sm text-gray-600">当前积分</p>
-                    <p class="text-lg font-semibold text-blue-600">{{ userDetails.currentPoints }}</p>
-                  </div>
-                  <div class="text-center p-3 bg-green-50 rounded-lg">
-                    <Crown class="w-6 h-6 text-green-600 mx-auto mb-1" />
-                    <p class="text-sm text-gray-600">累计积分</p>
-                    <p class="text-lg font-semibold text-green-600">{{ userDetails.totalPoints }}</p>
-                  </div>
-                </div>
+              <p class="text">折扣：{{ Math.round(level.discountRate * 100) }}%</p>
+              <p class="desc">{{ level.description || '暂无描述' }}</p>
+            </div>
+          </div>
+        </section>
 
-                <div class="space-y-2">
-                  <button 
-                    @click="showLevelModal = true"
-                    class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition-colors"
-                  >
-                    升级会员等级
-                  </button>
-                  <button 
-                    @click="showPointsModal = true"
-                    class="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition-colors"
-                  >
-                    调整积分
-                  </button>
+        <!-- 积分记录 -->
+        <section class="card history">
+          <div class="section-head">
+            <h2>积分记录</h2>
+            <p>最近的积分变更</p>
+          </div>
+          <div v-if="loading" class="loading">
+            <div class="spinner"></div>
+          </div>
+          <div v-else-if="pointsHistory.length === 0" class="empty">暂无积分记录</div>
+          <div v-else class="history-list">
+            <div
+              v-for="record in pointsHistory"
+              :key="record.id"
+              class="history-item"
+            >
+              <div>
+                <div class="history-top">
+                  <span class="type">{{ record.recordType }}</span>
+                  <span class="time">{{ record.createTime }}</span>
                 </div>
+                <p class="desc">{{ record.description || '无描述' }}</p>
+              </div>
+              <div
+                class="amount"
+                :class="record.pointsChange >= 0 ? 'plus' : 'minus'"
+              >
+                {{ record.pointsChange >= 0 ? '+' : '' }}{{ record.pointsChange }}
               </div>
             </div>
-
-            <!-- 积分历史 -->
-            <div class="bg-white rounded-lg shadow-sm p-6">
-              <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <History class="w-5 h-5 mr-2" />
-                积分记录
-              </h3>
-              <div v-if="loading" class="flex items-center justify-center h-32">
-                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-              </div>
-              <div v-else class="space-y-3 max-h-64 overflow-y-auto">
-                <div 
-                  v-for="record in pointsHistory" 
-                  :key="record.id" 
-                  class="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                >
-                  <div class="flex-1">
-                    <div class="flex items-center justify-between mb-1">
-                      <span :class="[
-                        'px-2 py-1 rounded-full text-xs font-medium',
-                        getRecordTypeColor(record.recordType)
-                      ]">
-                        {{ record.recordType }}
-                      </span>
-                      <span :class="[
-                        'font-semibold',
-                        record.pointsChange > 0 ? 'text-green-600' : 'text-red-600'
-                      ]">
-                        {{ record.pointsChange > 0 ? '+' : '' }}{{ record.pointsChange }}
-                      </span>
-                    </div>
-                    <p class="text-sm text-gray-600">{{ record.description }}</p>
-                    <p class="text-xs text-gray-500 mt-1">{{ record.createTime }}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </template>
-          
-          <div v-else class="bg-white rounded-lg shadow-sm p-6 text-center">
-            <User class="w-12 h-12 text-gray-400 mx-auto mb-3" />
-            <p class="text-gray-500">请选择一个用户查看详情</p>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 等级升级模态框 -->
-    <div v-if="showLevelModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg p-6 w-96">
-        <h3 class="text-lg font-semibold mb-4">升级会员等级</h3>
-        <div class="space-y-3">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">当前用户</label>
-            <p class="text-gray-900">{{ selectedUser?.username }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">当前等级</label>
-            <p class="text-gray-900">{{ selectedUser?.levelName }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">目标等级</label>
-            <select v-model="targetLevelId" class="w-full p-2 border border-gray-300 rounded-md">
-              <option v-for="level in levels" :key="level.id" :value="level.id">
-                {{ level.levelName }}
-              </option>
-            </select>
-          </div>
-        </div>
-        <div class="flex justify-end space-x-3 mt-6">
-          <button 
-            @click="showLevelModal = false"
-            class="px-4 py-2 text-gray-600 hover:text-gray-800"
-          >
-            取消
-          </button>
-          <button 
-            @click="confirmLevelUpgrade"
-            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          >
-            确认升级
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 积分调整模态框 -->
-    <div v-if="showPointsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg p-6 w-96">
-        <h3 class="text-lg font-semibold mb-4">调整用户积分</h3>
-        <div class="space-y-3">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">当前用户</label>
-            <p class="text-gray-900">{{ selectedUser?.username }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">当前积分</label>
-            <p class="text-gray-900">{{ selectedUser?.currentPoints }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">积分变动</label>
-            <input 
-              type="number" 
-              v-model="pointsChange"
-              placeholder="正数为增加，负数为减少"
-              class="w-full p-2 border border-gray-300 rounded-md"
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">变动原因</label>
-            <textarea 
-              v-model="pointsReason"
-              placeholder="请输入积分调整原因"
-              class="w-full p-2 border border-gray-300 rounded-md h-20 resize-none"
-            />
-          </div>
-        </div>
-        <div class="flex justify-end space-x-3 mt-6">
-          <button 
-            @click="showPointsModal = false"
-            class="px-4 py-2 text-gray-600 hover:text-gray-800"
-          >
-            取消
-          </button>
-          <button 
-            @click="confirmPointsAdjustment"
-            class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-          >
-            确认调整
-          </button>
-        </div>
+        </section>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { User, Crown, Coins, History, Search } from 'lucide-vue-next'
-import type { User as UserType } from '@/types/api'
-import type { MemberLevel, PointsHistory } from '@/api/modules/member'
+import { computed, onMounted, ref } from 'vue'
+import { Crown, RefreshCcw } from 'lucide-vue-next'
 import api from '@/api'
+import type { MemberInfo, MemberLevel, MemberPoints, PointsHistory } from '@/api/modules/member'
 
-// 响应式数据
-const users = ref<UserType[]>([])
-const levels = ref<MemberLevel[]>([])
-const selectedUser = ref<UserType | null>(null)
-const userDetails = ref<UserType | null>(null)
-const pointsHistory = ref<PointsHistory[]>([])
 const loading = ref<boolean>(false)
-const showLevelModal = ref<boolean>(false)
-const showPointsModal = ref<boolean>(false)
-const searchTerm = ref<string>('')
-const targetLevelId = ref<number | null>(null)
-const pointsChange = ref<number | null>(null)
-const pointsReason = ref<string>('')
+const memberInfo = ref<MemberInfo | null>(null)
+const pointsInfo = ref<MemberPoints | null>(null)
+const levels = ref<MemberLevel[]>([])
+const pointsHistory = ref<PointsHistory[]>([])
+const nonMember = ref<boolean>(false)
 
-// 计算属性
-const filteredUsers = computed(() => {
-  return users.value.filter(user => 
-    user.username.toLowerCase().includes(searchTerm.value.toLowerCase()) ||
-    (user.email && user.email.toLowerCase().includes(searchTerm.value.toLowerCase()))
-  )
+const discountLabel = computed(() => {
+  const rate = memberInfo.value?.level?.discountRate
+  if (!rate && rate !== 0) return '无折扣'
+  return `${Math.round(rate * 100)}%`
 })
 
-// 方法
-const getLevelColor = (levelId: number) => {
-  const colors: Record<number, string> = {
-    1: 'bg-amber-600',
-    2: 'bg-gray-400',
-    3: 'bg-yellow-500',
-    4: 'bg-purple-600'
-  }
-  return colors[levelId] || 'bg-gray-400'
+const nextLevel = computed(() => {
+  if (!levels.value.length || !pointsInfo.value) return null
+  const sorted = [...levels.value].sort((a, b) => (a.pointsRequired ?? 0) - (b.pointsRequired ?? 0))
+  return sorted.find(l => (pointsInfo.value?.totalPoints ?? 0) < (l.pointsRequired ?? 0)) || null
+})
+
+const progressValue = computed(() => {
+  if (!pointsInfo.value) return 0
+  const total = pointsInfo.value.totalPoints ?? 0
+  const currentReq = memberInfo.value?.level?.pointsRequired ?? 0
+  if (!nextLevel.value) return 100
+  const need = (nextLevel.value.pointsRequired ?? 0) - currentReq
+  if (need <= 0) return 100
+  const gained = total - currentReq
+  const percent = Math.min(100, Math.max(0, Math.round((gained / need) * 100)))
+  return percent
+})
+
+const leftPoints = computed(() => {
+  if (!pointsInfo.value || !nextLevel.value) return 0
+  const left = (nextLevel.value.pointsRequired ?? 0) - (pointsInfo.value.totalPoints ?? 0)
+  return left < 0 ? 0 : left
+})
+
+
+const fetchMemberInfo = async () => {
+  const res = await api.member.getMemberInfo()
+  memberInfo.value = res.data
+  pointsInfo.value = res.data?.points || null
 }
 
-const getRecordTypeColor = (type: string) => {
-  const colors: Record<string, string> = {
-    'PURCHASE': 'bg-green-100 text-green-800',
-    'REVIEW': 'bg-blue-100 text-blue-800',
-    'EXCHANGE': 'bg-red-100 text-red-800',
-    'FORUM_POST': 'bg-purple-100 text-purple-800',
-    'SYSTEM': 'bg-yellow-100 text-yellow-800'
-  }
-  return colors[type] || 'bg-gray-100 text-gray-800'
+const fetchLevels = async () => {
+  const res = await api.member.getAllLevelsForUser()
+  levels.value = res.data || []
 }
 
-const handleUserClick = async (user: UserType) => {
-  selectedUser.value = user
-  loading.value = true
-  
-  // 模拟获取用户详情和积分历史
-  setTimeout(() => {
-    userDetails.value = {
-      ...user,
-      memberInfo: {
-        createTime: '2024-01-15',
-        updateTime: '2024-06-20'
+const fetchPointsHistory = async () => {
+  const res = await api.member.getPointsHistory()
+  pointsHistory.value = res.data || []
+}
+
+// 兼容旧数据：若缺少等级或积分，则调用后端修复为一级会员，并回填前端状态
+const ensureMemberLevel = async () => {
+  const isMember = memberInfo.value?.isMember ?? !!memberInfo.value?.level
+  const missingLevel = !memberInfo.value?.level
+  const missingPoints = !pointsInfo.value
+  if (isMember && (missingLevel || missingPoints)) {
+    try {
+      const repaired = await api.member.repairMember()
+      // 修复后再拉一次会员信息，确保状态一致
+      const refreshed = await api.member.getMemberInfo()
+      memberInfo.value = refreshed.data
+      pointsInfo.value = refreshed.data?.points || null
+
+      if (!memberInfo.value?.level) {
+        const fallback = repaired.data || levels.value.find(l => l.memberLevel === 1) || levels.value.find(l => l.id === 1)
+        memberInfo.value.level = fallback || null
       }
+
+      if (!pointsInfo.value) {
+        pointsInfo.value = {
+          userId: (memberInfo.value as any)?.userId || 0,
+          currentPoints: 0,
+          totalPoints: 0,
+          currentLevelId: 1,
+          currentLevelName: '铜牌会员'
+        }
+      }
+    } catch (e) {
+      console.warn('补写默认会员等级失败', e)
     }
-
-    const mockHistory: PointsHistory[] = [
-      { id: 1, userId: user.id, pointsChange: 100, recordType: 'PURCHASE', description: '购买商品获得积分', createTime: '2024-06-20' },
-      { id: 2, userId: user.id, pointsChange: 50, recordType: 'REVIEW', description: '发表评价获得积分', createTime: '2024-06-18' },
-      { id: 3, userId: user.id, pointsChange: -200, recordType: 'EXCHANGE', description: '兑换优惠券', createTime: '2024-06-15' },
-      { id: 4, userId: user.id, pointsChange: 150, recordType: 'FORUM_POST', description: '论坛发帖获得积分', createTime: '2024-06-12' },
-      { id: 5, userId: user.id, pointsChange: 300, recordType: 'SYSTEM', description: '系统奖励积分', createTime: '2024-06-10' },
-    ]
-    
-    pointsHistory.value = mockHistory
-    loading.value = false
-  }, 500)
-}
-
-const confirmLevelUpgrade = async () => {
-  if (!selectedUser.value || !targetLevelId.value) return
-  
-  try {
-    await api.member.upgradeUserLevel(selectedUser.value.id, targetLevelId.value)
-    showLevelModal.value = false
-    // 刷新用户列表
-    // TODO: 刷新用户数据
-    targetLevelId.value = null
-  } catch (error) {
-    console.error('升级用户等级失败:', error)
-    alert('升级失败，请稍后重试')
   }
 }
 
-const confirmPointsAdjustment = () => {
-  showPointsModal.value = false
-  // 这里调用积分调整接口
-  console.log('调整积分:', {
-    username: selectedUser.value?.username,
-    pointsChange: pointsChange.value,
-    reason: pointsReason.value
-  })
-  pointsChange.value = null
-  pointsReason.value = ''
+const refreshAll = async () => {
+  loading.value = true
+  try {
+    await fetchLevels()
+    await fetchMemberInfo()
+    const isMember = memberInfo.value?.isMember ?? !!memberInfo.value?.level
+    nonMember.value = !isMember
+    if (nonMember.value) {
+      pointsInfo.value = null
+      pointsHistory.value = []
+      return
+    }
+    await ensureMemberLevel()
+    await fetchPointsHistory()
+  } finally {
+    loading.value = false
+  }
 }
 
-// 生命周期钩子
-onMounted(() => {
-  const mockUsers = [
-    { id: 1, username: 'alice', email: 'alice@example.com', currentPoints: 1200, totalPoints: 2500, currentLevelId: 2, levelName: '银牌会员' },
-    { id: 2, username: 'bob', email: 'bob@example.com', currentPoints: 800, totalPoints: 1600, currentLevelId: 1, levelName: '铜牌会员' },
-    { id: 3, username: 'charlie', email: 'charlie@example.com', currentPoints: 2800, totalPoints: 5000, currentLevelId: 3, levelName: '金牌会员' },
-    { id: 4, username: 'diana', email: 'diana@example.com', currentPoints: 500, totalPoints: 800, currentLevelId: 1, levelName: '铜牌会员' },
-    { id: 5, username: 'eve', email: 'eve@example.com', currentPoints: 5200, totalPoints: 8000, currentLevelId: 4, levelName: '钻石会员' },
-  ]
-
-  const mockLevels: MemberLevel[] = [
-    { id: 1, memberLevel: 1, levelName: '铜牌会员', pointsRequired: 0, discountRate: 0.95, isActive: true },
-    { id: 2, memberLevel: 2, levelName: '银牌会员', pointsRequired: 1000, discountRate: 0.90, isActive: true },
-    { id: 3, memberLevel: 3, levelName: '金牌会员', pointsRequired: 2500, discountRate: 0.85, isActive: true },
-    { id: 4, memberLevel: 4, levelName: '钻石会员', pointsRequired: 5000, discountRate: 0.80, isActive: true },
-  ]
-
-  users.value = mockUsers
-  levels.value = mockLevels
+onMounted(async () => {
+  await refreshAll()
 })
 </script>
 
 <style scoped>
-/* 如果需要额外的自定义样式，可以在这里添加 */
+.page {
+  min-height: 100vh;
+  background: #f6f7fb;
+  padding: 32px 16px 48px;
+}
+
+.content {
+  max-width: 1080px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e9ecf3;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+  padding: 20px 22px;
+}
+
+.overview {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 12px;
+}
+
+.overview-left {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.title h1 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+}
+
+.sub {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.current {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  color: #111827;
+  font-weight: 600;
+}
+
+.badge .icon {
+  width: 18px;
+  height: 18px;
+  color: #f59e0b;
+}
+
+.discount {
+  font-size: 14px;
+  color: #4b5563;
+  background: #eef2ff;
+  border: 1px solid #e0e7ff;
+  padding: 6px 10px;
+  border-radius: 10px;
+}
+
+.progress {
+  margin-top: 4px;
+}
+
+.progress-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #eef2f7;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-inner {
+  height: 100%;
+  background: linear-gradient(135deg, #2563eb, #22c55e);
+  transition: width 0.3s ease;
+}
+
+.overview-right {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.metric {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.metric .label {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.metric .value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.divider {
+  height: 100%;
+  width: 1px;
+  background: #e5e7eb;
+  margin: 0 auto;
+}
+
+.refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.refresh:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.refresh:disabled {
+  background: #93c5fd;
+  cursor: not-allowed;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 12px;
+}
+
+.section-head {
+  margin-bottom: 12px;
+}
+
+.section-head h2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.section-head p {
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.non-member {
+  text-align: left;
+}
+
+.non-member-actions {
+  margin-top: 12px;
+}
+
+.level-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.level-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  background: #f9fafb;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+.level-item.active {
+  border-color: #2563eb;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.12);
+  background: #eef2ff;
+}
+
+.level-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.level-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.level-name .crown {
+  width: 18px;
+  height: 18px;
+  color: #f59e0b;
+}
+
+.tag {
+  background: #e5e7eb;
+  color: #374151;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+
+.level-item.active .tag {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.text {
+  font-size: 13px;
+  color: #4b5563;
+  margin-top: 6px;
+}
+
+.desc {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.history {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 0;
+}
+
+.spinner {
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #2563eb;
+  animation: spin 1s linear infinite;
+}
+
+.empty {
+  text-align: center;
+  color: #6b7280;
+  padding: 18px 0;
+  font-size: 13px;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #f9fafb;
+}
+
+.history-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.history-top .type {
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.time {
+  color: #9ca3af;
+}
+
+.history-item .desc {
+  margin-top: 4px;
+}
+
+.amount {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.amount.plus {
+  color: #16a34a;
+}
+
+.amount.minus {
+  color: #dc2626;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 960px) {
+  .overview {
+    grid-template-columns: 1fr;
+  }
+  .overview-right {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .level-list {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

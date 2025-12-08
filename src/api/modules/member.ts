@@ -18,11 +18,20 @@ export interface MemberLevel {
 }
 
 export interface MemberInfo {
-    userId: number
-    levelId: number
-    points: number
-    level?: MemberLevel
+    points: MemberPoints
+    level: MemberLevel
+    isMember?: boolean
+    memberLevelId?: number
     [key: string]: any
+}
+
+export interface MemberPoints {
+    userId: number
+    currentPoints: number
+    totalPoints: number
+    currentLevelId: number
+    currentLevelName?: string
+    updateTime?: string
 }
 
 export interface PointsHistory {
@@ -102,13 +111,18 @@ const memberApi = {
     },
 
     // 获取用户当前积分
-    getUserPoints(): Promise<ApiResponse<{ points: number }>> {
+    getUserPoints(): Promise<ApiResponse<MemberPoints>> {
         return request.get('/member/points')
     },
 
     // 获取用户积分历史记录
     getPointsHistory(): Promise<ApiResponse<PointsHistory[]>> {
         return request.get('/member/points/history')
+    },
+
+    // 兼容：修复缺少等级的会员
+    repairMember(): Promise<ApiResponse<MemberLevel>> {
+        return request.post('/member/repair')
     }
 }
 
