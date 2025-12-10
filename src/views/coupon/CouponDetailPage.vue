@@ -3,7 +3,7 @@
     <NavigationBar />
     <div class="container">
       <CouponDetail 
-        :coupon-id="String($route.params.id)" 
+        :coupon-id="String($route.params.id || '')" 
         @exchange="handleExchange"
         @use="handleUse"
       />

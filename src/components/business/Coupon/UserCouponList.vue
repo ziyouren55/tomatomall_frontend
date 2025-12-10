@@ -1,20 +1,20 @@
 <template>
   <div class="coupon-card" :class="{'expired': isExpired}">
     <div class="coupon-header">
-      <span class="discount">{{ coupon.discount }}%</span>
+      <span class="discount">{{ discountText }}</span>
       <span class="status-badge" v-if="isExpired">已过期</span>
       <span class="status-badge" v-else-if="isUsed">已使用</span>
       <span class="status-badge" v-else>可使用</span>
     </div>
     
     <div class="coupon-body">
-      <h3>{{ coupon.name }}</h3>
-      <p class="description">{{ coupon.description }}</p>
+      <h3>{{ displayName }}</h3>
+      <p class="description">{{ displayDescription }}</p>
       
       <div class="coupon-meta">
         <div class="meta-item">
           <i class="icon calendar"></i>
-          <span>有效期: {{ formatDate(coupon.expiryDate) }}</span>
+          <span>有效期: {{ formatDate(validTo) }}</span>
         </div>
         <div class="meta-item" v-if="showPoints">
           <i class="icon coin"></i>
@@ -52,13 +52,13 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import type { Coupon } from '@/types/api'
 
 export default defineComponent({
   name: 'UserCouponList',
   props: {
     coupon: {
-      type: Object as () => Coupon,
+      // 兼容用户券+模板组合结构，放宽为 any
+      type: Object as () => any,
       required: true
     },
     showExchange: {
@@ -77,11 +77,35 @@ export default defineComponent({
   emits: ['view-detail', 'exchange', 'use'],
   computed: {
     isExpired(): boolean {
-      if (!this.coupon.expiryDate) return false;
-      return new Date() > new Date(this.coupon.expiryDate);
+      if (!this.validTo) return false;
+      return new Date() > new Date(this.validTo);
     },
     isUsed(): boolean {
-      return this.coupon.status === 1;
+      const c: any = this.coupon;
+      return c.isUsed === true || c.status === 1 || !!c.usedTime;
+    },
+    discountText(): string {
+      const c: any = this.coupon;
+      if (c.discountAmount) return `¥${c.discountAmount}`;
+      if (c.discountPercentage) return `${c.discountPercentage}%`;
+      if (c.discount) return `${c.discount}%`;
+      return '优惠券';
+    },
+    validTo(): string | undefined {
+      const c: any = this.coupon;
+      return c.validTo || c.expiryDate || c.couponValidTo;
+    },
+    displayName(): string {
+      const c: any = this.coupon;
+      return c.couponName || c.name || '优惠券';
+    },
+    displayDescription(): string {
+      const c: any = this.coupon;
+      return c.couponDescription || c.description || '';
+    },
+    targetId(): number | string | undefined {
+      const c: any = this.coupon;
+      return c.couponId || c.id;
     }
   },
   methods: {
@@ -90,13 +114,16 @@ export default defineComponent({
       return new Date(date).toLocaleDateString();
     },
     viewDetail(): void {
-      this.$emit('view-detail', this.coupon.id);
+      if (!this.targetId) return;
+      this.$emit('view-detail', this.targetId);
     },
     exchangeCoupon(): void {
-      this.$emit('exchange', this.coupon.id);
+      if (!this.targetId) return;
+      this.$emit('exchange', this.targetId);
     },
     useCoupon(): void {
-      this.$emit('use', this.coupon.id);
+      if (!this.targetId) return;
+      this.$emit('use', this.targetId);
     }
   }
 });

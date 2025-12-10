@@ -26,12 +26,16 @@
             <span>{{ coupon.id }}</span>
           </div>
           <div class="info-item">
-            <label>折扣:</label>
-            <span class="discount-value">{{ coupon.discount }}%</span>
+            <label>优惠:</label>
+            <span class="discount-value">{{ discountText }}</span>
+          </div>
+          <div class="info-item">
+            <label>门槛:</label>
+            <span>满 {{ coupon.minimumPurchase || 0 }} 可用</span>
           </div>
           <div class="info-item">
             <label>有效期:</label>
-            <span>{{ coupon.expiryDate ? formatDate(coupon.expiryDate) : '长期有效' }}</span>
+            <span>{{ formatRange(coupon.validFrom, coupon.validTo) }}</span>
           </div>
           <div class="info-item">
             <label>创建时间:</label>
@@ -95,14 +99,22 @@ export default defineComponent({
     };
   },
   computed: {
+    discountText(): string {
+      if (!this.coupon) return '';
+      if (this.coupon.discountAmount) return `¥${this.coupon.discountAmount}`;
+      if (this.coupon.discountPercentage) return `${this.coupon.discountPercentage}%`;
+      if ((this.coupon as any).discount) return `${(this.coupon as any).discount}%`;
+      return '优惠券';
+    },
     statusText(): string {
       if (!this.coupon) return '';
       
-      if (this.coupon.expiryDate && new Date() > new Date(this.coupon.expiryDate)) {
+      const end = (this.coupon as any).validTo || (this.coupon as any).expiryDate;
+      if (end && new Date() > new Date(end)) {
         return '已过期';
       }
       
-      if (this.coupon.status === 1) {
+      if (this.coupon.status === 1 || (this.coupon as any).isUsed) {
         return '已使用';
       }
       
@@ -134,11 +146,12 @@ export default defineComponent({
       this.error = null;
       
       try {
-        const couponIdNum = typeof this.couponId === 'string' ? parseInt(this.couponId, 10) : this.couponId;
-        if (isNaN(couponIdNum as number)) {
+        const idVal = (this.couponId ?? (this as any).$route?.params?.id) as string | number | undefined;
+        const couponIdNum = Number(idVal);
+        if (!idVal || Number.isNaN(couponIdNum)) {
           throw new Error('优惠券ID格式错误');
         }
-        const response = await api.coupon.getCouponDetail(couponIdNum as number);
+        const response = await api.coupon.getCouponDetail(couponIdNum);
         this.coupon = response.data;
       } catch (error) {
         this.error = '获取优惠券详情失败，请稍后重试';
@@ -150,6 +163,11 @@ export default defineComponent({
     formatDate(date: string | undefined): string {
       if (!date) return '';
       return new Date(date).toLocaleString();
+    },
+    formatRange(start?: string | undefined, end?: string | undefined): string {
+      const s = start ? new Date(start).toLocaleDateString() : '即时';
+      const e = end ? new Date(end).toLocaleDateString() : '长期';
+      return `${s} ~ ${e}`;
     },
     exchangeCoupon() {
       if (this.coupon?.id) {

@@ -53,6 +53,18 @@ const userRoutes: RouteRecordRaw[] = [
         meta: { requiresAuth: true }
     },
     {
+        path: '/coupon-center',
+        name: 'CouponCenter',
+        component: () => import('@/views/coupon/CouponCenterPage.vue'),
+        meta: { requiresAuth: true }
+    },
+    {
+        path: '/my-coupons',
+        name: 'MyCoupons',
+        component: () => import('@/views/coupon/MyCouponsPage.vue'),
+        meta: { requiresAuth: true }
+    },
+    {
         path: '/member',
         name: 'usermember',
         component: () => import('@/views/user/UserMember.vue'),

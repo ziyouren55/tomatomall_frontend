@@ -12,20 +12,20 @@
     <table v-if="userCoupons.length" class="table">
       <thead>
         <tr>
-          <th>优惠券ID</th>
-          <th>名称</th>
-          <th>折扣</th>
+          <th>用户券ID</th>
+          <th>券名称</th>
+          <th>优惠</th>
           <th>状态</th>
-          <th>获取时间</th>
+          <th>有效期至</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="uc in userCoupons" :key="uc.id">
-          <td>{{ uc.couponId }}</td>
+          <td>{{ uc.id }}</td>
           <td>{{ uc.couponName }}</td>
-          <td>{{ uc.discount }}%</td>
-          <td>{{ statusText(uc.status) }}</td>
-          <td>{{ formatDate(uc.obtainTime) }}</td>
+          <td>{{ discountText(uc) }}</td>
+          <td>{{ statusText(uc) }}</td>
+          <td>{{ formatDate(uc.validTo) }}</td>
         </tr>
       </tbody>
     </table>
@@ -42,15 +42,7 @@ import { defineComponent } from 'vue'
 import api from '@/api';
 import IssueCouponForm from './IssueCouponForm.vue';
 
-interface UserCoupon {
-  id: number
-  couponId: number
-  couponName: string
-  discount: number
-  status: number
-  obtainTime: string | Date
-  [key: string]: any
-}
+type UserCoupon = Record<string, any>
 
 export default defineComponent({
   name: 'UserCoupons',
@@ -63,13 +55,12 @@ export default defineComponent({
     };
   },
   methods: {
-    statusText(status: number): string {
-      const statusMap: Record<number, string> = {
-        0: '未使用',
-        1: '已使用',
-        2: '已过期'
-      };
-      return statusMap[status] || '未知';
+    statusText(uc: UserCoupon): string {
+      if (!uc) return '未知';
+      const expired = uc.validTo && new Date(uc.validTo).getTime() < Date.now();
+      if (expired) return '已过期';
+      if (uc.isUsed || uc.status === 1 || uc.usedTime) return '已使用';
+      return '未使用';
     },
     async fetchUserCoupons(): Promise<void> {
       if (!this.userId) return;
@@ -82,9 +73,7 @@ export default defineComponent({
       
       try {
         const response = await api.coupon.getUserCoupons(userIdNum);
-        // 后端返回的可能是Coupon[]，但我们需要UserCoupon格式
-        // 这里使用类型断言，因为实际返回的数据结构可能不同
-        this.userCoupons = (response.data || []) as unknown as UserCoupon[];
+        this.userCoupons = (response.data || []) as UserCoupon[];
         this.showIssueForm = true;
       } catch (error) {
         console.error('获取用户优惠券失败:', error);
@@ -95,7 +84,14 @@ export default defineComponent({
     handleIssued() {
       this.fetchUserCoupons(); // 刷新列表
     },
-    formatDate(date: string | Date): string {
+    discountText(uc: UserCoupon): string {
+      if (uc.discountAmount) return `¥${uc.discountAmount}`;
+      if (uc.discountPercentage) return `${uc.discountPercentage}%`;
+      if (uc.discount) return `${uc.discount}%`;
+      return '-';
+    },
+    formatDate(date?: string | Date): string {
+      if (!date) return '—';
       return new Date(date).toLocaleString();
     }
   }

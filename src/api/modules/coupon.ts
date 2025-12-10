@@ -13,7 +13,14 @@ export interface IssueCouponData {
 }
 
 export interface ApplyCouponData {
+    userCouponId?: number
     couponId: number
+    orderId?: number
+    [key: string]: any
+}
+
+export interface ReleaseCouponData {
+    userCouponId: number
     orderId?: number
     [key: string]: any
 }
@@ -50,6 +57,11 @@ const couponApi = {
         return request.post('/admin/coupons/issue', issueData)
     },
 
+    // 向全体用户发放优惠券
+    issueCouponToAll(couponId: number, remark?: string): Promise<ApiResponse<void>> {
+        return request.post('/admin/coupons/issue/all', { couponId, remark })
+    },
+
     // ========== 用户优惠券 API ==========
     // 获取所有可兑换优惠券
     getAvailableCoupons(): Promise<ApiResponse<Coupon[]>> {
@@ -59,6 +71,16 @@ const couponApi = {
     // 获取优惠券详情
     getCouponDetail(couponId: number): Promise<ApiResponse<Coupon>> {
         return request.get(`/coupons/${couponId}`)
+    },
+
+    // 获取用户优惠券详情
+    getUserCouponDetail(userCouponId: number): Promise<ApiResponse<Coupon>> {
+        return request.get(`/coupons/user/${userCouponId}`)
+    },
+
+    // 领取优惠券（无需积分）
+    claimCoupon(couponId: number): Promise<ApiResponse<void>> {
+        return request.post(`/coupons/claim/${couponId}`)
     },
 
     // 获取用户拥有的优惠券
@@ -74,6 +96,11 @@ const couponApi = {
     // 使用优惠券
     applyCoupon(applyData: ApplyCouponData): Promise<ApiResponse<void>> {
         return request.post('/coupons/apply', applyData)
+    },
+
+    // 释放优惠券
+    releaseCoupon(releaseData: ReleaseCouponData): Promise<ApiResponse<void>> {
+        return request.post('/coupons/release', releaseData)
     }
 }
 
