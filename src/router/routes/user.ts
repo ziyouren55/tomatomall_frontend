@@ -57,6 +57,30 @@ const userRoutes: RouteRecordRaw[] = [
         name: 'usermember',
         component: () => import('@/views/user/UserMember.vue'),
         meta: { requiresAuth: true }
+    },
+    {
+        path: '/forums',
+        name: 'ForumList',
+        component: () => import('@/views/forum/ForumListPage.vue'),
+        meta: { requiresAuth: false }
+    },
+    {
+        path: '/forums/:id',
+        name: 'ForumDetail',
+        component: () => import('@/views/forum/ForumDetailPage.vue'),
+        meta: { requiresAuth: false }
+    },
+    {
+        path: '/forums/:id/new-post',
+        name: 'CreatePost',
+        component: () => import('@/views/forum/CreatePostPage.vue'),
+        meta: { requiresAuth: true }
+    },
+    {
+        path: '/posts/:id',
+        name: 'PostDetail',
+        component: () => import('@/views/forum/PostDetailPage.vue'),
+        meta: { requiresAuth: true }
     }
 ]
 

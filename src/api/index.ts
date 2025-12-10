@@ -13,6 +13,8 @@ import member from './modules/member'
 import advertisement from './modules/advertisement'
 import review from './modules/review'
 import forum from './modules/forum'
+import post from './modules/post'
+import reply from './modules/reply'
 import image from './modules/image'
 
 export default {
@@ -25,6 +27,8 @@ export default {
     advertisement,
     review,
     forum,
+    post,
+    reply,
     image
 }
 

@@ -29,6 +29,9 @@
 
         <!-- 右侧功能区 -->
         <div class="navbar-actions">
+          <!-- 论坛入口，所有人可见 -->
+          <router-link to="/forums" class="nav-link desktop-link">论坛</router-link>
+
           <!-- 未登录状态 -->
           <template v-if="!isLoggedIn">
             <router-link to="/login" class="nav-link">登录</router-link>

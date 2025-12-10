@@ -79,6 +79,78 @@ export interface AdvertisementFormData {
 }
 
 /**
+ * 通用分页结果
+ */
+export interface PageResult<T> {
+    content: T[]
+    totalElements: number
+    totalPages: number
+    number: number
+    size: number
+}
+
+/**
+ * 论坛
+ */
+export interface ForumInfo {
+    id: number
+    name: string
+    bookId?: number
+    description?: string
+    postCount?: number
+    status?: string
+    bookTitle?: string
+    bookCover?: string
+    createTime?: string
+    updateTime?: string
+}
+
+/**
+ * 帖子
+ */
+export interface PostInfo {
+    id: number
+    forumId: number
+    userId: number
+    title: string
+    content: string
+    imageUrls?: string[]
+    viewCount?: number
+    likeCount?: number
+    replyCount?: number
+    isSticky?: boolean
+    isEssence?: boolean
+    status?: string
+    lastReplyTime?: string
+    createTime?: string
+    updateTime?: string
+    username?: string
+    forumName?: string
+    userAvatar?: string
+    isLiked?: boolean
+}
+
+/**
+ * 回复
+ */
+export interface ReplyInfo {
+    id: number
+    postId: number
+    userId: number
+    content: string
+    parentId?: number
+    likeCount?: number
+    status?: string
+    createTime?: string
+    updateTime?: string
+    username?: string
+    userAvatar?: string
+    childReplies?: ReplyInfo[]
+    isLiked?: boolean
+    parentUsername?: string
+}
+
+/**
  * 库存信息
  */
 export interface Stockpile {
