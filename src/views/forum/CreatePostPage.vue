@@ -15,8 +15,18 @@
       </div>
 
       <div class="form-group">
-        <label>图片链接（用逗号分隔，可选）</label>
-        <input v-model="imageInput" placeholder="https://example.com/a.jpg,https://example.com/b.jpg" />
+        <label>图片上传（可选，最多5张）</label>
+        <div class="upload-box">
+          <input type="file" accept="image/*" multiple @change="handleFiles" :disabled="uploading || images.length >= 5" />
+          <span class="tip">支持多选，自动上传并填充链接</span>
+        </div>
+        <div class="thumb-list" v-if="images.length">
+          <div v-for="(img, idx) in images" :key="idx" class="thumb">
+            <img :src="img" alt="img" />
+            <button type="button" @click="removeImage(idx)" :disabled="submitting || uploading">移除</button>
+          </div>
+        </div>
+        <p class="error" v-if="uploadError">{{ uploadError }}</p>
       </div>
 
       <div class="actions">
@@ -44,11 +54,13 @@ const form = reactive({
   content: ''
 })
 
-const imageInput = ref('')
+const images = ref<string[]>([])
 const submitting = ref(false)
 const error = ref('')
 const success = ref('')
 const forumName = ref('')
+const uploading = ref(false)
+const uploadError = ref('')
 
 const fetchForum = async () => {
   try {
@@ -57,6 +69,33 @@ const fetchForum = async () => {
   } catch (e: any) {
     error.value = e?.response?.data?.msg || '加载论坛失败'
   }
+}
+
+const handleFiles = async (e: Event) => {
+  const input = e.target as HTMLInputElement
+  const files = input.files
+  if (!files || files.length === 0) return
+  uploadError.value = ''
+  uploading.value = true
+  try {
+    const remain = 5 - images.value.length
+    const list = Array.from(files).slice(0, remain)
+    for (const file of list) {
+      const res = await api.image.uploadImage(file, 'forum')
+      if (res.data) {
+        images.value.push(res.data)
+      }
+    }
+  } catch (err: any) {
+    uploadError.value = err?.response?.data?.msg || '上传失败，请重试'
+  } finally {
+    uploading.value = false
+    if (input) input.value = ''
+  }
+}
+
+const removeImage = (idx: number) => {
+  images.value.splice(idx, 1)
 }
 
 const submit = async () => {
@@ -68,14 +107,11 @@ const submit = async () => {
   error.value = ''
   success.value = ''
   try {
-    const images = imageInput.value
-      ? imageInput.value.split(',').map(i => i.trim()).filter(i => i.length > 0)
-      : []
     await api.post.createPost({
       forumId,
       title: form.title.trim(),
       content: form.content.trim(),
-      imageUrlList: images
+      imageUrlList: images.value
     })
     success.value = '发布成功，正在跳转...'
     setTimeout(() => router.push(`/forums/${forumId}`), 800)
@@ -139,6 +175,43 @@ textarea {
 .success {
   color: #28a745;
   margin-top: 8px;
+}
+.upload-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.upload-box input {
+  padding: 6px 0;
+}
+.upload-box .tip {
+  font-size: 12px;
+  color: #888;
+}
+.thumb-list {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.thumb {
+  width: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.thumb img {
+  width: 100%;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #eee;
+}
+.thumb button {
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
 }
 </style>
 

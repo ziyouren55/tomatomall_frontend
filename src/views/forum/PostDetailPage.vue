@@ -19,7 +19,9 @@
         <img v-for="(img, idx) in post.imageUrls" :key="idx" :src="img" />
       </div>
       <div class="actions">
-        <button @click="likePost">👍 赞 {{ post.likeCount ?? 0 }}</button>
+        <button @click="likePost" :disabled="likePostLoading">
+          {{ post.isLiked ? '取消赞' : '👍 赞' }} {{ post.likeCount ?? 0 }}
+        </button>
       </div>
     </div>
 
@@ -41,7 +43,9 @@
           </div>
           <div class="reply-content">{{ reply.content }}</div>
           <div class="reply-actions">
-            <button @click="likeReply(reply.id)">👍 {{ reply.likeCount ?? 0 }}</button>
+            <button @click="likeReply(reply.id)" :disabled="replyLikeLoading.has(reply.id)">
+              {{ reply.isLiked ? '取消赞' : '👍' }} {{ reply.likeCount ?? 0 }}
+            </button>
           </div>
           <div v-if="reply.childReplies?.length" class="child-replies">
             <div v-for="child in reply.childReplies" :key="child.id" class="child-item">
@@ -75,6 +79,8 @@ const replies = ref<ReplyItem[]>([])
 const replyContent = ref('')
 const replyLoading = ref(false)
 const replyLoadingList = ref(false)
+const likePostLoading = ref(false)
+const replyLikeLoading = ref<Set<number>>(new Set())
 
 const postId = () => Number(route.params.id)
 
@@ -106,13 +112,40 @@ const submitReply = async () => {
 }
 
 const likePost = async () => {
-  const res = await api.post.likePost(postId())
-  post.value = res.data
+  if (!post.value) return
+  likePostLoading.value = true
+  try {
+    const res = await api.post.likePost(postId())
+    post.value = res.data
+  } finally {
+    likePostLoading.value = false
+  }
 }
 
 const likeReply = async (replyId: number) => {
-  await api.reply.likeReply(replyId)
-  fetchReplies()
+  const target = replies.value.find(r => r.id === replyId)
+  const next = new Set(replyLikeLoading.value)
+  next.add(replyId)
+  replyLikeLoading.value = next
+  try {
+    const res = await api.reply.likeReply(replyId)
+    const updated = res.data
+    // 更新对应回复（含子回复）的计数与状态
+    const updateReply = (list: ReplyItem[]): ReplyItem[] => list.map(r => {
+      if (r.id === replyId) {
+        return { ...r, likeCount: updated.likeCount, isLiked: updated.isLiked }
+      }
+      if (r.childReplies?.length) {
+        return { ...r, childReplies: updateReply(r.childReplies) }
+      }
+      return r
+    })
+    replies.value = updateReply(replies.value)
+  } finally {
+    const after = new Set(replyLikeLoading.value)
+    after.delete(replyId)
+    replyLikeLoading.value = after
+  }
 }
 
 const formatTime = (t?: string) => (t ? new Date(t).toLocaleString() : '')
