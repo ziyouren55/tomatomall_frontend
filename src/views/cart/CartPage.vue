@@ -254,25 +254,7 @@ export default defineComponent({
     this.fetchCart();
   },
   methods: {
-    getToken(): string | null {
-      return localStorage.getItem('token');
-    },
-
-    ensureAuth(): boolean {
-      const token = this.getToken();
-      if (!token) {
-        ElMessage({
-          type: 'warning',
-          message: '请先登录后再查看购物车'
-        });
-        this.$router.push({ name: 'Login' });
-        return false;
-      }
-      return true;
-    },
-
     async fetchCart(): Promise<void> {
-      if (!this.ensureAuth()) return;
       try {
         this.loading = true;
         const response = await api.cart.getCartItems();
@@ -550,10 +532,6 @@ export default defineComponent({
     },
     
     async initiatePayment(orderId: number): Promise<void> {
-      if (!this.ensureAuth()) {
-        this.loading = false;
-        return;
-      }
       try {
         console.log(orderId)
         const response = await api.order.payOrder(orderId);

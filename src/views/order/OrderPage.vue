@@ -20,14 +20,24 @@
       >全部</button>
       <button 
         class="tab-btn" 
-        :class="{ active: selectedTab === 'ongoing' }"
-        @click="setTab('ongoing')"
-      >进行中</button>
+        :class="{ active: selectedTab === 'unpaid' }"
+        @click="setTab('unpaid')"
+      >待付款</button>
       <button 
         class="tab-btn" 
-        :class="{ active: selectedTab === 'completed' }"
-        @click="setTab('completed')"
-      >已完成</button>
+        :class="{ active: selectedTab === 'toship' }"
+        @click="setTab('toship')"
+      >待发货</button>
+      <button 
+        class="tab-btn" 
+        :class="{ active: selectedTab === 'toreceive' }"
+        @click="setTab('toreceive')"
+      >待收货</button>
+      <button 
+        class="tab-btn" 
+        :class="{ active: selectedTab === 'tocomment' }"
+        @click="setTab('tocomment')"
+      >待评价</button>
     </div>
     
     <!-- Error Message -->
@@ -39,7 +49,7 @@
     </div>
     
     <!-- Empty Orders Message -->
-    <div v-if="!loading && orders.length === 0 && !errorMessage" class="empty-orders">
+    <div v-if="!loading && filteredOrders.length === 0 && !errorMessage" class="empty-orders">
       <p>您还没有任何订单，快去选购喜欢的商品吧！</p>
       <router-link to="/" class="btn btn-primary">去购物</router-link>
     </div>
@@ -69,8 +79,8 @@
         <!-- 订单商品信息 -->
         <div class="order-items">
           <h4 class="items-title">订单商品</h4>
-          <div v-if="order.cartItems && order.cartItems.length > 0" class="items-list">
-            <div v-for="item in order.cartItems" :key="item.cartItemId" class="item-card">
+          <div v-if="getOrderItems(order).length > 0" class="items-list">
+            <div v-for="item in getOrderItems(order)" :key="item.cartItemId || item.productId || item.title" class="item-card">
               <div class="item-image">
                 <img 
                   :src="item.cover" 
@@ -172,7 +182,7 @@ export default defineComponent({
       paymentForm: null as string | null,
       currentOrderId: null as number | null,
       formSubmitted: false,
-      selectedTab: 'all' as 'all' | 'ongoing' | 'completed'
+      selectedTab: 'all' as 'all' | 'unpaid' | 'toship' | 'toreceive' | 'tocomment'
     };
   },
   computed: {
@@ -180,14 +190,21 @@ export default defineComponent({
       if (!this.orders) return [];
       if (this.selectedTab === 'all') return this.orders;
 
-      const ongoingStatuses = ['PENDING', 'PAID', 'SUCCESS', 'DELIVERED'];
-      const completedStatuses = ['COMPLETED'];
-
-      if (this.selectedTab === 'ongoing') {
-        return this.orders.filter(o => ongoingStatuses.includes(o.status));
+      // 待付款：PENDING
+      if (this.selectedTab === 'unpaid') {
+        return this.orders.filter(o => o.status === 'PENDING');
       }
-      if (this.selectedTab === 'completed') {
-        return this.orders.filter(o => completedStatuses.includes(o.status));
+      // 待发货：SUCCESS（已支付成功但未发货）
+      if (this.selectedTab === 'toship') {
+        return this.orders.filter(o => o.status === 'SUCCESS');
+      }
+      // 待收货：DELIVERED
+      if (this.selectedTab === 'toreceive') {
+        return this.orders.filter(o => o.status === 'DELIVERED');
+      }
+      // 待评价：COMPLETED
+      if (this.selectedTab === 'tocomment') {
+        return this.orders.filter(o => o.status === 'COMPLETED');
       }
       return this.orders;
     }
@@ -196,26 +213,8 @@ export default defineComponent({
     this.fetchOrders();
   },
   methods: {
-    getToken(): string | null {
-      return localStorage.getItem('token');
-    },
-
-    ensureAuth(): boolean {
-      const token = this.getToken();
-      if (!token) {
-        ElMessage({
-          type: 'warning',
-          message: '请先登录后查看订单'
-        });
-        this.$router.push({ name: 'Login' });
-        return false;
-      }
-      return true;
-    },
-
     // 获取订单列表
     async fetchOrders(): Promise<void> {
-      if (!this.ensureAuth()) return;
       this.loading = true;
       this.errorMessage = '';
       
@@ -239,7 +238,11 @@ export default defineComponent({
       }
     },
 
-    setTab(tab: 'all' | 'ongoing' | 'completed') {
+    getOrderItems(order: any) {
+      return order?.orderItems || order?.cartItems || [];
+    },
+
+    setTab(tab: 'all' | 'unpaid' | 'toship' | 'toreceive' | 'tocomment') {
       this.selectedTab = tab;
     },
     

@@ -35,6 +35,18 @@ const userRoutes: RouteRecordRaw[] = [
         meta: { requiresAuth: true }
     },
     {
+        path: '/order/:orderId',
+        name: 'OrderDetail',
+        component: () => import('@/views/order/OrderDetail.vue'),
+        meta: { requiresAuth: true }
+    },
+    {
+        path: '/pay/result',
+        name: 'PayResult',
+        component: () => import('@/views/order/PayResult.vue'),
+        meta: { requiresAuth: false }
+    },
+    {
         path: '/bookcomment',
         name: 'BookReview',
         component: () => import('@/views/review/BookCommentPage.vue'),
