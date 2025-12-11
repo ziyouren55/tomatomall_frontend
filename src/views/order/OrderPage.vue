@@ -196,8 +196,26 @@ export default defineComponent({
     this.fetchOrders();
   },
   methods: {
+    getToken(): string | null {
+      return localStorage.getItem('token');
+    },
+
+    ensureAuth(): boolean {
+      const token = this.getToken();
+      if (!token) {
+        ElMessage({
+          type: 'warning',
+          message: '请先登录后查看订单'
+        });
+        this.$router.push({ name: 'Login' });
+        return false;
+      }
+      return true;
+    },
+
     // 获取订单列表
     async fetchOrders(): Promise<void> {
+      if (!this.ensureAuth()) return;
       this.loading = true;
       this.errorMessage = '';
       
