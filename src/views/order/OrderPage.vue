@@ -11,6 +11,25 @@
       </button>
     </h1>
     
+    <!-- 订单筛选 Tabs -->
+    <div class="order-tabs">
+      <button 
+        class="tab-btn" 
+        :class="{ active: selectedTab === 'all' }"
+        @click="setTab('all')"
+      >全部</button>
+      <button 
+        class="tab-btn" 
+        :class="{ active: selectedTab === 'ongoing' }"
+        @click="setTab('ongoing')"
+      >进行中</button>
+      <button 
+        class="tab-btn" 
+        :class="{ active: selectedTab === 'completed' }"
+        @click="setTab('completed')"
+      >已完成</button>
+    </div>
+    
     <!-- Error Message -->
     <div v-if="errorMessage" class="error-message">
       {{ errorMessage }}
@@ -26,8 +45,8 @@
     </div>
     
     <!-- Orders List -->
-    <div v-else-if="!loading && orders.length > 0" class="orders-container">
-      <div v-for="order in orders" :key="order.orderId" class="order-card">
+    <div v-else-if="!loading && filteredOrders.length > 0" class="orders-container">
+      <div v-for="order in filteredOrders" :key="order.orderId" class="order-card">
         <div class="order-header">
           <div class="order-number">
             订单号：{{ order.orderId }}
@@ -152,8 +171,26 @@ export default defineComponent({
       showPaymentForm: false,
       paymentForm: null as string | null,
       currentOrderId: null as number | null,
-      formSubmitted: false
+      formSubmitted: false,
+      selectedTab: 'all' as 'all' | 'ongoing' | 'completed'
     };
+  },
+  computed: {
+    filteredOrders(): Order[] {
+      if (!this.orders) return [];
+      if (this.selectedTab === 'all') return this.orders;
+
+      const ongoingStatuses = ['PENDING', 'PAID', 'SUCCESS', 'DELIVERED'];
+      const completedStatuses = ['COMPLETED'];
+
+      if (this.selectedTab === 'ongoing') {
+        return this.orders.filter(o => ongoingStatuses.includes(o.status));
+      }
+      if (this.selectedTab === 'completed') {
+        return this.orders.filter(o => completedStatuses.includes(o.status));
+      }
+      return this.orders;
+    }
   },
   created() {
     this.fetchOrders();
@@ -182,6 +219,10 @@ export default defineComponent({
       } finally {
         this.loading = false;
       }
+    },
+
+    setTab(tab: 'all' | 'ongoing' | 'completed') {
+      this.selectedTab = tab;
     },
     
     // 刷新订单列表
@@ -331,6 +372,32 @@ export default defineComponent({
   max-width: 1200px;
   margin: 0 auto;
   background-color: #f5f5f5;
+}
+
+.order-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.tab-btn {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid #007bff;
+  background: #fff;
+  color: #007bff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-btn.active {
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 123, 255, 0.3);
+}
+
+.tab-btn:hover {
+  transform: translateY(-1px);
 }
 
 h1 {

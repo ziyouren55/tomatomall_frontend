@@ -535,8 +535,28 @@ export default defineComponent({
       try {
         console.log(orderId)
         const response = await api.order.payOrder(orderId);
-        this.paymentForm = (response.data as any)?.paymentForm || (response as any).paymentForm;
+        const paymentForm = (response.data as any)?.paymentForm || (response as any).paymentForm;
+
+        // 直接在新窗口写入并提交支付宝表单，避免弹窗里 script 不执行导致不跳转
+        if (paymentForm) {
+          const payWindow = window.open('', '_blank');
+          if (payWindow) {
+            payWindow.document.open();
+            payWindow.document.write(paymentForm);
+            payWindow.document.close();
+            const form = payWindow.document.forms[0];
+            form && form.submit();
+          } else {
+            // 如果被拦截则回退到原有弹窗展示
+            this.paymentForm = paymentForm;
         this.showPaymentForm = true;
+          }
+        } else {
+          ElMessage({
+            type: 'error',
+            message: '未获取到支付表单'
+          });
+        }
         this.loading = false;
       } catch (error: unknown) {
         console.error('Failed to initiate payment:', error);
