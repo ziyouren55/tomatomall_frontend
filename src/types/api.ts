@@ -40,17 +40,47 @@ export interface UserDetailsResponse {
 
 /**
  * 优惠券
+ * 使用新字段 discountAmount / discountPercentage / validFrom / validTo
  */
 export interface Coupon {
     id: number
     name: string
-    discount: number
+    // 优惠金额 / 折扣百分比
+    discountAmount?: number
+    discountPercentage?: number
     description?: string
-    expiryDate?: string
+    // 有效期
+    validFrom?: string
+    validTo?: string
     createTime?: string
+    minimumPurchase?: number
     pointsRequired?: number
     status?: number // 0: 未使用, 1: 已使用
     terms?: string[]
+    [key: string]: any
+}
+
+/**
+ * 用户持有的优惠券（基于后端 UserCouponVO）
+ */
+export interface UserCoupon {
+    id: number
+    userId: number
+    couponId: number
+    couponName?: string
+    couponDescription?: string
+    discountAmount?: number
+    discountPercentage?: number
+    minimumPurchase?: number
+    pointsRequired?: number
+    validFrom?: string
+    validTo?: string
+    isUsed?: boolean
+    usedTime?: string
+    orderId?: number
+    createTime?: string
+    isActive?: boolean
+    [key: string]: any
 }
 
 /**

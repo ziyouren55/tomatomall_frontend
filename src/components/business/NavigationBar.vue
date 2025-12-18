@@ -43,7 +43,6 @@
           <template v-else>
             <router-link to="/bookcomment" class="nav-link desktop-link">书评</router-link>
             <router-link to="/coupon-center" class="nav-link desktop-link">领券中心</router-link>
-            <router-link to="/my-coupons" class="nav-link desktop-link">我的优惠券</router-link>
             <!-- 用户名下拉菜单 -->
             <el-dropdown @command="handleUserCommand" trigger="hover" class="user-dropdown">
               <span class="user-info">
@@ -76,24 +75,6 @@
                         <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
                       </svg>
                       我的订单
-                    </span>
-                  </el-dropdown-item>
-                  <el-dropdown-item command="bookcomment" v-if="isLoggedIn">
-                    <span class="menu-item">
-                      <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path d="M21 15V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10"></path>
-                        <path d="M7 22h10l-2-3H9l-2 3z"></path>
-                        <path d="M7 9h10M7 6h10M7 12h10"></path>
-                      </svg>
-                      书评
-                    </span>
-                  </el-dropdown-item>
-                  <el-dropdown-item command="coupon-center">
-                    <span class="menu-item">
-                      <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path d="M3 5h18v6H3z"></path><path d="M5 11v8h14v-8"></path><path d="M9 15h6"></path>
-                      </svg>
-                      领券中心
                     </span>
                   </el-dropdown-item>
                   <el-dropdown-item command="my-coupons">

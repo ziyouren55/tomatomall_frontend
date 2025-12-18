@@ -40,8 +40,7 @@
 import { defineComponent } from 'vue'
 import NavigationBar from '@/components/business/NavigationBar.vue'
 import api from '@/api'
-
-type UserCoupon = Record<string, any>
+import type { UserCoupon } from '@/types/api'
 
 export default defineComponent({
   name: 'MyCouponsPage',
@@ -100,7 +99,6 @@ export default defineComponent({
     displayDiscount(c: UserCoupon) {
       if (c.discountAmount) return `¥${c.discountAmount}`
       if (c.discountPercentage) return `${c.discountPercentage}%`
-      if (c.discount) return `${c.discount}%`
       return '—'
     },
     formatDate(date?: string) {

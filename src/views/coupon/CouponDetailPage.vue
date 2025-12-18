@@ -29,22 +29,34 @@ export default defineComponent({
   methods: {
     async handleExchange(couponId: number): Promise<void> {
       try {
-        await api.coupon.exchangeCoupon(couponId);
-        // 使用alert替代$toast，或者可以导入ElMessage
-        alert('优惠券兑换成功！');
-        // 刷新优惠券详情
-        this.$emit('refresh');
-      } catch (error: unknown) {
+        const res = await api.coupon.exchangeCoupon(couponId);
+        if (res && res.code === '200') {
+          alert('优惠券兑换成功！');
+          // 刷新优惠券详情
+          this.$emit('refresh');
+        } else {
+          const msg = res?.msg || res?.message || '';
+          if (typeof msg === 'string' && msg.includes('积分不足')) {
+            alert('积分不足，兑换失败!');
+          } else {
+            alert(`兑换失败: ${msg || '未知错误'}`);
+          }
+        }
+      } catch (error: any) {
         console.error('兑换优惠券失败:', error);
-        const axiosError = error as AxiosError<ErrorResponse>;
-        alert(`兑换失败: ${axiosError.response?.data?.message || '未知错误'}`);
+        const msg = error?.response?.data?.msg || error?.response?.data?.message || error?.message;
+        if (typeof msg === 'string' && msg.includes('积分不足')) {
+          alert('积分不足，兑换失败!');
+        } else {
+          alert(`兑换失败: ${msg || '未知错误'}`);
+        }
       }
     },
     handleUse(couponId: number): void {
-      // 跳转到订单页面或打开使用模态框
-      this.$router.push({ 
-        name: 'OrderPage', 
-        query: { couponId } 
+      // 跳转到订单页面并携带优惠券ID
+      this.$router.push({
+        name: 'Order',
+        query: { couponId }
       });
     }
   }

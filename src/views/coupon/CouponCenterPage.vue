@@ -17,9 +17,14 @@
             <p class="desc">{{ item.description || '无描述' }}</p>
             <p class="meta">满 {{ item.minimumPurchase || 0 }} 可用</p>
             <p class="meta">有效期：{{ formatRange(item.validFrom, item.validTo) }}</p>
+            <p class="meta">
+              所需积分：{{ item.pointsRequired ?? 0 }}
+            </p>
           </div>
           <div class="card-footer">
-            <button class="btn-claim" @click="claim(item.id)">领取</button>
+            <button class="btn-claim" @click="claim(item)">
+              兑换
+            </button>
             <button class="btn-detail" @click="viewDetail(item.id)">详情</button>
           </div>
         </div>
@@ -58,14 +63,31 @@ export default defineComponent({
         this.loading = false
       }
     },
-    async claim(couponId: number) {
+    async claim(coupon: any) {
       try {
-        await api.coupon.claimCoupon(couponId)
-        alert('领取成功')
-        this.fetchCoupons()
-      } catch (e) {
-        console.error('领取失败', e)
-        alert('领取失败，请稍后重试')
+        const couponId = coupon.id
+        // 统一使用兑换接口，0 积分优惠券相当于扣减 0 积分
+        const res = await api.coupon.exchangeCoupon(couponId)
+
+        if (res && res.code === '200') {
+          alert('兑换成功')
+          this.fetchCoupons()
+        } else {
+          const msg = res?.msg || ''
+          if (msg.includes('积分不足')) {
+            alert('积分不足，兑换失败!')
+          } else {
+            alert(msg || '兑换失败，请稍后重试')
+          }
+        }
+      } catch (e: any) {
+        console.error('兑换失败', e)
+        const msg = e?.response?.data?.msg || e?.response?.data?.message || e?.message
+        if (typeof msg === 'string' && msg.includes('积分不足')) {
+          alert('积分不足，兑换失败!')
+        } else {
+          alert(msg || '兑换失败，请稍后重试')
+        }
       }
     },
     viewDetail(couponId: number) {

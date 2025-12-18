@@ -41,9 +41,9 @@
             <label>创建时间:</label>
             <span>{{ formatDate(coupon.createTime) }}</span>
           </div>
-          <div v-if="coupon.pointsRequired" class="info-item">
+          <div class="info-item">
             <label>兑换所需积分:</label>
-            <span>{{ coupon.pointsRequired }} 积分</span>
+            <span>{{ coupon.pointsRequired ?? 0 }} 积分</span>
           </div>
         </div>
         
@@ -100,10 +100,10 @@ export default defineComponent({
   },
   computed: {
     discountText(): string {
-      if (!this.coupon) return '';
-      if (this.coupon.discountAmount) return `¥${this.coupon.discountAmount}`;
-      if (this.coupon.discountPercentage) return `${this.coupon.discountPercentage}%`;
-      if ((this.coupon as any).discount) return `${(this.coupon as any).discount}%`;
+      const coupon = this.coupon as any;
+      if (!coupon) return '';
+      if (coupon.discountAmount) return `¥${coupon.discountAmount}`;
+      if (coupon.discountPercentage) return `${coupon.discountPercentage}%`;
       return '优惠券';
     },
     statusText(): string {
@@ -126,10 +126,9 @@ export default defineComponent({
       return 'active';
     },
     canExchange(): boolean {
-      // 只有未过期且有积分要求的优惠券才能兑换
+      // 只要未过期且可使用的优惠券都可以兑换（包括 0 积分的优惠券）
       if (!this.coupon) return false;
-      return this.statusText !== '已过期' && 
-             (this.coupon.pointsRequired || 0) > 0;
+      return this.statusText === '可使用';
     },
     canUse(): boolean {
       // 只有未使用且未过期的优惠券才能使用

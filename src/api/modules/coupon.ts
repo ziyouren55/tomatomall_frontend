@@ -1,5 +1,5 @@
 import request from '../config/request'
-import { ApiResponse, Coupon } from '@/types/api'
+import { ApiResponse, Coupon, UserCoupon } from '@/types/api'
 
 /**
  * 优惠券相关 API
@@ -47,8 +47,8 @@ const couponApi = {
         return request.put(`/admin/coupons/${couponId}`, couponData)
     },
 
-    // 查看用户优惠券
-    getUserCoupons(userId: number): Promise<ApiResponse<Coupon[]>> {
+    // 查看某个用户的优惠券（管理员视角）
+    getUserCoupons(userId: number): Promise<ApiResponse<UserCoupon[]>> {
         return request.get(`/admin/coupons/user/${userId}`)
     },
 
@@ -73,8 +73,8 @@ const couponApi = {
         return request.get(`/coupons/${couponId}`)
     },
 
-    // 获取用户优惠券详情
-    getUserCouponDetail(userCouponId: number): Promise<ApiResponse<Coupon>> {
+    // 获取单个用户优惠券详情
+    getUserCouponDetail(userCouponId: number): Promise<ApiResponse<UserCoupon>> {
         return request.get(`/coupons/user/${userCouponId}`)
     },
 
@@ -83,8 +83,8 @@ const couponApi = {
         return request.post(`/coupons/claim/${couponId}`)
     },
 
-    // 获取用户拥有的优惠券
-    getUserOwnedCoupons(): Promise<ApiResponse<Coupon[]>> {
+    // 获取当前登录用户拥有的优惠券
+    getUserOwnedCoupons(): Promise<ApiResponse<UserCoupon[]>> {
         return request.get('/coupons/my')
     },
 
