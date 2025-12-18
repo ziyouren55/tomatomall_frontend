@@ -4,3 +4,5 @@
 优惠券详情页：显示兑换所需积分；0 积分券也可显示并使用“兑换优惠券”按钮；兑换时同样根据返回 code/msg 判断是否兑换成功或积分不足
 前后端字段对齐：删除前端旧字段 discount/expiryDate，统一使用 discountAmount/discountPercentage/validFrom/validTo 等新字段
 区分类型：在前端新增 UserCoupon 类型，API 中用户持有优惠券相关接口（getUserCoupons/getUserOwnedCoupons/getUserCouponDetail）改用 UserCoupon，其余仍使用 Coupon
+仓库管理-产品管理：为每个产品新增“创建论坛”按钮，支持检查已有论坛并跳转或调用后台 /api/admin/forum/books/{bookId}/forum 创建对应书籍论坛
+发帖页面：增加本地校验（标题至少2字、内容至少5字），并在发布失败时展示后端返回的具体错误原因（如长度校验、未登录等）
