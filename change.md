@@ -6,3 +6,4 @@
 区分类型：在前端新增 UserCoupon 类型，API 中用户持有优惠券相关接口（getUserCoupons/getUserOwnedCoupons/getUserCouponDetail）改用 UserCoupon，其余仍使用 Coupon
 仓库管理-产品管理：为每个产品新增“创建论坛”按钮，支持检查已有论坛并跳转或调用后台 /api/admin/forum/books/{bookId}/forum 创建对应书籍论坛
 发帖页面：增加本地校验（标题至少2字、内容至少5字），并在发布失败时展示后端返回的具体错误原因（如长度校验、未登录等）
+购物车-订单确认弹窗：新增“优惠券”下拉选择，可按金额/有效期/门槛筛出当前可用的用户优惠券，实时计算并展示原价、优惠减免和应付金额，下单时调用 /api/coupons/apply 将所选优惠券应用到新建订单

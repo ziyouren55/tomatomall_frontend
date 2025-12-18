@@ -136,7 +136,32 @@
           <div class="order-summary">
             <h3>订单摘要</h3>
             <p>选中商品: {{ selectedItems.length }} 件</p>
-            <p>订单总额: ¥{{ selectedTotal.toFixed(2) }}</p>
+            <p>订单原价: ¥{{ selectedTotal.toFixed(2) }}</p>
+            <p v-if="selectedDiscount > 0">优惠减免: -¥{{ selectedDiscount.toFixed(2) }}</p>
+            <p>应付金额: ¥{{ payableTotal.toFixed(2) }}</p>
+          </div>
+
+          <div class="coupon-section">
+            <h3>优惠券</h3>
+            <div v-if="couponLoading" class="coupon-hint">正在加载可用优惠券...</div>
+            <div v-else>
+              <select v-model="selectedUserCouponId" class="form-control">
+                <option :value="null">不使用优惠券</option>
+                <option
+                  v-for="c in availableUserCoupons"
+                  :key="c.id"
+                  :value="c.id"
+                >
+                  {{ c.couponName || c.couponDescription || '优惠券' }}（
+                  优惠：{{ formatCouponDiscount(c) }}，
+                  门槛：满 {{ c.minimumPurchase || 0 }} 可用，
+                  有效期至：{{ formatCouponDate(c.validTo) }}）
+                </option>
+              </select>
+              <p v-if="!availableUserCoupons.length" class="coupon-hint">
+                暂无可用优惠券
+              </p>
+            </div>
           </div>
           
           <div class="payment-method">
@@ -191,6 +216,7 @@ import { defineComponent } from 'vue'
 import api from '@/api';
 import { ElMessage } from 'element-plus';
 import type { AxiosError } from 'axios';
+import type { UserCoupon } from '@/types/api';
 
 interface CartItem {
   id?: number
@@ -240,7 +266,11 @@ export default defineComponent({
       paymentMethod: 'ALIPAY' as string,
       paymentForm: null as any,
       currentOrder: null as any,
-      productStockpiles: {} as Record<number, any> // 存储商品库存信息
+      productStockpiles: {} as Record<number, any>, // 存储商品库存信息
+      availableUserCoupons: [] as UserCoupon[],
+      selectedUserCouponId: null as number | null,
+      couponLoading: false,
+      selectedDiscount: 0
     };
   },
   computed: {
@@ -248,6 +278,16 @@ export default defineComponent({
       return this.cart.items && 
              this.cart.items.length > 0 && 
              this.selectedItems.length === this.cart.items.length;
+    },
+    payableTotal(): number {
+      const total = this.selectedTotal || 0;
+      const discount = this.selectedDiscount || 0;
+      return total - discount > 0 ? total - discount : 0;
+    }
+  },
+  watch: {
+    selectedUserCouponId() {
+      this.recalculateDiscount();
     }
   },
   created() {
@@ -450,7 +490,9 @@ export default defineComponent({
         });
         return;
       }
-      
+
+      // 打开结算弹窗前刷新可用优惠券
+      this.loadAvailableCoupons();
       this.showCheckoutModal = true;
     },
     
@@ -461,16 +503,6 @@ export default defineComponent({
       
       try {
         this.loading = true;
-        
-        // 构建订单数据，确保符合 OrderData 接口
-        const selectedCartItems = this.cart.items.filter(item => {
-          const id = item.cartItemId || item.id
-          return id && this.selectedItems.includes(id)
-        }).map(item => ({
-          id: (item.cartItemId || item.id)!,
-          productId: item.productId,
-          quantity: item.quantity
-        }))
         
         // 构建符合后端OrderCheckoutVO格式的数据
         const orderData = {
@@ -490,6 +522,41 @@ export default defineComponent({
         this.showCheckoutModal = false;
         console.log(this.currentOrder);
         const orderId = (this.currentOrder as any)?.orderId || (this.currentOrder as any)?.id
+
+        // 如果选择了优惠券，先尝试应用优惠券
+        if (orderId && this.selectedUserCouponId) {
+          const selectedCoupon = this.availableUserCoupons.find(
+            c => c.id === this.selectedUserCouponId
+          );
+          if (!selectedCoupon || !selectedCoupon.couponId) {
+            ElMessage({ type: 'error', message: '优惠券信息缺失，无法使用该优惠券' });
+            this.loading = false;
+            return;
+          }
+          try {
+            const applyRes = await api.coupon.applyCoupon({
+              userCouponId: this.selectedUserCouponId as number,
+              couponId: selectedCoupon.couponId,
+              orderId
+            });
+            const msg = (applyRes as any)?.data || applyRes.msg;
+            if (typeof msg === 'string' && msg.includes('失败')) {
+              ElMessage({ type: 'error', message: msg || '优惠券使用失败' });
+              this.loading = false;
+              return;
+            }
+          } catch (e: any) {
+            const msg =
+              e?.response?.data?.msg ||
+              e?.response?.data?.message ||
+              e?.message ||
+              '优惠券使用失败';
+            ElMessage({ type: 'error', message: msg });
+            this.loading = false;
+            return;
+          }
+        }
+
         if (orderId) {
           await this.initiatePayment(orderId);
         }
@@ -504,6 +571,62 @@ export default defineComponent({
         }
         this.loading = false;
       }
+    },
+
+    async loadAvailableCoupons() {
+      this.couponLoading = true;
+      this.availableUserCoupons = [];
+      try {
+        const res = await api.coupon.getUserOwnedCoupons();
+        const list = (res.data || []) as UserCoupon[];
+        const now = Date.now();
+        this.availableUserCoupons = list.filter(c => {
+          if (c.isUsed) return false;
+          const end = c.validTo ? new Date(c.validTo).getTime() : null;
+          if (end && end < now) return false;
+          const min = c.minimumPurchase || 0;
+          return this.selectedTotal >= min;
+        });
+      } catch (e) {
+        console.error('加载优惠券失败', e);
+      } finally {
+        this.couponLoading = false;
+        this.recalculateDiscount();
+      }
+    },
+
+    formatCouponDiscount(c: UserCoupon): string {
+      if (c.discountAmount) return `¥${c.discountAmount}`;
+      if (c.discountPercentage) return `${c.discountPercentage}%`;
+      return '—';
+    },
+
+    formatCouponDate(date?: string): string {
+      if (!date) return '长期';
+      return new Date(date).toLocaleDateString();
+    },
+
+    recalculateDiscount() {
+      const total = this.selectedTotal || 0;
+      if (!this.selectedUserCouponId) {
+        this.selectedDiscount = 0;
+        return;
+      }
+      const coupon = this.availableUserCoupons.find(
+        c => c.id === this.selectedUserCouponId
+      );
+      if (!coupon) {
+        this.selectedDiscount = 0;
+        return;
+      }
+      let discount = 0;
+      if (coupon.discountAmount) {
+        discount = coupon.discountAmount;
+      } else if (coupon.discountPercentage) {
+        discount = (total * coupon.discountPercentage) / 100;
+      }
+      if (discount > total) discount = total;
+      this.selectedDiscount = Number(discount.toFixed(2));
     },
     
     validateShippingAddress() {
