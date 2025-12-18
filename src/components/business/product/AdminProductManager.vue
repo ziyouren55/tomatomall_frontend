@@ -139,6 +139,13 @@
                     <path d="M12 8v13M3 8V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2"></path>
                   </svg>
                 </button>
+                <button class="forum-btn" @click="createForum(product)" title="为该书创建论坛">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M21 15V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10"></path>
+                    <path d="M7 22h10l-2-3H9l-2 3z"></path>
+                    <path d="M8 7h8M8 11h5"></path>
+                  </svg>
+                </button>
                 <button class="delete-btn" @click="confirmDelete(product)" title="删除产品">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <polyline points="3 6 5 6 21 6"></polyline>
@@ -457,6 +464,34 @@
       },
       handleStockpileUpdated() {
         // Optionally do something when stockpile is updated
+      },
+      async createForum(product) {
+        if (!product || !product.id) return;
+        try {
+          const res = await api.forum.getForumByBookId(product.id);
+          if (res && res.data) {
+            const go = window.confirm('该书已经有论坛，是否直接前往论坛页面？');
+            if (go) {
+              this.$router.push(`/forums/${res.data.id}`);
+            }
+            return;
+          }
+        } catch (e) {
+          // 如果是404或后端报“论坛不存在”，继续创建；其他错误仅在控制台记录
+          console.warn('检查论坛是否存在失败，尝试创建新论坛:', e);
+        }
+
+        try {
+          const res = await api.forum.createBookForum(product.id);
+          if (res && res.code === '200') {
+            alert('书籍论坛创建成功！');
+          } else {
+            alert(res?.msg || '创建论坛失败，请稍后重试');
+          }
+        } catch (e) {
+          console.error('创建论坛失败:', e);
+          alert('创建论坛时发生错误，请稍后重试');
+        }
       },
       confirmDelete(product) {
         this.currentProduct = product;

@@ -1,5 +1,5 @@
 import request from '../config/request'
-import { ApiResponse } from '@/types/api'
+import {ApiResponse, PageResult} from '@/types/api'
 
 /**
  * 论坛相关 API
@@ -42,6 +42,11 @@ const forumApi = {
     // 根据书籍获取论坛
     getForumByBookId(bookId: number): Promise<ApiResponse<Forum>> {
         return request.get(`/forums/book/${bookId}`)
+    },
+
+    // 管理员：为某本书创建论坛
+    createBookForum(bookId: number): Promise<ApiResponse<Forum>> {
+        return request.post(`/admin/forum/books/${bookId}/forum`)
     },
 
     // 搜索论坛（按名称，状态可选）

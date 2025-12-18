@@ -99,8 +99,15 @@ const removeImage = (idx: number) => {
 }
 
 const submit = async () => {
-  if (!form.title.trim() || !form.content.trim()) {
+  const title = form.title.trim()
+  const content = form.content.trim()
+
+  if (!title || !content) {
     error.value = '标题和内容不能为空'
+    return
+  }
+  if (title.length < 2 || content.length < 5) {
+    error.value = '标题至少2字，内容至少5字'
     return
   }
   submitting.value = true
@@ -116,7 +123,8 @@ const submit = async () => {
     success.value = '发布成功，正在跳转...'
     setTimeout(() => router.push(`/forums/${forumId}`), 800)
   } catch (e: any) {
-    error.value = e?.response?.data?.msg || '发布失败'
+    const msg = e?.response?.data?.msg || e?.response?.data?.message || e?.message
+    error.value = msg ? `发布失败：${msg}` : '发布失败'
   } finally {
     submitting.value = false
   }
