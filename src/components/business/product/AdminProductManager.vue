@@ -21,21 +21,21 @@
           添加产品
         </button>
       </div>
-      
+
       <div v-if="showForm" class="form-container">
-        <ProductForm 
-          :product="selectedProduct" 
+        <ProductForm
+          :product="selectedProduct"
           :isEdit="!!selectedProduct"
           @success="handleFormSuccess"
           @error="handleFormError"
           @cancel="closeForm"
         />
       </div>
-      
+
       <div v-if="message" class="message" :class="{ success: messageType === 'success', error: messageType === 'error' }">
         {{ message }}
       </div>
-      
+
       <!-- 搜索框 -->
       <div class="search-section">
         <div class="search-container">
@@ -43,17 +43,17 @@
             <circle cx="11" cy="11" r="8"></circle>
             <path d="m21 21-4.35-4.35"></path>
           </svg>
-          <input 
-            type="text" 
-            v-model="searchKeyword" 
+          <input
+            type="text"
+            v-model="searchKeyword"
             @input="handleSearchInput"
             @keyup.enter="performSearch"
             placeholder="搜索产品名称、描述..."
             class="search-input"
           />
-          <button 
-            v-if="searchKeyword" 
-            @click="clearSearch" 
+          <button
+            v-if="searchKeyword"
+            @click="clearSearch"
             class="clear-search-btn"
             title="清除搜索"
           >
@@ -71,7 +71,7 @@
           <span class="result-count">找到 {{ products.length }} 个产品</span>
         </div>
       </div>
-      
+
       <div v-if="loading" class="loading">
         <div class="loading-spinner"></div>
         <p>正在加载产品...</p>
@@ -109,9 +109,9 @@
             <tr v-for="product in products" :key="product.id">
               <td>{{ product.id }}</td>
               <td class="product-image">
-                <img 
-                  v-if="product.cover" 
-                  :src="product.cover" 
+                <img
+                  v-if="product.cover"
+                  :src="product.cover"
                   :alt="product.title"
                   @error="handleImageError"
                 >
@@ -157,51 +157,51 @@
           </tbody>
         </table>
       </div>
-      
+
       <!-- 分页器 -->
       <div v-if="!loading && products.length > 0 && !isSearchMode" class="pagination-container">
         <div class="pagination-info">
           显示第 {{ (currentPage * pageSize) + 1 }} - {{ Math.min((currentPage + 1) * pageSize, total) }} 条，共 {{ total }} 条
         </div>
         <div class="pagination">
-          <button 
-            class="page-btn" 
-            :disabled="currentPage === 0" 
+          <button
+            class="page-btn"
+            :disabled="currentPage === 0"
             @click="changePage(0)"
             title="首页"
           >
             ««
           </button>
-          <button 
-            class="page-btn" 
-            :disabled="currentPage === 0" 
+          <button
+            class="page-btn"
+            :disabled="currentPage === 0"
             @click="changePage(currentPage - 1)"
             title="上一页"
           >
             ‹
           </button>
-          
+
           <template v-for="page in visiblePages" :key="page">
-            <button 
-              class="page-btn" 
+            <button
+              class="page-btn"
               :class="{ active: page === currentPage }"
               @click="changePage(page)"
             >
               {{ page + 1 }}
             </button>
           </template>
-          
-          <button 
-            class="page-btn" 
-            :disabled="currentPage >= totalPages - 1" 
+
+          <button
+            class="page-btn"
+            :disabled="currentPage >= totalPages - 1"
             @click="changePage(currentPage + 1)"
             title="下一页"
           >
             ›
           </button>
-          <button 
-            class="page-btn" 
-            :disabled="currentPage >= totalPages - 1" 
+          <button
+            class="page-btn"
+            :disabled="currentPage >= totalPages - 1"
             @click="changePage(totalPages - 1)"
             title="末页"
           >
@@ -209,7 +209,7 @@
           </button>
         </div>
       </div>
-      
+
       <!-- Stockpile Management Modal - 简化版 -->
       <div v-if="showStockpileModal" class="modal">
         <div class="modal-content stockpile-modal">
@@ -229,7 +229,7 @@
             </button>
           </div>
           <div class="modal-body">
-            <SimpleStockpileEditor 
+            <SimpleStockpileEditor
               :productId="currentProduct?.id"
               :productTitle="currentProduct?.title"
               @updated="handleStockpileUpdated"
@@ -238,7 +238,7 @@
           </div>
         </div>
       </div>
-      
+
       <!-- Delete Confirmation Modal -->
       <div v-if="showDeleteModal" class="modal">
         <div class="modal-content delete-confirmation">
@@ -258,13 +258,13 @@
       </div>
     </div>
   </template>
-  
+
   <script>
   import api from '@/api';
   import ProductForm from './ProductForm.vue';
   import StockpileManager from './StockPileManager.vue';
   import SimpleStockpileEditor from './SimpleStockpileEditor.vue';
-  
+
   export default {
     name: 'AdminProductManager',
     components: {
@@ -301,12 +301,12 @@
         const maxVisible = 7; // 最多显示7个页码按钮
         let start = Math.max(0, this.currentPage - Math.floor(maxVisible / 2));
         let end = Math.min(this.totalPages - 1, start + maxVisible - 1);
-        
+
         // 如果右侧空间不足，向左调整
         if (end - start < maxVisible - 1) {
           start = Math.max(0, end - maxVisible + 1);
         }
-        
+
         for (let i = start; i <= end; i++) {
           pages.push(i);
         }
@@ -325,8 +325,8 @@
             this.pageSize
           );
           if (response.code === '200' && response.data) {
-            this.products = Array.isArray(response.data.products) 
-              ? response.data.products 
+            this.products = Array.isArray(response.data.products)
+              ? response.data.products
               : [];
             this.total = response.data.total || 0;
             this.totalPages = response.data.totalPages || 0;
@@ -353,13 +353,13 @@
           this.clearSearch();
           return;
         }
-        
+
         this.searching = true;
         this.isSearchMode = true;
         this.loading = true;
         this.error = null;
         this.currentPage = 0; // 搜索时重置页码
-        
+
         try {
           const response = await api.product.searchProducts(
             this.searchKeyword.trim(),
@@ -368,7 +368,7 @@
             null, // sortBy
             null  // sortOrder
           );
-          
+
           if (response.code === '200' && response.data) {
             this.products = response.data.products || [];
             this.total = response.data.total || 0;
@@ -395,12 +395,12 @@
         if (this.searchTimer) {
           clearTimeout(this.searchTimer);
         }
-        
+
         if (!this.searchKeyword.trim()) {
           this.clearSearch();
           return;
         }
-        
+
         this.searchTimer = setTimeout(() => {
           this.performSearch();
         }, 500);
@@ -439,7 +439,7 @@
         } else {
           this.fetchProducts();
         }
-        
+
         // Clear message after 3 seconds
         setTimeout(() => {
           this.message = '';
@@ -448,7 +448,7 @@
       handleFormError(errorMsg) {
         this.messageType = 'error';
         this.message = errorMsg;
-        
+
         // Clear message after 5 seconds
         setTimeout(() => {
           this.message = '';
@@ -468,29 +468,19 @@
       async createForum(product) {
         if (!product || !product.id) return;
         try {
-          const res = await api.forum.getForumByBookId(product.id);
-          if (res && res.data) {
-            const go = window.confirm('该书已经有论坛，是否直接前往论坛页面？');
+          // 调用后端 ensure 接口：若存在则返回已有论坛；若不存在则创建后返回
+          const res = await api.forum.ensureBookForum(product.id);
+          if (res && res.code === '200' && res.data) {
+            const go = window.confirm('已为该书准备好论坛，是否前往论坛页面？');
             if (go) {
               this.$router.push(`/forums/${res.data.id}`);
             }
-            return;
-          }
-        } catch (e) {
-          // 如果是404或后端报“论坛不存在”，继续创建；其他错误仅在控制台记录
-          console.warn('检查论坛是否存在失败，尝试创建新论坛:', e);
-        }
-
-        try {
-          const res = await api.forum.createBookForum(product.id);
-          if (res && res.code === '200') {
-            alert('书籍论坛创建成功！');
           } else {
-            alert(res?.msg || '创建论坛失败，请稍后重试');
+            alert(res?.msg || '处理论坛时出现问题，请稍后重试');
           }
         } catch (e) {
-          console.error('创建论坛失败:', e);
-          alert('创建论坛时发生错误，请稍后重试');
+          console.error('确保论坛存在失败:', e);
+          alert('处理论坛时发生错误，请稍后重试');
         }
       },
       confirmDelete(product) {
@@ -503,19 +493,19 @@
       },
       async deleteProduct() {
         if (!this.currentProduct) return;
-        
+
         try {
           const response = await api.product.deleteProduct(this.currentProduct.id);
-          
+
           if (response.code === 200) {
             this.messageType = 'success';
             this.message = '产品删除成功！';
-            
+
             // Refresh product list (保持当前搜索状态)
             if (this.isSearchMode) {
-              this.performSearch();
+              await this.performSearch();
             } else {
-              this.fetchProducts();
+              await this.fetchProducts();
             }
           } else {
             this.messageType = 'error';
@@ -526,10 +516,10 @@
           this.messageType = 'error';
           this.message = '删除产品时发生错误';
         }
-        
+
         // Close the modal
         this.closeDeleteModal();
-        
+
         // Clear message after 3 seconds
         setTimeout(() => {
           this.message = '';
@@ -545,7 +535,7 @@
     }
   };
   </script>
-  
+
 <style scoped>
 .admin-product-manager {
   padding: 0;
@@ -729,27 +719,27 @@
   color: #999;
   font-size: 0.85rem;
 }
-  
+
   .form-container {
     margin-bottom: 30px;
   }
-  
+
   .message {
     padding: 15px;
     margin-bottom: 20px;
     border-radius: 4px;
   }
-  
+
   .message.success {
     background-color: #e8f5e9;
     color: #2e7d32;
   }
-  
+
   .message.error {
     background-color: #ffebee;
     color: #c62828;
   }
-  
+
 .product-table-container {
   overflow-x: auto;
   overflow-y: visible;
@@ -829,7 +819,7 @@
   word-break: break-word;
   max-width: 300px;
 }
-  
+
 .product-image {
   width: 80px;
 }
@@ -872,7 +862,7 @@
 .product-table td:nth-child(5) {
   color: #666;
 }
-  
+
 .actions {
   display: flex;
   gap: 8px;
@@ -941,7 +931,7 @@
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(198, 40, 40, 0.3);
 }
-  
+
 .loading {
   padding: 80px 20px;
   text-align: center;
@@ -1008,7 +998,7 @@
   font-size: 0.9rem;
   color: #999;
 }
-  
+
   /* Modal styles */
   .modal {
     position: fixed;
@@ -1022,7 +1012,7 @@
     justify-content: center;
     z-index: 1000;
   }
-  
+
   .modal-content {
     background-color: white;
     border-radius: 12px;
@@ -1032,17 +1022,17 @@
     overflow-y: auto;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   }
-  
+
   .stockpile-modal {
     max-width: 700px;
     max-height: 85vh;
     overflow-y: auto;
   }
-  
+
   .delete-confirmation {
     max-width: 400px;
   }
-  
+
   .modal-header {
     display: flex;
     justify-content: space-between;
@@ -1053,26 +1043,26 @@
     color: white;
     border-radius: 12px 12px 0 0;
   }
-  
+
   .modal-title {
     display: flex;
     align-items: center;
     gap: 12px;
   }
-  
+
   .modal-icon {
     width: 24px;
     height: 24px;
     stroke-width: 2;
   }
-  
+
   .modal-header h2 {
     margin: 0;
     font-size: 1.5rem;
     font-weight: 600;
     color: white;
   }
-  
+
   .close-btn {
     width: 36px;
     height: 36px;
@@ -1086,34 +1076,34 @@
     color: white;
     transition: all 0.3s ease;
   }
-  
+
   .close-btn:hover {
     background: rgba(255, 255, 255, 0.3);
     transform: rotate(90deg);
   }
-  
+
   .close-btn svg {
     width: 20px;
     height: 20px;
     stroke-width: 2.5;
   }
-  
+
   .modal-body {
     padding: 24px;
   }
-  
+
   .warning {
     color: #f44336;
     font-weight: 600;
   }
-  
+
   .modal-actions {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
     margin-top: 20px;
   }
-  
+
   .cancel-btn {
     padding: 8px 16px;
     background-color: #e0e0e0;
@@ -1121,7 +1111,7 @@
     border-radius: 4px;
     cursor: pointer;
   }
-  
+
   .delete-confirm-btn {
     padding: 8px 16px;
     background-color: #f44336;
@@ -1130,15 +1120,15 @@
     border-radius: 4px;
     cursor: pointer;
   }
-  
+
   .cancel-btn:hover {
     background-color: #d0d0d0;
   }
-  
+
   .delete-confirm-btn:hover {
     background-color: #d32f2f;
   }
-  
+
   /* 分页器样式 */
   .pagination-container {
     display: flex;
@@ -1150,18 +1140,18 @@
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   }
-  
+
   .pagination-info {
     color: #666;
     font-size: 0.9rem;
   }
-  
+
   .pagination {
     display: flex;
     gap: 8px;
     align-items: center;
   }
-  
+
   .page-btn {
     min-width: 36px;
     height: 36px;
@@ -1178,7 +1168,7 @@
     align-items: center;
     justify-content: center;
   }
-  
+
   .page-btn:hover:not(:disabled) {
     border-color: #ff6b35;
     color: #ff6b35;
@@ -1186,20 +1176,20 @@
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(255, 107, 53, 0.2);
   }
-  
+
   .page-btn.active {
     background: linear-gradient(135deg, #ff6b35 0%, #e53935 100%);
     color: white;
     border-color: #ff6b35;
     box-shadow: 0 2px 6px rgba(255, 107, 53, 0.3);
   }
-  
+
   .page-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
     background: #f5f5f5;
   }
-  
+
   .page-btn:disabled:hover {
     transform: none;
     box-shadow: none;

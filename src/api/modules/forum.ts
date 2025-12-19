@@ -49,6 +49,11 @@ const forumApi = {
         return request.post(`/admin/forum/books/${bookId}/forum`)
     },
 
+    // 管理员：确保某本书拥有论坛（存在则返回现有，不存在则创建后返回）
+    ensureBookForum(bookId: number): Promise<ApiResponse<Forum>> {
+        return request.post(`/admin/forum/books/${bookId}/forum/ensure`)
+    },
+
     // 搜索论坛（按名称，状态可选）
     searchForums(keyword: string, page: number = 0, size: number = 10, status?: string): Promise<ApiResponse<PageResult<Forum>>> {
         return request.get('/forums/search', { params: { keyword, page, size, status } })
