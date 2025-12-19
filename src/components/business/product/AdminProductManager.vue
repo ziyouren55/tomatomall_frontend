@@ -497,7 +497,7 @@
         try {
           const response = await api.product.deleteProduct(this.currentProduct.id);
 
-          if (response.code === 200) {
+          if (response.code === '200') {
             this.messageType = 'success';
             this.message = '产品删除成功！';
 
