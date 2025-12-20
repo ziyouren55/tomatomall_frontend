@@ -320,7 +320,7 @@
       async fetchProducts() {
         this.loading = true;
         try {
-          const response = await api.product.getAllProducts(
+          const response = await api.product.getManageProducts(
             this.currentPage,
             this.pageSize
           );

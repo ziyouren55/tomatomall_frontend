@@ -59,6 +59,15 @@
               </span>
               <template #dropdown>
                 <el-dropdown-menu>
+                <el-dropdown-item command="merchant-stores" v-if="isMerchant || isAdmin">
+                  <span class="menu-item">
+                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path d="M3 7h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"></path>
+                      <path d="M7 7v-2a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    我的店铺
+                  </span>
+                </el-dropdown-item>
                   <el-dropdown-item command="profile">
                     <span class="menu-item">
                       <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -162,6 +171,7 @@ const searchQuery = ref<string>('');
 const cartItemCount = ref<number>(0);
 const isLoggedIn = ref<boolean>(false);
 const isAdmin = ref<boolean>(false);
+const isMerchant = ref<boolean>(false);
 const username = ref<string>('');
 const userAvatar = ref<string>('');
 let cartPollingInterval: ReturnType<typeof setInterval> | null = null;
@@ -221,6 +231,8 @@ const checkLoginStatus = () => {
       const userInfo = JSON.parse(userInfoStr);
       // 使用枚举检查角色
       adminCheck = userInfo.role === UserRole.ADMIN || userInfo.role === 'ADMIN';
+      // merchant check
+      isMerchant.value = userInfo.role === UserRole.MERCHANT || userInfo.role === 'MERCHANT';
     } catch (e) {
       console.error('Failed to parse userInfo:', e);
     }
@@ -258,6 +270,7 @@ const checkLoginStatus = () => {
     username.value = '';
     userAvatar.value = '';
     isAdmin.value = false;
+    isMerchant.value = false;
   }
 };
 
@@ -320,6 +333,9 @@ const handleUserCommand = (command: string) => {
       break;
     case 'admin-coupons':
       router.push('/admin/coupons');
+      break;
+    case 'merchant-stores':
+      router.push('/merchant/stores');
       break;
     case 'logout':
       logout();

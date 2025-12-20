@@ -138,7 +138,8 @@
         // 角色选项
         roleOptions: [
           { value: UserRole.USER, label: USER_ROLE_LABELS[UserRole.USER] },
-          { value: UserRole.ADMIN, label: USER_ROLE_LABELS[UserRole.ADMIN] }
+          { value: UserRole.MERCHANT, label: USER_ROLE_LABELS[UserRole.MERCHANT] },
+          { value: UserRole.ADMIN, label: USER_ROLE_LABELS[UserRole.ADMIN] },
         ]
       };
     },

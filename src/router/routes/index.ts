@@ -5,11 +5,13 @@
 import publicRoutes from './public'
 import userRoutes from './user'
 import adminRoutes from './admin'
+import merchantRoutes from './merchant'
 
 const routes = [
     ...publicRoutes,
     ...userRoutes,
-    ...adminRoutes
+    ...adminRoutes,
+    ...merchantRoutes
 ]
 
 export default routes

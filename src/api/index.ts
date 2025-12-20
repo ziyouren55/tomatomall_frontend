@@ -16,6 +16,7 @@ import forum from './modules/forum'
 import post from './modules/post'
 import reply from './modules/reply'
 import image from './modules/image'
+import store from './modules/store'
 
 export default {
     user,
@@ -30,5 +31,6 @@ export default {
     post,
     reply,
     image
+    ,store
 }
 

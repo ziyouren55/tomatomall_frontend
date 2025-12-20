@@ -19,6 +19,9 @@ export function setupRouterGuards(router: Router): void {
         const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
         // 检查路由是否需要管理员权限
         const requiresAdmin = to.matched.some(record => record.meta.requiresAdmin)
+        // 检查路由是否声明了需要特定角色（如 MERCHANT）
+        const requiredRoleRecord = to.matched.find(record => record.meta && record.meta.role)
+        const requiredRole: string | undefined = requiredRoleRecord ? (requiredRoleRecord.meta.role as string) : undefined
         
         // 直接检查本地存储的token，不依赖store（因为store可能未初始化）
         const token = getToken()
@@ -58,6 +61,27 @@ export function setupRouterGuards(router: Router): void {
                 next('/')
                 // 可以在这里显示一个提示消息
                 console.warn('Access denied: Admin privileges required')
+                return
+            }
+        }
+
+        // 检查指定角色权限（例如 MERCHANT）。允许管理员访问所有商家路由。
+        if (requiredRole) {
+            const userInfoStr = localStorage.getItem('userInfo')
+            let userRole = ''
+            if (userInfoStr) {
+                try {
+                    const userInfo = JSON.parse(userInfoStr)
+                    userRole = userInfo.role || ''
+                } catch (e) {
+                    console.error('Failed to parse userInfo:', e)
+                }
+            }
+
+            const isAllowed = userRole === requiredRole || userRole === UserRole.ADMIN || userRole === 'ADMIN'
+            if (!isAllowed) {
+                next('/')
+                console.warn(`Access denied: role ${requiredRole} required`)
                 return
             }
         }

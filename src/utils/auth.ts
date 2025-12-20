@@ -32,6 +32,29 @@ export const isAdmin = (): boolean => {
     return localStorage.getItem('isAdmin') === 'true'
 }
 
+/**
+ * 检查用户是否为商家
+ */
+export const isMerchant = (): boolean => {
+    const userInfoStr = localStorage.getItem('userInfo')
+    if (userInfoStr) {
+        try {
+            const userInfo = JSON.parse(userInfoStr)
+            return userInfo.role === UserRole.MERCHANT || userInfo.role === 'MERCHANT'
+        } catch (e) {
+            console.error('Failed to parse userInfo:', e)
+        }
+    }
+    return false
+}
+
+/**
+ * 检查用户是否为商家或管理员
+ */
+export const isMerchantOrAdmin = (): boolean => {
+    return isMerchant() || isAdmin()
+}
+
 
 
 

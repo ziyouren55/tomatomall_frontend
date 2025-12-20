@@ -29,24 +29,27 @@ export const ROUTE_NAMES = {
 // 用户角色枚举（与后端保持一致）
 export enum UserRole {
     USER = 'USER',
-    ADMIN = 'ADMIN'
+    ADMIN = 'ADMIN',
+    MERCHANT = 'MERCHANT'
 }
 
 // 角色显示名称映射
 export const USER_ROLE_LABELS: Record<UserRole, string> = {
     [UserRole.USER]: '顾客',
-    [UserRole.ADMIN]: '商家'
+    [UserRole.ADMIN]: '管理员',
+    [UserRole.MERCHANT]: '商家'
 }
 
 // 向后兼容的常量对象
 export const USER_ROLES = {
     ADMIN: UserRole.ADMIN,
-    USER: UserRole.USER
+    USER: UserRole.USER,
+    MERCHANT: UserRole.MERCHANT
 } as const
 
 // 角色验证工具函数
 export const isValidRole = (role: string): role is UserRole => {
-    return role === UserRole.USER || role === UserRole.ADMIN
+    return role === UserRole.USER || role === UserRole.ADMIN || role === UserRole.MERCHANT
 }
 
 // 规范化角色（将小写转换为大写）
@@ -54,6 +57,9 @@ export const normalizeRole = (role: string): UserRole => {
     const upperRole = role.toUpperCase()
     if (upperRole === UserRole.ADMIN) {
         return UserRole.ADMIN
+    }
+    if (upperRole === UserRole.MERCHANT) {
+        return UserRole.MERCHANT
     }
     return UserRole.USER // 默认返回 USER
 }

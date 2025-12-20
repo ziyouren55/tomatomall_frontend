@@ -60,6 +60,19 @@ const productApi = {
         return request.get('/products', { params });
     },
 
+    // 获取管理端产品列表（商家 / 管理员用）
+    getManageProducts(
+        page: number = 0,
+        pageSize: number = 20,
+        sortBy?: string,
+        sortOrder?: string
+    ): Promise<ApiResponse<SearchResult>> {
+        const params: any = { page, pageSize };
+        if (sortBy) params.sortBy = sortBy;
+        if (sortOrder) params.sortOrder = sortOrder;
+        return request.get('/products/manage', { params });
+    },
+
     // 根据ID获取产品
     getProductById(id: number): Promise<ApiResponse<Product>> {
         return request.get(`/products/${id}`)

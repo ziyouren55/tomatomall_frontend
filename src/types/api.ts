@@ -136,6 +136,19 @@ export interface ForumInfo {
 }
 
 /**
+ * 店铺信息
+ */
+export interface Store {
+    id?: number
+    name: string
+    description?: string
+    status?: string
+    merchantId?: number
+    createTime?: string
+    [key: string]: any
+}
+
+/**
  * 帖子
  */
 export interface PostInfo {
