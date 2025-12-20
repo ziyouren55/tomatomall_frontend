@@ -47,7 +47,7 @@
           <div class="col-2 quantity">
             <div class="quantity-control">
               <button 
-                @click="decreaseQuantity((item.cartItemId || item.id)!, item.quantity)" 
+                @click="getCartItemId(item) !== null && decreaseQuantity(getCartItemId(item)!, item.quantity)" 
                 :disabled="item.quantity <= 1"
                 class="quantity-btn"
               >-</button>
@@ -55,11 +55,11 @@
                 type="number" 
                 v-model.number="item.quantity" 
                 min="1" 
-                @change="updateQuantity((item.cartItemId || item.id)!, item.quantity)"
+                @change="getCartItemId(item) !== null && updateQuantity(getCartItemId(item)!, item.quantity)"
                 class="quantity-input"
               >
               <button 
-                @click="increaseQuantity((item.cartItemId || item.id)!, item.quantity)" 
+                @click="getCartItemId(item) !== null && increaseQuantity(getCartItemId(item)!, item.quantity)" 
                 class="quantity-btn"
                 :disabled="isMaxQuantity(item)"
               >+</button>
@@ -70,7 +70,7 @@
           </div>
           <div class="col-2 subtotal">¥{{ ((item.price || 0) * item.quantity).toFixed(2) }}</div>
           <div class="col-1 actions">
-            <button @click="removeItem((item.cartItemId || item.id)!)" class="remove-btn">删除</button>
+            <button @click="getCartItemId(item) !== null && removeItem(getCartItemId(item)!)" class="remove-btn">删除</button>
           </div>
         </div>
       </div>
@@ -216,32 +216,7 @@ import { defineComponent } from 'vue'
 import api from '@/api';
 import { ElMessage } from 'element-plus';
 import type { AxiosError } from 'axios';
-import type { UserCoupon } from '@/types/api';
-
-interface CartItem {
-  id?: number
-  cartItemId?: number
-  productId: number
-  quantity: number
-  price?: number
-  title?: string
-  description?: string
-  cover?: string
-  [key: string]: any
-}
-
-interface Cart {
-  items: CartItem[]
-  total: number
-  totalAmount: number
-}
-
-interface ShippingAddress {
-  receiverName: string
-  phone: string
-  zipCode: string
-  address: string
-}
+import type { UserCoupon, Cart, ShippingAddress, CartItem } from '@/types/api';
 
 export default defineComponent({
   name: 'CartPage',
@@ -266,7 +241,7 @@ export default defineComponent({
       paymentMethod: 'ALIPAY' as string,
       paymentForm: null as any,
       currentOrder: null as any,
-      productStockpiles: {} as Record<number, any>, // 存储商品库存信息
+      productStockpiles: {} as Record<string | number, any>, // 存储商品库存信息
       availableUserCoupons: [] as UserCoupon[],
       selectedUserCouponId: null as number | null,
       couponLoading: false,
@@ -345,11 +320,14 @@ export default defineComponent({
           if (!item.productId) continue;
           
           try {
-            const response = await api.product.getProductStockpile(item.productId);
+            const productId = typeof item.productId === 'string' ? parseInt(item.productId, 10) : item.productId;
+            if (isNaN(productId)) continue;
+            
+            const response = await api.product.getProductStockpile(productId);
             // console.log(`商品 ${item.productId} 库存API响应:`, response);
             
             if (response && response.code === '200' && response.data) {
-              // 存储库存信息，键为商品ID
+              // 存储库存信息，键为商品ID（保持原始类型）
               this.productStockpiles[item.productId] = response.data;
               // console.log(`商品 ${item.productId} 库存:`, response.data);
               // console.log(`商品 ${item.productId} 的amount值:`, response.data.amount);
@@ -416,6 +394,12 @@ export default defineComponent({
       }
     },
     
+    getCartItemId(item: CartItem): number | null {
+      const id = item.cartItemId || item.id;
+      if (id === undefined || id === null) return null;
+      return typeof id === 'string' ? parseInt(id, 10) : id;
+    },
+    
     async removeItem(cartItemId: number): Promise<void> {
       if (!confirm('确定要从购物车中删除此商品吗？')) return;
       
@@ -475,8 +459,8 @@ export default defineComponent({
       if (!this.cart.items) return;
       
       for (const item of this.cart.items) {
-        const id = item.cartItemId || item.id
-        if (id && this.selectedItems.includes(id)) {
+        const id = this.getCartItemId(item);
+        if (id !== null && this.selectedItems.includes(id)) {
           this.selectedTotal += (item.price || 0) * item.quantity;
         }
       }
@@ -723,7 +707,7 @@ export default defineComponent({
       return result;
     },
     
-    getAvailableStock(productId: number): number | null {
+    getAvailableStock(productId: string | number): number | null {
       if (!this.productStockpiles[productId]) return null;
       
       const stockpile = this.productStockpiles[productId];

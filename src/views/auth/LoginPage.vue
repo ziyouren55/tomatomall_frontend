@@ -35,11 +35,7 @@
 import { defineComponent } from 'vue'
 import { mapActions } from 'vuex'
 import api from '@/api'
-
-interface LoginForm {
-  username: string
-  password: string
-}
+import type { LoginForm } from '@/types/api'
 
 export default defineComponent({
   name: 'LoginPage',

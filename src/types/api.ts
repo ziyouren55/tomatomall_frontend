@@ -196,8 +196,9 @@ export interface Stockpile {
  * 购物车项（完整定义）
  */
 export interface CartItem {
-    cartItemId: string
-    productId: string
+    cartItemId?: string | number
+    id?: number
+    productId: string | number
     title: string
     price: number
     description?: string
@@ -255,5 +256,120 @@ export interface ErrorResponse {
     message?: string
     data?: any
     [key: string]: any
+}
+
+/**
+ * 优惠券表单数据（用于创建/编辑优惠券）
+ */
+export interface CouponFormData {
+    name: string
+    discountAmount?: number
+    discountPercentage?: number
+    minimumPurchase?: number
+    validFrom: string
+    validTo: string
+    pointsRequired?: number
+    isActive: boolean
+    description: string
+}
+
+/**
+ * 优惠券发放数据
+ */
+export interface IssueCouponData {
+    userId: number
+    couponId: number
+    [key: string]: any
+}
+
+/**
+ * 优惠券使用数据
+ */
+export interface ApplyCouponData {
+    userCouponId?: number
+    couponId: number
+    orderId?: number
+    [key: string]: any
+}
+
+/**
+ * 优惠券释放数据
+ */
+export interface ReleaseCouponData {
+    userCouponId: number
+    orderId?: number
+    [key: string]: any
+}
+
+/**
+ * 购物车（包含购物车项和总计）
+ */
+export interface Cart {
+    items: CartItem[]
+    total: number
+    totalAmount: number
+}
+
+/**
+ * 购物车项（扩展定义，兼容不同场景）
+ */
+export interface CartItemExtended {
+    id?: number
+    cartItemId?: number | string
+    productId: number | string
+    quantity: number
+    price?: number
+    title?: string
+    description?: string
+    cover?: string
+    [key: string]: any
+}
+
+/**
+ * 收货地址
+ */
+export interface ShippingAddress {
+    receiverName: string
+    phone: string
+    zipCode: string
+    address: string
+}
+
+/**
+ * 登录表单数据
+ */
+export interface LoginForm {
+    username: string
+    password: string
+}
+
+/**
+ * 注册表单数据
+ */
+export interface RegisterForm {
+    username: string
+    password: string
+    name: string
+    avatar: string
+    role: UserRole
+    telephone: string
+    email: string
+    location: string
+    memberLevel: number
+    isMember: boolean
+}
+
+/**
+ * 用户编辑表单数据
+ */
+export interface EditForm {
+    username: string
+    name: string
+    avatar: string
+    telephone: string
+    email: string
+    location: string
+    password: string
+    role: UserRole
 }
 

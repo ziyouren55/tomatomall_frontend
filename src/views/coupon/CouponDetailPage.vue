@@ -16,8 +16,6 @@ import { defineComponent } from 'vue'
 import NavigationBar from '@/components/business/NavigationBar.vue';
 import CouponDetail from '@/components/business/admin/coupon/AdminCoupon/CouponDetail.vue';
 import api from '@/api';
-import type { AxiosError } from 'axios';
-import type { ErrorResponse } from '@/types/api';
 
 export default defineComponent({
   name: 'CouponDetailPage',
@@ -35,7 +33,7 @@ export default defineComponent({
           // 刷新优惠券详情
           this.$emit('refresh');
         } else {
-          const msg = res?.msg || res?.message || '';
+          const msg = res?.msg || (res as any)?.message || '';
           if (typeof msg === 'string' && msg.includes('积分不足')) {
             alert('积分不足，兑换失败!');
           } else {

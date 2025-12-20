@@ -41,8 +41,7 @@
 import { defineComponent } from 'vue'
 import api from '@/api';
 import IssueCouponForm from './IssueCouponForm.vue';
-
-type UserCoupon = Record<string, any>
+import type { UserCoupon } from '@/types/api';
 
 export default defineComponent({
   name: 'UserCoupons',

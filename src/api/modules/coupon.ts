@@ -1,29 +1,10 @@
 import request from '../config/request'
-import { ApiResponse, Coupon, UserCoupon } from '@/types/api'
+import { ApiResponse, Coupon, UserCoupon, IssueCouponData, ApplyCouponData, ReleaseCouponData } from '@/types/api'
 
 /**
  * 优惠券相关 API
  * 包含管理员和用户两套 API
  */
-
-export interface IssueCouponData {
-    userId: number
-    couponId: number
-    [key: string]: any
-}
-
-export interface ApplyCouponData {
-    userCouponId?: number
-    couponId: number
-    orderId?: number
-    [key: string]: any
-}
-
-export interface ReleaseCouponData {
-    userCouponId: number
-    orderId?: number
-    [key: string]: any
-}
 
 const couponApi = {
     // ========== 管理员优惠券 API ==========

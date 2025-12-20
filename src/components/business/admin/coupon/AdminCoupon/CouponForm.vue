@@ -68,18 +68,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import api from '@/api';
-
-interface CouponFormData {
-  name: string
-  discountAmount?: number
-  discountPercentage?: number
-  minimumPurchase?: number
-  validFrom: string
-  validTo: string
-  pointsRequired?: number
-  isActive: boolean
-  description: string
-}
+import type { CouponFormData } from '@/types/api';
 
 export default defineComponent({
   name: 'CouponForm',

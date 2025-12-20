@@ -113,19 +113,7 @@
   import { defineComponent } from 'vue'
   import api from '@/api';
   import { UserRole, USER_ROLE_LABELS } from '@/utils/constants';
-  
-  interface RegisterForm {
-    username: string
-    password: string
-    name: string
-    avatar: string
-    role: UserRole
-    telephone: string
-    email: string
-    location: string
-    memberLevel: number
-    isMember: boolean
-  }
+  import type { RegisterForm } from '@/types/api';
   
   export default defineComponent({
     name: 'RegisterPage',

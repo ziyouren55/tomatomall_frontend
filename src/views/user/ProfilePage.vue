@@ -138,17 +138,7 @@
   import type { UserInfo, ErrorResponse } from '@/types/api'
   import type { AxiosError } from 'axios'
   import { UserRole, USER_ROLE_LABELS, getRoleLabel as getRoleLabelUtil, normalizeRole } from '@/utils/constants'
-  
-  interface EditForm {
-    username: string
-    name: string
-    avatar: string
-    telephone: string
-    email: string
-    location: string
-    password: string
-    role: UserRole
-  }
+  import type { EditForm } from '@/types/api';
   
   export default defineComponent({
     name: 'ProfilePage',
