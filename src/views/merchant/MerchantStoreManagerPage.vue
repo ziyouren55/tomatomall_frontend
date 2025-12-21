@@ -33,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import StoreListComponent from '@/components/merchant/StoreListComponent.vue'
+import StoreListComponent from '@/components/business/merchant/StoreListComponent.vue'
 </script>
 
 <style scoped>

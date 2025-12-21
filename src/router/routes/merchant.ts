@@ -3,26 +3,26 @@ import { RouteRecordRaw } from 'vue-router'
 const merchantRoutes: RouteRecordRaw[] = [
     {
         path: '/merchant/stores',
-        name: 'MerchantStoreList',
-        component: () => import('@/views/merchant/StoreList.vue'),
+        name: 'MerchantStoreManagerPage',
+        component: () => import('@/views/merchant/MerchantStoreManagerPage.vue'),
         meta: { requiresAuth: true, role: 'MERCHANT' }
     },
     {
         path: '/merchant/stores/new',
-        name: 'MerchantStoreCreate',
-        component: () => import('@/views/merchant/StoreEdit.vue'),
+        name: 'MerchantStoreCreatePage',
+        component: () => import('@/views/merchant/MerchantStoreEditPage.vue'),
         meta: { requiresAuth: true, role: 'MERCHANT' }
     },
     {
         path: '/merchant/stores/:id',
-        name: 'MerchantStoreDetail',
-        component: () => import('@/views/merchant/StoreEdit.vue'),
+        name: 'MerchantStoreDetailPage',
+        component: () => import('@/views/merchant/MerchantStoreEditPage.vue'),
         meta: { requiresAuth: true, role: 'MERCHANT' }
     },
     {
         path: '/merchant/stores/:id/edit',
-        name: 'MerchantStoreEdit',
-        component: () => import('@/views/merchant/StoreEdit.vue'),
+        name: 'MerchantStoreEditPage',
+        component: () => import('@/views/merchant/MerchantStoreEditPage.vue'),
         meta: { requiresAuth: true, role: 'MERCHANT' }
     }
     ,

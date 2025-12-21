@@ -6,20 +6,15 @@
     </div>
 
     <div class="table">
-      <div class="row header-row">
-        <div>ID</div><div>名称</div><div>商家ID</div><div>描述</div><div>状态</div><div>操作</div>
-      </div>
-      <div v-for="s in stores" :key="s.id" class="row">
-        <div>{{ s.id }}</div>
-        <div>{{ s.name }}</div>
-        <div>{{ s.merchantId }}</div>
-        <div>{{ s.description || '-' }}</div>
-        <div>{{ s.status || '-' }}</div>
-        <div>
-          <button @click="editStore(s)" class="btn btn-sm">编辑</button>
-          <button @click="removeStore(s.id)" class="btn btn-sm btn-danger">删除</button>
-        </div>
-      </div>
+      <StoreListCore :stores="stores" :loading="loading" @delete="removeStore">
+        <template #name="{ item }">
+          <div>{{ item.name }}</div>
+        </template>
+        <template #actions="{ item }">
+          <button @click="editStore(item)" class="btn btn-sm">编辑</button>
+          <button @click="removeStore(item.id)" class="btn btn-sm btn-danger">删除</button>
+        </template>
+      </StoreListCore>
     </div>
 
     <!-- 分页（简化） -->
@@ -59,6 +54,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import storeApi, { Store } from '@/api/modules/store'
+import StoreListCore from '@/components/business/store/StoreListCore.vue'
 
 const stores = ref<Store[]>([])
 const page = ref(0)
@@ -101,7 +97,9 @@ const parseStoresFromResponse = (res: any): Store[] => {
 const fetchStores = async () => {
   loading.value = true
   try {
-    const res = await storeApi.getAllStores(page.value, pageSize.value)
+    // 管理员可能希望一次看到所有店铺，若为管理员则请求更大的 pageSize
+    const requestedPageSize = isAdminCreating.value ? 1000 : pageSize.value
+    const res = await storeApi.getAllStores(page.value, requestedPageSize)
     stores.value = parseStoresFromResponse(res)
   } catch (e) {
     console.error('fetch stores error', e)
