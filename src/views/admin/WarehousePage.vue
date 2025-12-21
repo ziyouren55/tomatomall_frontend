@@ -49,7 +49,7 @@
       <div class="tab-content">
         <div class="content-card">
           <AdminProductManager v-if="activeTab === 'products'" />
-          <StockpileManager v-if="activeTab === 'stockpile'" />
+          <AdminStockpileManager v-if="activeTab === 'stockpile'" />
         </div>
       </div>
     </div>
@@ -58,7 +58,7 @@
 
 <script setup lang="ts">
 import AdminProductManager from '@/components/business/product/AdminProductManager.vue'
-import StockpileManager from '@/components/business/product/StockPileManager.vue'
+import AdminStockpileManager from '@/components/business/product/AdminStockPileManager.vue'
 import { ref } from 'vue';
 
 const activeTab = ref<string>('products');

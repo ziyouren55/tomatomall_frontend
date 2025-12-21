@@ -1230,6 +1230,12 @@ export default defineComponent({
       required: false,
       default: null
     }
+    ,
+    storeId: {
+      type: [String, Number],
+      required: false,
+      default: null
+    }
   },
   data() {
     return {
@@ -1291,6 +1297,14 @@ export default defineComponent({
   mounted() {
     this.fetchAllStockpiles();
   },
+  watch: {
+    storeId(newVal: any, oldVal: any) {
+      if (newVal !== oldVal) {
+        this.currentPage = 0;
+        this.fetchAllStockpiles();
+      }
+    }
+  },
   methods: {
     handleSearchInput() {
       // 防抖：如果用户停止输入500ms后自动搜索（前端过滤，无需API调用）
@@ -1314,13 +1328,24 @@ export default defineComponent({
         // 使用分页API获取库存
         const response = await api.product.getAllStockpile(this.currentPage, this.pageSize);
         if (response.code === '200' && response.data) {
+          // 原始库存数据（未经过滤）
           this.stockpiles = Array.isArray(response.data.data) ? response.data.data : [];
-          this.total = response.data.total || 0;
-          this.totalPages = response.data.totalPages || 0;
-          
-          // 获取所有产品的详细信息（只获取当前页的产品）
+
+          // 先获取当前页相关的产品信息，以便根据产品归属的 storeId 做过滤
           await this.fetchProductsInfo();
-          
+
+          // 如果传入了 storeId，按产品的 storeId 进行过滤（库存本身可能未带 storeId 字段）
+          if (this.storeId !== null && this.storeId !== undefined) {
+            this.stockpiles = this.stockpiles.filter((s: any) => {
+              const prod = this.getProductInfo(s.productId);
+              if (!prod) return false;
+              return String(prod.storeId || prod.storeID || prod.store || '') === String(this.storeId);
+            });
+          }
+
+          this.total = this.stockpiles.length || response.data.total || 0;
+          this.totalPages = response.data.totalPages || 0;
+
           // 如果有传入productId，则自动选中对应的库存
           if (this.productId) {
             const stockpile = this.stockpiles.find(s => s.productId == this.productId);

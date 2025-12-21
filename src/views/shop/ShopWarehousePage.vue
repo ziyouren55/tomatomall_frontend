@@ -50,7 +50,7 @@
         <div class="content-card">
           <!-- 使用商店专用的产品管理组件，传入 storeId -->
           <ShopProductManager v-if="activeTab === 'products'" :storeId="storeId" />
-          <StockpileManager v-if="activeTab === 'stockpile'" :storeId="storeId" />
+          <ShopStockpileManager v-if="activeTab === 'stockpile'" :storeId="storeId" />
         </div>
       </div>
     </div>
@@ -59,7 +59,7 @@
 
 <script setup lang="ts">
 import ShopProductManager from '@/components/business/product/ShopProductManager.vue'
-import StockpileManager from '@/components/business/product/StockPileManager.vue'
+import ShopStockpileManager from '@/components/business/product/ShopStockPileManager.vue'
 import { ref, computed } from 'vue';
 import { useRoute } from 'vue-router';
 
