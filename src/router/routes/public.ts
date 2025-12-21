@@ -10,6 +10,12 @@ const publicRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/auth/LoginPage.vue')
     },
     {
+        path: '/stores/:id',
+        name: 'StoreDetail',
+        component: () => import('@/views/store/StoreDetail.vue'),
+        meta: { requiresAuth: false }
+    },
+    {
         path: '/register',
         name: 'Register',
         component: () => import('@/views/auth/RegisterPage.vue')

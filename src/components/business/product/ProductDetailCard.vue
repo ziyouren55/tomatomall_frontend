@@ -89,6 +89,13 @@
               <span v-else-if="props.cartItem">更新购物车 ({{ props.cartItem.quantity }}+{{ quantity }})</span>
               <span v-else>加入购物车</span>
             </button>
+            <button
+              class="btn btn-store"
+              @click="goToStore"
+              :disabled="!props.product?.storeId && !props.product?.store?.id"
+            >
+              前往店铺
+            </button>
           </div>
         </div>
       </div>
@@ -99,6 +106,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useRouter } from 'vue-router'
 import type { Stockpile, CartItem } from '@/types/api'
 import type { Product } from '@/api/modules/product'
 
@@ -216,6 +224,17 @@ const addToCart = () => {
   }
   
   emit('add-to-cart', quantity.value);
+}
+
+// 跳转到店铺详情
+const router = useRouter()
+const goToStore = () => {
+  const storeId = props.product?.storeId || props.product?.store?.id
+  if (!storeId) {
+    ElMessage.warning('未找到所属店铺')
+    return
+  }
+  router.push(`/stores/${storeId}`)
 }
 
 // 计算可用库存
@@ -501,6 +520,16 @@ watch(() => getAvailableStock(), (newAvailableStock) => {
 .btn-cart:hover {
   background: #ff6b35;
   color: white;
+}
+.
+.btn-store {
+  background: #ff6b35;
+  color: white;
+  border: none;
+}
+
+.btn-store:hover {
+  background: #e55a2b;
 }
 
 /* 响应式设计 */
