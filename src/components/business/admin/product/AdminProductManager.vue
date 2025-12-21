@@ -3,7 +3,7 @@
 </template>
 
 <script>
-import ProductManager from './ProductManager.vue';
+import ProductManager from '../../product/ProductManager.vue';
 
 export default {
   name: 'AdminProductManager',

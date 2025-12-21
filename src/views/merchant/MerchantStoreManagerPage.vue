@@ -25,7 +25,7 @@
 
       <div class="tab-content">
         <div class="content-card">
-          <StoreListComponent />
+          <MerchantStoreManage />
         </div>
       </div>
     </div>
@@ -33,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import StoreListComponent from '@/components/business/merchant/StoreListComponent.vue'
+import MerchantStoreManage from '@/components/business/merchant/MerchantStoreManage.vue'
 </script>
 
 <style scoped>

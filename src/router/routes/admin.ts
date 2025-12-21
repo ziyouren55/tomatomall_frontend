@@ -7,7 +7,7 @@ const adminRoutes: RouteRecordRaw[] = [
     {
         path: '/warehouse',
         name: 'Warehouse',
-        component: () => import('@/views/admin/WarehousePage.vue'),
+        component: () => import('@/views/admin/AdminWarehousePage.vue'),
         meta: { requiresAuth: true, requiresAdmin: true }
     },
     {
@@ -17,29 +17,29 @@ const adminRoutes: RouteRecordRaw[] = [
         children: [
             {
                 path: '',
-                component: () => import('@/components/business/admin/coupon/AdminCoupon/CouponList.vue')
+                component: () => import('@/components/business/admin/coupon/CouponList.vue')
             },
             {
                 path: 'create',
-                component: () => import('@/components/business/admin/coupon/AdminCoupon/CouponForm.vue')
+                component: () => import('@/components/business/admin/coupon/CouponForm.vue')
             },
             {
                 path: 'edit/:id',
-                component: () => import('@/components/business/admin/coupon/AdminCoupon/CouponForm.vue'),
+                component: () => import('@/components/business/admin/coupon/CouponForm.vue'),
                 props: true
             },
             {
                 path: ':id',
-                component: () => import('@/components/business/admin/coupon/AdminCoupon/CouponDetail.vue'),
+                component: () => import('@/components/business/admin/coupon/CouponDetail.vue'),
                 props: true
             },
             {
                 path: 'user',
-                component: () => import('@/components/business/admin/coupon/AdminCoupon/UserCoupons.vue')
+                component: () => import('@/components/business/admin/coupon/UserCoupons.vue')
             },
             {
                 path: 'issue',
-                component: () => import('@/components/business/admin/coupon/AdminCoupon/IssueCouponForm.vue')
+                component: () => import('@/components/business/admin/coupon/IssueCouponForm.vue')
             }
         ]
     },
@@ -53,14 +53,14 @@ const adminRoutes: RouteRecordRaw[] = [
     {
         path: '/admin/stores',
         name: 'AdminStores',
-        component: () => import('@/views/admin/AdminStore.vue'),
+        component: () => import('@/views/admin/AdminStoreManagePage.vue'),
         meta: { requiresAuth: true, requiresAdmin: true }
     }
     ,
     {
         path: '/admin/stockpiles',
         name: 'AdminStockpiles',
-        component: () => import('@/components/business/product/AdminStockPileManager.vue'),
+        component: () => import('@/components/business/admin/stockpile/AdminStockPileManager.vue'),
         meta: { requiresAuth: true, requiresAdmin: true }
     }
 ]

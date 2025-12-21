@@ -59,7 +59,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import api from '@/api';
-import type { Coupon } from '@/types/api';
+import type { Coupon } from '@/types/api.ts';
 
 export default defineComponent({
   name: 'CouponList',

@@ -257,7 +257,7 @@
 <script>
 import api from '@/api';
 import ProductForm from './ProductForm.vue';
-import SimpleStockpileEditor from './SimpleStockpileEditor.vue';
+import SimpleStockpileEditor from '../stockpile/SimpleStockpileEditor.vue';
 
 export default {
   name: 'ProductManager',

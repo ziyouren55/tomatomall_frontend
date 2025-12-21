@@ -2,8 +2,8 @@
   <div>
     <NavigationBar />
     <div class="container">
-      <CouponDetail 
-        :coupon-id="String($route.params.id || '')" 
+      <CouponDetail
+        :coupon-id="String($route.params.id || '')"
         @exchange="handleExchange"
         @use="handleUse"
       />
@@ -14,7 +14,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import NavigationBar from '@/components/business/NavigationBar.vue';
-import CouponDetail from '@/components/business/admin/coupon/AdminCoupon/CouponDetail.vue';
+import CouponDetail from '@/components/business/admin/coupon/CouponDetail.vue';
 import api from '@/api';
 
 export default defineComponent({

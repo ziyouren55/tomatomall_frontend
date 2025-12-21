@@ -68,7 +68,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import api from '@/api';
-import type { CouponFormData } from '@/types/api';
+import type { CouponFormData } from '@/types/api.ts';
 
 export default defineComponent({
   name: 'CouponForm',

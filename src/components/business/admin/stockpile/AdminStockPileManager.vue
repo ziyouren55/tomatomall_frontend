@@ -3,7 +3,7 @@
 </template>
 
 <script>
-import StockpileManager from './StockPileManager.vue';
+import StockpileManager from '../../stockpile/StockPileManager.vue';
 
 export default {
   name: 'AdminStockpileManager',

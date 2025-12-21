@@ -8,7 +8,7 @@
         <button @click="fetchUserCoupons" class="btn btn-primary"> 查询 </button>
       </div>
     </div>
-    
+
     <table v-if="userCoupons.length" class="table">
       <thead>
         <tr>
@@ -29,7 +29,7 @@
         </tr>
       </tbody>
     </table>
-    
+
       <div v-if="showIssueForm" class="mt-4">
       <h3>发放优惠券</h3>
       <IssueCouponForm :userId="parseInt(userId, 10)" @issued="handleIssued" />
@@ -41,7 +41,7 @@
 import { defineComponent } from 'vue'
 import api from '@/api';
 import IssueCouponForm from './IssueCouponForm.vue';
-import type { UserCoupon } from '@/types/api';
+import type { UserCoupon } from '@/types/api.ts';
 
 export default defineComponent({
   name: 'UserCoupons',
@@ -63,13 +63,13 @@ export default defineComponent({
     },
     async fetchUserCoupons(): Promise<void> {
       if (!this.userId) return;
-      
+
       const userIdNum = typeof this.userId === 'string' ? parseInt(this.userId, 10) : this.userId;
       if (isNaN(userIdNum)) {
         alert('请输入有效的用户ID');
         return;
       }
-      
+
       try {
         const response = await api.coupon.getUserCoupons(userIdNum);
         this.userCoupons = (response.data || []) as UserCoupon[];

@@ -18,8 +18,8 @@
       <!-- 标签页导航 -->
       <div class="tabs-container">
         <div class="tabs">
-          <button 
-            :class="{ 'active': activeTab === 'products' }" 
+          <button
+            :class="{ 'active': activeTab === 'products' }"
             @click="activeTab = 'products'"
             class="tab-button"
           >
@@ -30,8 +30,8 @@
             </svg>
             <span>产品管理</span>
           </button>
-          <button 
-            :class="{ 'active': activeTab === 'stockpile' }" 
+          <button
+            :class="{ 'active': activeTab === 'stockpile' }"
             @click="activeTab = 'stockpile'"
             class="tab-button"
           >
@@ -57,8 +57,8 @@
 </template>
 
 <script setup lang="ts">
-import AdminProductManager from '@/components/business/product/AdminProductManager.vue'
-import AdminStockpileManager from '@/components/business/product/AdminStockPileManager.vue'
+import AdminProductManager from '@/components/business/admin/product/AdminProductManager.vue'
+import AdminStockpileManager from '@/components/business/admin/stockpile/AdminStockPileManager.vue'
 import { ref } from 'vue';
 
 const activeTab = ref<string>('products');

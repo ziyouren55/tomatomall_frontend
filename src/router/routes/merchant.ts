@@ -29,7 +29,7 @@ const merchantRoutes: RouteRecordRaw[] = [
     {
         path: '/merchant/stores/:id/warehouse',
         name: 'MerchantStoreWarehouse',
-        component: () => import('@/views/shop/ShopWarehousePage.vue'),
+        component: () => import('@/views/store/StoreWarehousePage.vue'),
         meta: { requiresAuth: true, role: 'MERCHANT' }
     }
     ,

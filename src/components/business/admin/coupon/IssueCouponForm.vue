@@ -37,7 +37,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import api from '@/api';
-import type { Coupon } from '@/types/api';
+import type { Coupon } from '@/types/api.ts';
 
 export default defineComponent({
   name: 'IssueCouponForm',
@@ -102,7 +102,7 @@ export default defineComponent({
             couponId: this.issueData.couponId,
             remark: this.issueData.remark
           };
-          
+
           await api.coupon.issueCouponToUser(issueVO);
           this.$emit('issued');
           alert('优惠券发放成功');

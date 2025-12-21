@@ -4,13 +4,13 @@
       <div class="spinner"></div>
       <p>加载中...</p>
     </div>
-    
+
     <div v-else-if="error" class="error">
       <i class="error-icon">⚠️</i>
       <p>{{ error }}</p>
       <button @click="fetchCoupon" class="retry-btn">重试</button>
     </div>
-    
+
     <div v-else-if="coupon" class="detail-content">
       <div class="coupon-header">
         <h1>{{ coupon.name }}</h1>
@@ -18,7 +18,7 @@
           {{ statusText }}
         </div>
       </div>
-      
+
       <div class="coupon-info">
         <div class="info-card">
           <div class="info-item">
@@ -46,12 +46,12 @@
             <span>{{ coupon.pointsRequired ?? 0 }} 积分</span>
           </div>
         </div>
-        
+
         <div class="description-section">
           <h3>优惠券描述</h3>
           <p>{{ coupon.description || '暂无描述' }}</p>
         </div>
-        
+
         <div class="terms-section">
           <h3>使用条款</h3>
           <ul>
@@ -60,16 +60,16 @@
           </ul>
         </div>
       </div>
-      
+
       <div class="action-buttons">
         <button v-if="canExchange" @click="exchangeCoupon" class="btn-exchange">
           <i class="icon-exchange"></i> 兑换优惠券
         </button>
-        
+
         <button v-if="canUse" @click="useCoupon" class="btn-use">
           <i class="icon-use"></i> 立即使用
         </button>
-        
+
         <button @click="goBack" class="btn-back">
           <i class="icon-back"></i> 返回
         </button>
@@ -81,7 +81,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import api from '@/api';
-import type { Coupon } from '@/types/api'
+import type { Coupon } from '@/types/api.ts'
 
 export default defineComponent({
   name: 'CouponDetail',
@@ -108,16 +108,16 @@ export default defineComponent({
     },
     statusText(): string {
       if (!this.coupon) return '';
-      
+
       const end = (this.coupon as any).validTo || (this.coupon as any).expiryDate;
       if (end && new Date() > new Date(end)) {
         return '已过期';
       }
-      
+
       if (this.coupon.status === 1 || (this.coupon as any).isUsed) {
         return '已使用';
       }
-      
+
       return '可使用';
     },
     statusClass(): string {
@@ -143,7 +143,7 @@ export default defineComponent({
     async fetchCoupon(): Promise<void> {
       this.loading = true;
       this.error = null;
-      
+
       try {
         const idVal = (this.couponId ?? (this as any).$route?.params?.id) as string | number | undefined;
         const couponIdNum = Number(idVal);
@@ -384,7 +384,7 @@ export default defineComponent({
   .action-buttons {
     flex-direction: column;
   }
-  
+
   .btn-exchange, .btn-use, .btn-back {
     width: 100%;
   }

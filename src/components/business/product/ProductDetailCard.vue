@@ -521,7 +521,7 @@ watch(() => getAvailableStock(), (newAvailableStock) => {
   background: #ff6b35;
   color: white;
 }
-.
+
 .btn-store {
   background: #ff6b35;
   color: white;
