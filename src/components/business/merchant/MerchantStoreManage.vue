@@ -17,9 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
-import SockJS from 'sockjs-client'
-import Stomp from 'stompjs'
+import { ref, onMounted } from 'vue'
 import storeApi from '@/api/modules/store'
 import type { Store } from '@/api/modules/store'
 import { ElMessage } from 'element-plus'
@@ -64,45 +62,6 @@ const onDelete = async (id?: number) => {
 
 onMounted(() => {
   fetchStores()
-  // WebSocket / STOMP subscribe for merchant notifications
-  try {
-    const socket = new SockJS((import.meta.env.VITE_API_BASE_URL || '') + '/ws')
-    const client = Stomp.over(socket)
-    client.debug = (msg: any) => console.log('[STOMP DEBUG]', msg)
-    client.connect({}, () => {
-      console.log('[WS] stomp connected')
-      client.subscribe('/topic/merchant/notifications', (message: any) => {
-        console.log('[WS] message on /topic/merchant/notifications', message)
-        try {
-          const body = JSON.parse(message.body)
-          console.log('[WS] parsed payload', body)
-          // 简单提示并可扩展为添加到通知中心
-          // @ts-ignore
-          ElMessage({ type: 'info', message: '收到新订单通知：' + (body.orderId || '') })
-        } catch (e) {
-          console.warn('[WS] parse failed', e)
-        }
-      }, (err: any) => {
-        console.error('[WS] subscribe error', err)
-      })
-    }, (err: any) => {
-      console.error('[WS] stomp connect error', err)
-    })
-    socket.onclose = () => console.warn('[WS] socket closed')
-    // 保存到变量以便卸载时断开
-    // @ts-ignore
-    window.__merchantStompClient = client
-  } catch (e) {
-    console.warn('ws init failed', e)
-  }
-})
-
-onUnmounted(() => {
-  try {
-    // @ts-ignore
-    const client = window.__merchantStompClient
-    if (client) client.disconnect()
-  } catch (e) {}
 })
 </script>
 
