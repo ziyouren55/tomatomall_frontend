@@ -4,6 +4,19 @@
       <form @submit.prevent="submitForm">
         <div class="form-header">
           <h2>{{ isEdit ? '编辑产品' : '添加新产品' }}</h2>
+          <div v-if="!isEdit && storeId" class="form-store-info">当前店铺: <strong>{{ storeId }}</strong></div>
+          <div v-if="!isEdit && isAdmin" class="form-store-select">
+            <label>将商品创建到店铺（管理员）</label>
+            <div v-if="storesLoading">加载店铺...</div>
+            <div v-else>
+              <select v-model="selectedStoreId">
+                <option value="">无商店</option>
+                <option v-for="s in stores" :key="s.id" :value="s.id">#{{ s.id }} - {{ s.name }}</option>
+              </select>
+              <div v-if="storesError" class="small-error">{{ storesError }}</div>
+              <div v-if="stores.length === 0" class="hint">未能加载店铺列表，可手动输入店铺 ID（留空为“无商店”）。</div>
+            </div>
+          </div>
         </div>
         
         <div class="form-group">
@@ -112,12 +125,21 @@
   
   <script>
   import api from '@/api';
+  import storeApi from '@/api/modules/store';
   
   export default {
     name: 'ProductForm',
     props: {
       product: {
         type: Object,
+        default: null
+      },
+      isAdmin: {
+        type: Boolean,
+        default: false
+      },
+      storeId: {
+        type: [String, Number],
         default: null
       },
       isEdit: {
@@ -127,6 +149,10 @@
     },
     data() {
       return {
+        stores: [],
+        storesLoading: false,
+        storesError: '',
+        selectedStoreId: '',
         formData: {
           id: null,
           title: '',
@@ -146,8 +172,28 @@
       if (this.isEdit && this.product) {
         this.initFormWithProduct();
       }
+      if (this.isAdmin && !this.isEdit) {
+        this.fetchStoresForAdmin();
+      }
     },
     methods: {
+      async fetchStoresForAdmin() {
+        this.storesLoading = true;
+        this.storesError = '';
+        try {
+          const res = await storeApi.getAllStores(0, 1000);
+          if (res && res.data) {
+            // 支持后端分页包装
+            const payload = res.data.data ?? res.data.content ?? res.data;
+            this.stores = Array.isArray(payload) ? payload : [];
+          }
+        } catch (e) {
+          console.warn('获取店铺列表失败:', e);
+          this.storesError = e?.message || '获取店铺失败';
+        } finally {
+          this.storesLoading = false;
+        }
+      },
       initFormWithProduct() {
         // Copy product data to form
         this.formData = {
@@ -221,7 +267,14 @@
           if (this.isEdit) {
             response = await api.product.updateProduct(this.formData);
           } else {
-            response = await api.product.createProduct(this.formData);
+            const payload = { ...this.formData };
+            // If admin provided a selectedStoreId (from select), use it; otherwise use storeId prop
+            if (this.isAdmin && this.selectedStoreId !== undefined) {
+              if (this.selectedStoreId !== '') payload.storeId = this.selectedStoreId;
+            } else if (this.storeId != null) {
+              payload.storeId = this.storeId;
+            }
+            response = await api.product.createProduct(payload);
           }
           
           if (response.code === '200') {

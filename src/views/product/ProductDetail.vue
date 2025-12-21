@@ -121,10 +121,10 @@ const fetchProductDetail = async (): Promise<void> => {
       
       // 处理购物车信息
       if (cartResponse.status === 'fulfilled' && cartResponse.value && cartResponse.value.code === '200' && cartResponse.value.data) {
-    
         const items = Array.isArray(cartResponse.value.data) ? cartResponse.value.data : []
         const productIdStr = String(productIdNum)
-        const foundItem = items.find((item: CartItem) => item.productId === productIdStr && item.state === 'SHOW')
+        // 比较时统一转为字符串，避免 item.productId 为 number / string 不一致导致匹配失败
+        const foundItem = items.find((item: CartItem) => String(item.productId) === productIdStr && item.state === 'SHOW')
         if (foundItem) {
           cartItem.value = foundItem
           console.log('商品已在购物车中:', foundItem)
@@ -188,10 +188,10 @@ const handleAddToCart = async (quantity: number) => {
     
     // 检查商品是否已在购物车中
     //todo 这里检测有问题
-    if (cartItem.value && cartItem.value.state === 'SHOW') {
+      if (cartItem.value && cartItem.value.state === 'SHOW') {
       // 已在购物车中，更新数量
       const newQuantity = cartItem.value.quantity + quantity
-      const cartItemIdNum = parseInt(cartItem.value.cartItemId, 10)
+      const cartItemIdNum = parseInt(String(cartItem.value.cartItemId), 10)
       console.log('更新购物车项，新数量:', newQuantity)
       response = await api.cart.updateCartItemQuantity(cartItemIdNum, newQuantity)
       

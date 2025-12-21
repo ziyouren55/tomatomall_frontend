@@ -48,9 +48,9 @@
       <!-- 标签页内容 -->
       <div class="tab-content">
         <div class="content-card">
-          <!-- 复用管理员侧组件；组件内部应根据当前登录商家自动加载对应店铺数据 -->
-          <AdminProductManager v-if="activeTab === 'products'" />
-          <StockpileManager v-if="activeTab === 'stockpile'" />
+          <!-- 使用商店专用的产品管理组件，传入 storeId -->
+          <ShopProductManager v-if="activeTab === 'products'" :storeId="storeId" />
+          <StockpileManager v-if="activeTab === 'stockpile'" :storeId="storeId" />
         </div>
       </div>
     </div>
@@ -58,13 +58,19 @@
 </template>
 
 <script setup lang="ts">
-import AdminProductManager from '@/components/business/product/AdminProductManager.vue'
+import ShopProductManager from '@/components/business/product/ShopProductManager.vue'
 import StockpileManager from '@/components/business/product/StockPileManager.vue'
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+import { useRoute } from 'vue-router';
 
 const activeTab = ref<string>('products');
+const route = useRoute();
+const storeId = computed<number | null>(() => {
+  const id = route.params.id;
+  return id ? Number(id) : null;
+});
 
-// 注意：目前复用管理员侧组件；如需不同权限或不同接口，请在组件内或外层传入店铺 id / 权限信息进行区分。
+// 注意：将 storeId 传给店铺专用组件，组件内部会据此创建产品或加载库存
 </script>
 
 <style scoped>

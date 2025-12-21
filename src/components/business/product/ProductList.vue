@@ -84,7 +84,7 @@ export default defineComponent({
       pageSize: 20,
       hasMore: true,
       total: 0,
-      maxPages: 2, // 最多加载10页（200个商品），避免无限滚动导致数据过多
+      maxPages: 3, // 最多加载10页（200个商品），避免无限滚动导致数据过多
       reachedLimit: false // 是否达到上限
     };
   },
