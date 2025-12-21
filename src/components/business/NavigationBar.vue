@@ -59,7 +59,17 @@
               </span>
               <template #dropdown>
             <el-dropdown-menu>
-                <el-dropdown-item command="merchant-stores" v-if="isMerchant || isAdmin">
+                <!-- 管理员看到的是 管理店铺，商家看到的是 我的店铺 -->
+                <el-dropdown-item command="admin-stores" v-if="isAdmin">
+                  <span class="menu-item">
+                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path d="M3 7h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"></path>
+                      <path d="M7 7v-2a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    管理店铺
+                  </span>
+                </el-dropdown-item>
+                <el-dropdown-item command="merchant-stores" v-else-if="isMerchant">
                   <span class="menu-item">
                     <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                       <path d="M3 7h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"></path>
@@ -342,6 +352,9 @@ const handleUserCommand = async (command: string) => {
       break;
     case 'admin-coupons':
       router.push('/admin/coupons');
+      break;
+    case 'admin-stores':
+      router.push('/admin/stores');
       break;
     case 'merchant-stores':
       router.push('/merchant/stores');
