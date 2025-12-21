@@ -58,7 +58,7 @@
                 </svg>
               </span>
               <template #dropdown>
-                <el-dropdown-menu>
+            <el-dropdown-menu>
                 <el-dropdown-item command="merchant-stores" v-if="isMerchant || isAdmin">
                   <span class="menu-item">
                     <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -66,6 +66,15 @@
                       <path d="M7 7v-2a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"></path>
                     </svg>
                     我的店铺
+                  </span>
+                </el-dropdown-item>
+                <el-dropdown-item command="merchant-warehouse" v-if="isMerchant">
+                  <span class="menu-item">
+                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <rect x="3" y="8" width="18" height="4" rx="1"></rect>
+                      <path d="M12 8v13M3 8V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    我的仓库
                   </span>
                 </el-dropdown-item>
                   <el-dropdown-item command="profile">
@@ -308,7 +317,7 @@ const stopCartPolling = () => {
   }
 };
 
-const handleUserCommand = (command: string) => {
+const handleUserCommand = async (command: string) => {
   switch (command) {
     case 'profile':
       router.push('/profile');
@@ -336,6 +345,30 @@ const handleUserCommand = (command: string) => {
       break;
     case 'merchant-stores':
       router.push('/merchant/stores');
+      break;
+    case 'merchant-warehouse':
+      {
+        try {
+          const res = await api.store.getMerchantStores(0, 1)
+          let firstStore: any = null
+          if (res && res.data) {
+            if (Array.isArray(res.data)) firstStore = res.data[0]
+            else if (Array.isArray(res.data.content) && res.data.content.length) firstStore = res.data.content[0]
+            else if (Array.isArray(res.data.data) && res.data.data.length) firstStore = res.data.data[0]
+            else firstStore = res.data[0] || null
+          }
+
+          if (firstStore && firstStore.id) {
+            router.push(`/merchant/stores/${firstStore.id}/warehouse`)
+          } else {
+            // fallback to store list so user can pick/create a store
+            router.push('/merchant/stores')
+          }
+        } catch (e) {
+          console.error('Failed to open merchant warehouse:', e)
+          router.push('/merchant/stores')
+        }
+      }
       break;
     case 'logout':
       logout();
