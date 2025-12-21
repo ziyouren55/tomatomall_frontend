@@ -36,7 +36,7 @@ const merchantRoutes: RouteRecordRaw[] = [
     {
         path: '/merchant/stores/:id/stockpiles',
         name: 'MerchantStoreStockpiles',
-        component: () => import('@/components/business/product/ShopStockPileManager.vue'),
+        component: () => import('@/components/business/store/StoreStockPileManager.vue'),
         props: (route) => ({ storeId: route.params.id }),
         meta: { requiresAuth: true, role: 'MERCHANT' }
     }
