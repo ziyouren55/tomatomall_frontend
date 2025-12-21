@@ -1,3 +1,6 @@
+// Polyfills for libraries that expect Node-like globals in browser (e.g. sockjs-client)
+;(window as any).global = window
+;(window as any).process = { env: {} }
 import './assets/styles/main.css'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'

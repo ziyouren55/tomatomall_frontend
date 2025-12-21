@@ -27,7 +27,7 @@
             <input 
               type="checkbox" 
               v-model="selectedItems" 
-              :value="item.cartItemId || item.id"
+              :value="getCartItemId(item)"
               @change="calculateSelectedTotal"
             >
           </div>
@@ -447,7 +447,9 @@ export default defineComponent({
     toggleSelectAll(event: Event): void {
       const target = event.target as HTMLInputElement
       if (target && target.checked) {
-        this.selectedItems = this.cart.items.map(item => item.cartItemId || item.id).filter((id): id is number => typeof id === 'number');
+        this.selectedItems = this.cart.items
+          .map(item => this.getCartItemId(item))
+          .filter((id): id is number => id !== null);
       } else {
         this.selectedItems = [];
       }
