@@ -140,6 +140,12 @@
                   <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                 </svg>
               </button>
+              <button v-if="isAdmin" class="forum-btn" @click="openForumModal(product)" title="论坛管理">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <circle cx="12" cy="8" r="3"></circle>
+                  <path d="M21 20v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"></path>
+                </svg>
+              </button>
             </td>
           </tr>
         </tbody>
@@ -162,7 +168,87 @@
       </div>
     </div>
 
-    <StockpileManager v-if="showStockpileModal" :productId="currentProduct?.id" @updated="handleStockpileUpdated" @close="closeStockpileModal" />
+    <div v-if="showStockpileModal" class="modal" @click.self="closeStockpileModal">
+      <div class="modal-content stockpile-modal">
+        <div class="modal-header">
+          <div class="modal-title">
+            <svg class="modal-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <rect x="3" y="8" width="18" height="4" rx="1"></rect>
+              <path d="M12 8v13M3 8V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            <h2>管理库存 - {{ currentProduct?.title || currentProduct?.name || '产品' }}</h2>
+          </div>
+          <button class="close-btn" @click="closeStockpileModal" title="关闭">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <SimpleStockpileEditor
+            :productId="currentProduct?.id"
+            :productTitle="currentProduct?.title"
+            @updated="handleStockpileUpdated"
+            @close="closeStockpileModal"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Forum create/check modal for a single product (admin only) -->
+    <div v-if="showForumModal" class="modal" @click.self="closeForumModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-title">
+            <h2>论坛管理 - {{ forumProduct?.title || '产品' }}</h2>
+          </div>
+          <button class="close-btn" @click="closeForumModal" title="关闭">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div v-if="forumError" class="error" style="color:#c62828;">{{ forumError }}</div>
+
+          <div v-if="forumChecking" class="loading">
+            <div class="spinner"></div>
+            <span>正在检查论坛...</span>
+          </div>
+
+          <div v-else-if="forumExists === true">
+            <p>该产品已存在论坛：<strong>{{ forumInfo?.name || '（未获取名称）' }}</strong></p>
+            <div v-if="forumSuccess" class="form-group">
+              <div class="message success">{{ forumSuccess }}</div>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-primary" @click="goToForum">前往论坛</button>
+              <button class="btn btn-secondary" @click="closeForumModal">关闭</button>
+            </div>
+          </div>
+
+          <div v-else-if="forumExists === false">
+            <p>当前尚未为该产品创建论坛，是否现在创建？</p>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-primary" @click="confirmCreateForum" :disabled="forumCreating">
+                {{ forumCreating ? '创建中...' : '创建论坛' }}
+              </button>
+              <button class="btn btn-secondary" @click="closeForumModal">取消</button>
+            </div>
+          </div>
+
+          <div v-else>
+            <p>准备检查该产品是否已有论坛...</p>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-primary" @click="checkForumExists(forumProduct?.id)" :disabled="forumChecking || !forumProduct">检查论坛是否存在</button>
+              <button class="btn btn-secondary" @click="closeForumModal">取消</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Delete modal and other UI reuse existing logic -->
   </div>
@@ -171,7 +257,6 @@
 <script>
 import api from '@/api';
 import ProductForm from './ProductForm.vue';
-import StockpileManager from './StockPileManager.vue';
 import SimpleStockpileEditor from './SimpleStockpileEditor.vue';
 
 export default {
@@ -188,7 +273,6 @@ export default {
   },
   components: {
     ProductForm,
-    StockpileManager,
     SimpleStockpileEditor
   },
   data() {
@@ -203,6 +287,16 @@ export default {
       showStockpileModal: false,
       showDeleteModal: false,
       currentProduct: null,
+      // forum management (admin)
+      showForumModal: false,
+      forumChecking: false,
+      forumExists: null,
+      forumInfo: null,
+      forumError: '',
+      forumCreating: false,
+      forumSuccess: '',
+      forumCreated: false,
+      forumProduct: null,
       searchKeyword: '',
       isSearchMode: false,
       searching: false,
@@ -344,9 +438,99 @@ export default {
       this.currentProduct = product;
       this.showStockpileModal = true;
     },
+    handleStockpileUpdated(payload) {
+      // show a brief message and refresh product list
+      this.messageType = 'success';
+      this.message = '库存已更新';
+      if (this.isSearchMode) this.performSearch(); else this.fetchProducts();
+      this.closeStockpileModal();
+      setTimeout(() => { this.message = ''; }, 3000);
+    },
     closeStockpileModal() {
       this.showStockpileModal = false;
       this.currentProduct = null;
+    },
+    openForumModal(product) {
+      this.forumProduct = product;
+      this.showForumModal = true;
+      this.forumChecking = false;
+      this.forumExists = null;
+      this.forumInfo = null;
+      this.forumError = '';
+      this.forumCreating = false;
+      // auto-check
+      this.checkForumExists(product?.id);
+    },
+    closeForumModal() {
+      this.showForumModal = false;
+      this.forumProduct = null;
+      this.forumChecking = false;
+      this.forumExists = null;
+      this.forumInfo = null;
+      this.forumError = '';
+      this.forumCreating = false;
+    },
+    async checkForumExists(productId) {
+      if (!productId) return;
+      this.forumChecking = true;
+      this.forumError = '';
+      this.forumExists = null;
+      this.forumInfo = null;
+      try {
+        const res = await api.forum.existsBookForum(Number(productId));
+        if (res && res.data && typeof res.data.exists !== 'undefined') {
+          this.forumExists = !!res.data.exists;
+          if (this.forumExists) {
+            // fetch details safely
+            try {
+              const infoRes = await api.forum.getForumByBookId(Number(productId));
+              this.forumInfo = infoRes.data;
+            } catch (e) {
+              console.error('获取论坛详情失败:', e);
+            }
+          }
+        } else {
+          this.forumError = '接口返回格式异常';
+        }
+      } catch (err) {
+        this.forumError = err?.response?.data?.msg || err?.message || '检查失败';
+      } finally {
+        this.forumChecking = false;
+      }
+    },
+    async confirmCreateForum() {
+      const productId = this.forumProduct?.id;
+      if (!productId) {
+        alert('无法获取产品 ID');
+        return;
+      }
+      this.forumCreating = true;
+      this.forumError = '';
+      try {
+        const res = await api.forum.createBookForum(Number(productId));
+        if (res && res.data && res.data.id) {
+          // don't navigate immediately — show success and convert to navigate button
+          this.forumInfo = res.data;
+          this.forumExists = true;
+          this.forumCreated = true;
+          this.forumSuccess = '论坛创建成功';
+        } else {
+          this.forumError = res.msg || '创建失败';
+        }
+      } catch (err) {
+        this.forumError = err?.response?.data?.msg || err?.message || '创建失败';
+      } finally {
+        this.forumCreating = false;
+      }
+    },
+    goToForum() {
+      const id = this.forumInfo?.id;
+      if (id) {
+        this.$router.push(`/forums/${id}`);
+        this.closeForumModal();
+      } else {
+        alert('无法获取论坛 ID，稍后重试');
+      }
     },
     async confirmDelete(product) {
       this.currentProduct = product;

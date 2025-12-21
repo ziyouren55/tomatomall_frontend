@@ -153,6 +153,8 @@
       </div>
     </div>
 
+    <!-- (forum creation UI removed from this page; moved to product manager) -->
+
     <!-- 加载状态 -->
     <div v-if="loading" class="loading">
       <div class="spinner"></div>
@@ -320,6 +322,7 @@ const deleteSelected = async () => {
 onMounted(() => {
   fetchMemberLevels()
 })
+ 
 </script>
 
 <style scoped>

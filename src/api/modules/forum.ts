@@ -53,6 +53,11 @@ const forumApi = {
     ensureBookForum(bookId: number): Promise<ApiResponse<Forum>> {
         return request.post(`/admin/forum/books/${bookId}/forum/ensure`)
     },
+    
+    // 检查某本书是否已有论坛（轻量接口，返回 { exists: boolean }）
+    existsBookForum(bookId: number): Promise<ApiResponse<{ exists: boolean }>> {
+        return request.get(`/forums/book/${bookId}/exists`)
+    },
 
     // 搜索论坛（按名称，状态可选）
     searchForums(keyword: string, page: number = 0, size: number = 10, status?: string): Promise<ApiResponse<PageResult<Forum>>> {
