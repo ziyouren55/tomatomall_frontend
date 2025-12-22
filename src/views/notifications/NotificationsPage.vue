@@ -104,7 +104,16 @@ const open = async (it: Notification) => {
   const p = (it as any).__payload || {}
   const orderId = p.orderId ?? p.orderid ?? null
   if (orderId) {
-    try { (await import('@/router')).default.push(`/order/${orderId}`) } catch (e) {}
+    try {
+      const router = (await import('@/router')).default
+      // if payload contains merchant/store info, go to merchant order view
+      const merchantId = p.merchantId ?? p.merchantid ?? null
+      if (merchantId) {
+        router.push(`/merchant/orders/${orderId}`).catch(()=>{})
+      } else {
+        router.push(`/order/${orderId}`).catch(()=>{})
+      }
+    } catch (e) {}
   }
 }
 

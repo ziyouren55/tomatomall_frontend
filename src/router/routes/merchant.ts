@@ -40,6 +40,13 @@ const merchantRoutes: RouteRecordRaw[] = [
         props: (route) => ({ storeId: route.params.id }),
         meta: { requiresAuth: true, role: 'MERCHANT' }
     }
+    ,
+    {
+        path: '/merchant/orders/:orderId',
+        name: 'MerchantOrderDetail',
+        component: () => import('@/views/merchant/MerchantOrderPage.vue'),
+        meta: { requiresAuth: true, role: 'MERCHANT' }
+    }
 ]
 
 export default merchantRoutes

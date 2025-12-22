@@ -22,6 +22,11 @@ const orderApi = {
         return request.get(`/orders/${orderId}`)
     },
 
+    // 商家视图下的订单详情（仅返回该商家相关明细）
+    getOrderForMerchant(orderId: number): Promise<ApiResponse<Order>> {
+        return request.get(`/orders/merchant/${orderId}`)
+    },
+
     // 发起支付
     payOrder(orderId: number): Promise<ApiResponse<{ paymentForm: string; orderId: string; paymentMethod: string; totalAmount: number }>> {
         return request.post(`/orders/${orderId}/pay`)
