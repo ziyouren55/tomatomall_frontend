@@ -66,8 +66,20 @@ export async function initNotificationService(backendBase = '') {
           console.log('body = ', body)
           console.log('Comp = ', Comp)
           if (Comp) {
+            // build component payload: if backend sent stringified payload, parse it so component gets object
+            let compPayload: any = null
+            try {
+              if (body && body.payload && typeof body.payload === 'string') {
+                compPayload = JSON.parse(body.payload)
+              } else {
+                compPayload = body?.payload ?? body?.__payload ?? body
+              }
+            } catch (e) {
+              compPayload = body?.payload ?? body?.__payload ?? body
+            }
+            console.log('[WS] compPayload = ', compPayload, 'fullBody = ', body)
             // attach onOpen so component emits or calls parent handler will be handled here
-            const vnode = h(Comp, { payload: body, onOpen: () => handleNotificationClickShared(body) })
+            const vnode = h(Comp, { payload: compPayload, __notif: body, onOpen: () => handleNotificationClickShared(body) })
             ElNotification({
               title: '',
               message: vnode,

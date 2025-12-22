@@ -20,6 +20,7 @@ export async function handleNotificationClickShared(notif: any, opts?: { skipMar
 
   // derive payload
   const p = notif && (notif.payload ?? notif.__payload ?? notif) ? (notif.payload ?? notif.__payload ?? notif) : {}
+  console.log('notif = ', notif)
   console.log('p = ', p)
 
   // try navigator registry
@@ -27,7 +28,7 @@ export async function handleNotificationClickShared(notif: any, opts?: { skipMar
     const { getNotificationNavigator } = await import('@/utils/notificationNavigatorRegistry')
     const navigator = getNotificationNavigator(notif?.type ?? '')
     if (navigator) {
-      console.log('go registered navigator = ', navigator)
+      console.log('go registered navigator')
       await navigator(p, notif)
       return
     }

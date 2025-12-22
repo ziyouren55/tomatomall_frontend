@@ -14,8 +14,6 @@ export function registerNotificationComponents() {
 
     // default navigator: use resolver to get path then router.push
     const navigatorForPayload = async (payload: any) => {
-      console.log('navigatorForPayload = ', payload)
-      console.log('payload = ', payload)
       try {
         const path = resolveNotificationPath(payload)
         console.log('path = ', path)

@@ -5,7 +5,6 @@ export function resolveNotificationPath(payload: any): string | null {
     if (typeof payload === 'string') {
       try { snap = JSON.parse(payload) } catch (e) { snap = payload }
     }
-    console.log('resolveNotificationPath payload snapshot =', JSON.stringify(snap))
     if (!snap) return null
 
     // try common locations/variants for orderId
@@ -14,7 +13,6 @@ export function resolveNotificationPath(payload: any): string | null {
       snap.orderid ??
       (snap.payload && (snap.payload.orderId ?? snap.payload.orderid)) ??
       null
-    console.log('resolveNotificationPath orderId =', orderId)
     if (!orderId) return null
 
     const merchantId =
@@ -24,7 +22,6 @@ export function resolveNotificationPath(payload: any): string | null {
       snap.storeid ??
       (snap.payload && (snap.payload.merchantId ?? snap.payload.storeId)) ??
       null
-    console.log('resolveNotificationPath merchantId =', merchantId)
     return merchantId ? `/merchant/orders/${orderId}` : `/order/${orderId}`
   } catch (e) {
     console.error('resolveNotificationPath error', e)

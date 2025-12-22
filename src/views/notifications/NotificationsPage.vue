@@ -109,7 +109,7 @@ const open = async (it: Notification) => {
   // delegate navigation to shared handler; skip mark/badge because already handled above
   try {
     await handleNotificationClickShared(it, { skipMarkAndBadge: true })
-  } catch (e) {}
+    } catch (e) {}
 }
 
 const markAllRead = async () => {
