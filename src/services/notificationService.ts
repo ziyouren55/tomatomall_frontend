@@ -81,8 +81,14 @@ export async function initNotificationService(backendBase = '') {
               dangerouslyUseHTMLString: true,
               duration: 8000,
               showClose: true,
-              onClick: () => {
-                if (orderId) {
+              onClick: async () => {
+                if (!orderId) return
+                try {
+                  const { resolveNotificationPath } = await import('@/utils/notificationRouteResolver')
+                  const path = resolveNotificationPath(body)
+                  if (path) router.push({ path }).catch(()=>{})
+                } catch (e) {
+                  // fallback: direct user order
                   router.push({ path: `/order/${orderId}` }).catch(()=>{})
                 }
               }

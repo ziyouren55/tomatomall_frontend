@@ -32,6 +32,7 @@ import { ref, onMounted } from 'vue'
 import api from '@/api'
 import type { Notification } from '@/api/modules/notification'
 import { getNotificationComponent } from '@/services/notificationComponentRegistry'
+import { resolveNotificationPath } from '@/utils/notificationRouteResolver'
 
 const items = ref<Notification[]>([])
 
@@ -105,12 +106,9 @@ const open = async (it: Notification) => {
   if (orderId) {
     try {
       const router = (await import('@/router')).default
-      // if payload contains merchant/store info, go to merchant order view
-      const merchantId = p.merchantId ?? p.merchantid ?? null
-      if (merchantId) {
-        router.push(`/merchant/orders/${orderId}`).catch(()=>{})
-      } else {
-        router.push(`/order/${orderId}`).catch(()=>{})
+      const path = resolveNotificationPath(p)
+      if (path) {
+        router.push(path).catch(()=>{})
       }
     } catch (e) {}
   }

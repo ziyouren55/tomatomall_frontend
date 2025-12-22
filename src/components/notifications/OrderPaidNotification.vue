@@ -10,17 +10,12 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
+import { resolveNotificationPath } from '@/utils/notificationRouteResolver'
 const props = defineProps<{ payload: any }>()
 const router = useRouter()
 const goOrder = () => {
-  if (!props.payload || !props.payload.orderId) return
-  const orderId = props.payload.orderId
-  const merchantId = props.payload.merchantId ?? props.payload.storeId ?? null
-  if (merchantId) {
-    router.push(`/merchant/orders/${orderId}`).catch(()=>{})
-  } else {
-    router.push(`/order/${orderId}`).catch(()=>{})
-  }
+  const path = resolveNotificationPath(props.payload)
+  if (path) router.push(path).catch(()=>{})
 }
 </script>
 
