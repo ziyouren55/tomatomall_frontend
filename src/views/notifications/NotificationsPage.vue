@@ -37,7 +37,7 @@ import { ref, onMounted } from 'vue'
 import api from '@/api'
 import type { Notification } from '@/api/modules/notification'
 import { getNotificationComponent } from '@/services/notificationComponentRegistry'
-import { resolveNotificationPath } from '@/utils/notificationRouteResolver'
+import { handleNotificationClickShared } from '@/utils/notificationClickHandler'
 
 const items = ref<Notification[]>([])
 
@@ -94,8 +94,6 @@ const formatTime = (ts: any) => {
   }
 }
 
-import { getNotificationNavigator } from '@/utils/notificationNavigatorRegistry'
-
 const open = async (it: Notification) => {
   if (!it) return
   // mark read via bulk API
@@ -108,25 +106,9 @@ const open = async (it: Notification) => {
     console.warn('mark read failed', e)
   }
 
-  // delegate to navigator if exists, otherwise fallback to path resolver
-  const p = (it as any).__payload || {}
-  const navigator = getNotificationNavigator(it.type ?? '')
-  if (navigator) {
-    try {
-      await navigator(p, it)
-      return
-    } catch (e) {
-      console.warn('notification navigator failed', e)
-    }
-  }
-
-  // fallback default navigation using resolveNotificationPath
+  // delegate navigation to shared handler; skip mark/badge because already handled above
   try {
-    const path = resolveNotificationPath(p)
-    if (path) {
-      const router = (await import('@/router')).default
-      router.push(path).catch(()=>{})
-    }
+    await handleNotificationClickShared(it, { skipMarkAndBadge: true })
   } catch (e) {}
 }
 

@@ -12,23 +12,6 @@ async function registerBuiltinComponents() {
     registerNotificationComponent('ORDER_PAID', paid)
     registerNotificationComponent('ORDER_SHIPPED', shipped)
     registerNotificationComponent('ORDER_COMPLETED', completed)
-    // register simple navigators for built-in types
-    try {
-      const { registerNotificationNavigator } = await import('@/utils/notificationNavigatorRegistry')
-      const { resolveNotificationPath } = await import('@/utils/notificationRouteResolver')
-      const navigatorForPayload = async (payload: any) => {
-        const path = resolveNotificationPath(payload)
-        if (path) {
-          const router = (await import('@/router')).default
-          await router.push(path)
-        }
-      }
-      registerNotificationNavigator('ORDER_PAID', navigatorForPayload)
-      registerNotificationNavigator('ORDER_SHIPPED', navigatorForPayload)
-      registerNotificationNavigator('ORDER_COMPLETED', navigatorForPayload)
-    } catch (e) {
-      /* ignore navigator registration errors */
-    }
   } catch (e) {
     console.warn('registerBuiltinComponents failed', e)
   }
@@ -45,7 +28,6 @@ export async function initNotificationService(backendBase = '') {
     const SockJS = (await import('sockjs-client')).default
     const { Client } = await import('@stomp/stompjs')
     const { ElNotification } = await import('element-plus')
-    const router = (await import('@/router')).default
     // ensure built-in formatters/components are registered
     registerBuiltinComponents().catch(()=>{})
 
@@ -66,7 +48,7 @@ export async function initNotificationService(backendBase = '') {
     client.onConnect = () => {
       console.log('[WS] connected (notificationService)')
       connected = true
-      const handleMsg = (msg: any, label = '') => {
+      const handleMsg = async (msg: any, label = '') => {
         try {
           const body = msg.body ? JSON.parse(msg.body) : {}
           console.log('[WS] received', label, body)
@@ -76,10 +58,16 @@ export async function initNotificationService(backendBase = '') {
             // optimistic delta +1
             window.dispatchEvent(new CustomEvent('notificationChanged', { detail: { delta: 1 } }))
           } catch(e) {}
+          // delegate click handling to shared handler to keep behavior consistent with NotificationsPage.open
+          const { handleNotificationClickShared } = await import('@/utils/notificationClickHandler')
+
           // show notification using registered component if available
           const Comp = getNotificationComponent(body.type)
+          console.log('body = ', body)
+          console.log('Comp = ', Comp)
           if (Comp) {
-            const vnode = h(Comp, { payload: body })
+            // attach onOpen so component emits or calls parent handler will be handled here
+            const vnode = h(Comp, { payload: body, onOpen: () => handleNotificationClickShared(body) })
             ElNotification({
               title: '',
               message: vnode,
@@ -100,14 +88,7 @@ export async function initNotificationService(backendBase = '') {
               showClose: true,
               onClick: async () => {
                 if (!orderId) return
-                try {
-                  const { resolveNotificationPath } = await import('@/utils/notificationRouteResolver')
-                  const path = resolveNotificationPath(body)
-                  if (path) router.push({ path }).catch(()=>{})
-                } catch (e) {
-                  // fallback: direct user order
-                  router.push({ path: `/order/${orderId}` }).catch(()=>{})
-                }
+                await handleNotificationClickShared(body)
               }
             })
           }

@@ -6,7 +6,7 @@
       <small>店铺：{{ payload.storeId || '-' }} 商家：{{ payload.merchantId || '-' }}</small>
     </div>
     <div style="margin-top:8px;">
-      <el-button type="primary" size="mini" @click.stop="goOrder">查看订单</el-button>
+      <el-button type="primary" size="small" @click.stop="goOrder">查看订单</el-button>
     </div>
   </div>
 </template>
