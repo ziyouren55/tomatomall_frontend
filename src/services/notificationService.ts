@@ -1,5 +1,21 @@
 import { ref } from 'vue'
 import { getToken } from '@/utils/storage'
+import { h } from 'vue'
+import { registerNotificationComponent, getNotificationComponent } from './notificationComponentRegistry'
+
+// register built-in components (lazy-import to keep bundle reasonable)
+async function registerBuiltinComponents() {
+  try {
+    const paid = (await import('@/components/notifications/OrderPaidNotification.vue')).default
+    const shipped = (await import('@/components/notifications/OrderShippedNotification.vue')).default
+    const completed = (await import('@/components/notifications/OrderCompletedNotification.vue')).default
+    registerNotificationComponent('ORDER_PAID', paid)
+    registerNotificationComponent('ORDER_SHIPPED', shipped)
+    registerNotificationComponent('ORDER_COMPLETED', completed)
+  } catch (e) {
+    console.warn('registerBuiltinComponents failed', e)
+  }
+}
 
 export const notifications = ref<any[]>([])
 
@@ -13,6 +29,8 @@ export async function initNotificationService(backendBase = '') {
     const { Client } = await import('@stomp/stompjs')
     const { ElNotification } = await import('element-plus')
     const router = (await import('@/router')).default
+    // ensure built-in formatters/components are registered
+    registerBuiltinComponents().catch(()=>{})
 
     // if token exists, attach as query param so server-side HandshakeHandler can read it during HTTP handshake
     const token = (() => {
@@ -41,22 +59,35 @@ export async function initNotificationService(backendBase = '') {
             // optimistic delta +1
             window.dispatchEvent(new CustomEvent('notificationChanged', { detail: { delta: 1 } }))
           } catch(e) {}
-          const orderId = body.orderId
-          ElNotification({
-            title: '新订单通知',
-            message: `
-              <div>订单 <strong>#${orderId}</strong> 已支付，金额 ¥${body.amount || ''}。</div>
-              <div style="margin-top:8px;"><a href="#" id="notif-link">查看订单</a></div>
-            `,
-            dangerouslyUseHTMLString: true,
-            duration: 8000,
-            showClose: true,
-            onClick: () => {
-              if (orderId) {
-                router.push({ path: `/order/${orderId}` }).catch(()=>{})
+          // show notification using registered component if available
+          const Comp = getNotificationComponent(body.type)
+          if (Comp) {
+            const vnode = h(Comp, { payload: body })
+            ElNotification({
+              title: '',
+              message: vnode,
+              dangerouslyUseHTMLString: false,
+              duration: 8000,
+              showClose: true,
+            })
+          } else {
+            // fallback simple text notification
+            const orderId = body.orderId
+            ElNotification({
+              title: '新消息',
+              message: `
+                <div>订单 <strong>#${orderId}</strong> 已收到一条新消息。</div>
+              `,
+              dangerouslyUseHTMLString: true,
+              duration: 8000,
+              showClose: true,
+              onClick: () => {
+                if (orderId) {
+                  router.push({ path: `/order/${orderId}` }).catch(()=>{})
+                }
               }
-            }
-          })
+            })
+          }
         } catch (e) {
           console.warn('[WS] service parse failed', e)
         }

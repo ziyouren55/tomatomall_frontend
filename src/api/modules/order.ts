@@ -26,10 +26,27 @@ const orderApi = {
     getOrderForMerchant(orderId: number): Promise<ApiResponse<Order>> {
         return request.get(`/orders/merchant/${orderId}`)
     },
+    // 获取商家待发货订单列表
+    getPendingOrdersForMerchant(): Promise<ApiResponse<Order[]>> {
+        return request.get('/orders/merchant/pending')
+    },
+    // 获取商家已处理订单列表（已发货/已完成）
+    getProcessedOrdersForMerchant(): Promise<ApiResponse<Order[]>> {
+        return request.get('/orders/merchant/processed')
+    },
+    // 用户确认收货
+    confirmReceipt(orderId: number): Promise<ApiResponse<{ message: string }>> {
+        return request.post(`/orders/${orderId}/confirmReceipt`)
+    },
 
     // 发起支付
     payOrder(orderId: number): Promise<ApiResponse<{ paymentForm: string; orderId: string; paymentMethod: string; totalAmount: number }>> {
         return request.post(`/orders/${orderId}/pay`)
+    }
+    ,
+    // 商家标记发货
+    shipOrderForMerchant(orderId: number, body: { carrier?: string; trackingNo?: string }): Promise<ApiResponse<null>> {
+        return request.post(`/orders/merchant/${orderId}/ship`, body)
     }
 }
 

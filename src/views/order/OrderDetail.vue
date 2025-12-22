@@ -5,6 +5,14 @@
       <div class="actions">
         <el-button size="small" @click="$router.push('/order')">返回订单列表</el-button>
         <el-button size="small" type="primary" @click="$router.push('/')">返回首页</el-button>
+        <el-button
+          v-if="order && order.status === 'DELIVERED'"
+          size="small"
+          type="success"
+          @click="handleConfirmReceipt"
+        >
+          确认收货
+        </el-button>
       </div>
     </div>
 
@@ -105,6 +113,23 @@ export default defineComponent({
         const err = e as AxiosError<any>;
         this.errorMessage = err.response?.data?.msg || err.response?.data?.message || '获取订单详情失败';
         ElMessage.error(this.errorMessage);
+      } finally {
+        this.loading = false;
+      }
+    },
+    async handleConfirmReceipt() {
+      if (!this.order || !this.order.orderId) return;
+      try {
+        this.loading = true;
+        const res = await api.order.confirmReceipt(Number(this.order.orderId));
+        // show success
+        ElMessage.success((res as any)?.data?.message || '已确认收货');
+        // reload order detail
+        await this.fetchDetail();
+      } catch (e: unknown) {
+        const err = e as AxiosError<any>;
+        const msg = err.response?.data?.msg || err.response?.data?.message || '确认收货失败';
+        ElMessage.error(msg);
       } finally {
         this.loading = false;
       }

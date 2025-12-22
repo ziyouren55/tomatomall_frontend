@@ -47,6 +47,13 @@ const merchantRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/merchant/MerchantOrderPage.vue'),
         meta: { requiresAuth: true, role: 'MERCHANT' }
     }
+    ,
+    {
+        path: '/merchant/pending-shipments',
+        name: 'MerchantPendingShipments',
+        component: () => import('@/views/merchant/MerchantPendingShipments.vue'),
+        meta: { requiresAuth: true, role: 'MERCHANT' }
+    }
 ]
 
 export default merchantRoutes

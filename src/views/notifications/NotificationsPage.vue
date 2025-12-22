@@ -10,7 +10,10 @@
       <div v-for="item in items" :key="item.id" class="notif-item" :class="{ unread: !item.readFlag }" @click="open(item)">
         <div class="left">
           <div class="type">{{ item.type }}</div>
-          <div class="payload" v-html="formatPayload(item)"></div>
+          <div class="payload">
+            <component v-if="getComponent(item.type)" :is="getComponent(item.type)" :payload="item.__payload" />
+            <div v-else v-html="formatPayload(item)"></div>
+          </div>
         </div>
         <div class="right">
           <div class="time">{{ formatTime(item.createdAt) }}</div>
@@ -28,6 +31,7 @@
 import { ref, onMounted } from 'vue'
 import api from '@/api'
 import type { Notification } from '@/api/modules/notification'
+import { getNotificationComponent } from '@/services/notificationComponentRegistry'
 
 const items = ref<Notification[]>([])
 
@@ -65,12 +69,7 @@ const load = async () => {
 
 const formatPayload = (it: Notification) => {
   const p = (it as any).__payload || {}
-  // friendly for order notifications
-  if (p.orderId || p.amount) {
-    const orderId = p.orderId ?? p.orderid ?? ''
-    const amount = p.amount ?? p.total ?? ''
-    return `订单 <strong>#${orderId}</strong> 已支付，金额 ¥${amount}`
-  }
+  // fallback formatter for unknown types (stringify small object)
   // fallback: stringify small object
   try {
     const s = typeof p === 'string' ? p : JSON.stringify(p)
@@ -134,6 +133,11 @@ const markAllRead = async () => {
 onMounted(() => {
   load()
 })
+
+// expose helper for template to lookup components
+const getComponent = (type?: string) => {
+  return getNotificationComponent(type ?? '')
+}
 </script>
 
 <style scoped>

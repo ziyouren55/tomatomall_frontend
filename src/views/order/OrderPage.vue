@@ -123,11 +123,18 @@
               {{ paymentLoading === order.orderId ? '处理中...' : '去支付' }}
             </button>
             <button 
-              v-if="order.status === 'SUCCESS'"
               @click="viewOrderDetails(order.orderId)"
               class="btn btn-outline-primary"
             >
               查看详情
+            </button>
+            <button
+              v-if="order.status === 'DELIVERED'"
+              @click="confirmReceipt(order.orderId)"
+              class="btn btn-primary"
+              style="margin-left:8px;"
+            >
+              确认收货
             </button>
           </div>
         </div>
@@ -297,6 +304,23 @@ export default defineComponent({
       this.formSubmitted = false;
       // 关闭支付窗口后刷新订单状态
       this.refreshOrders();
+    },
+    
+    // 确认收货
+    async confirmReceipt(orderId: number) {
+      try {
+        const res = await api.order.confirmReceipt(orderId);
+        if (res && (res as any).code === '200') {
+          alert((res as any).data?.message || '确认收货成功');
+          this.refreshOrders();
+        } else {
+          alert((res as any).msg || '确认收货失败');
+        }
+      } catch (error: unknown) {
+        console.error('确认收货失败', error);
+        const axiosError = error as AxiosError<ErrorResponse>;
+        alert(axiosError.response?.data?.msg || axiosError.response?.data?.message || '确认收货失败');
+      }
     },
     
     // 查看订单详情
