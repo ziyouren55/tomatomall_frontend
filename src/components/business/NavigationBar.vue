@@ -156,6 +156,16 @@
               </template>
             </el-dropdown>
 
+            <!-- 消息 -->
+            <router-link to="/notifications" class="nav-link">
+              <div class="cart-icon-wrapper">
+                <svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M21 12.5a1 1 0 0 1-1 1H6l-3 4V6h18z"></path>
+                </svg>
+                <span v-if="unreadCount > 0" class="cart-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+              </div>
+              <span class="cart-text">消息</span>
+            </router-link>
             <!-- 购物车 -->
             <router-link to="/cart" class="cart-link">
               <div class="cart-icon-wrapper">
@@ -193,6 +203,7 @@ const isAdmin = ref<boolean>(false);
 const isMerchant = ref<boolean>(false);
 const username = ref<string>('');
 const userAvatar = ref<string>('');
+const unreadCount = ref<number>(0);
 let cartPollingInterval: ReturnType<typeof setInterval> | null = null;
 
 // 监听路由变化，在搜索页面时同步搜索关键词
@@ -313,6 +324,23 @@ const fetchCartCount = async () => {
   }
 };
 
+const fetchUnreadCount = async () => {
+  if (!isLoggedIn.value) {
+    unreadCount.value = 0;
+    return;
+  }
+  try {
+    const res = await api.notification.unreadCount();
+    if (res && res.data) {
+      // support different shapes: either {unreadCount} or raw number
+      const v = res.data.unreadCount ?? res.data ?? 0;
+      unreadCount.value = typeof v === 'number' ? v : Number(v) || 0;
+    }
+  } catch (e) {
+    console.warn('Failed to fetch unread count', e);
+  }
+}
+
 const startCartPolling = () => {
   // Poll for cart updates every 30 seconds
   cartPollingInterval = setInterval(() => {
@@ -424,6 +452,21 @@ onMounted(() => {
   
   // 监听登录状态变化事件
   window.addEventListener('loginStatusChanged', checkLoginStatus);
+  window.addEventListener('loginStatusChanged', fetchUnreadCount);
+  // listen for notification changes; if event has delta, apply optimistically, else fetch latest
+  window.addEventListener('notificationChanged', (e: Event) => {
+    try {
+      const ce = e as CustomEvent
+      const d = ce.detail && typeof ce.detail.delta === 'number' ? ce.detail.delta : null
+      if (d !== null) {
+        unreadCount.value = Math.max(0, unreadCount.value + d)
+      } else {
+        fetchUnreadCount()
+      }
+    } catch (err) {
+      fetchUnreadCount()
+    }
+  });
 });
 
 onBeforeUnmount(() => {
@@ -432,6 +475,8 @@ onBeforeUnmount(() => {
   
   // 移除事件监听
   window.removeEventListener('loginStatusChanged', checkLoginStatus);
+  window.removeEventListener('loginStatusChanged', fetchUnreadCount);
+  window.removeEventListener('notificationChanged', fetchUnreadCount);
 });
 
 watch(() => route.path, () => {

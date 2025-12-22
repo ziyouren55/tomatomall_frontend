@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { getToken } from '@/utils/storage'
 
 export const notifications = ref<any[]>([])
 
@@ -13,7 +14,12 @@ export async function initNotificationService(backendBase = '') {
     const { ElNotification } = await import('element-plus')
     const router = (await import('@/router')).default
 
-    const sockUrl = backendBase.endsWith('/') ? backendBase + 'ws' : backendBase + '/ws'
+    // if token exists, attach as query param so server-side HandshakeHandler can read it during HTTP handshake
+    const token = (() => {
+      try { return getToken() } catch (e) { return null }
+    })()
+    const baseWs = backendBase.endsWith('/') ? backendBase + 'ws' : backendBase + '/ws'
+    const sockUrl = token ? `${baseWs}?token=${encodeURIComponent(token)}` : baseWs
     const socketFactory = () => new SockJS(sockUrl)
 
     client = new Client({
@@ -25,10 +31,16 @@ export async function initNotificationService(backendBase = '') {
     client.onConnect = () => {
       console.log('[WS] connected (notificationService)')
       connected = true
-      client.subscribe('/topic/merchant/notifications', (msg: any) => {
+      const handleMsg = (msg: any, label = '') => {
         try {
           const body = msg.body ? JSON.parse(msg.body) : {}
+          console.log('[WS] received', label, body)
           notifications.value.unshift(body)
+          // 通知全局：有新消息，导航栏可刷新未读数或 badge
+          try {
+            // optimistic delta +1
+            window.dispatchEvent(new CustomEvent('notificationChanged', { detail: { delta: 1 } }))
+          } catch(e) {}
           const orderId = body.orderId
           ElNotification({
             title: '新订单通知',
@@ -48,7 +60,20 @@ export async function initNotificationService(backendBase = '') {
         } catch (e) {
           console.warn('[WS] service parse failed', e)
         }
-      })
+      }
+
+      // subscribe to merchant topic, general topic and user queue (if server sends to these)
+      client.subscribe('/topic/merchant/notifications', (msg: any) => handleMsg(msg, 'merchant'))
+      client.subscribe('/topic/notifications', (msg: any) => handleMsg(msg, 'general'))
+      client.subscribe('/user/queue/notifications', (msg: any) => handleMsg(msg, 'user'))
+    }
+
+    // attach token for handshake / CONNECT headers so server can assign Principal
+    try {
+      const token = getToken()
+      if (token) client.connectHeaders = { token }
+    } catch (e) {
+      // ignore
     }
 
     client.onStompError = (frame: any) => {

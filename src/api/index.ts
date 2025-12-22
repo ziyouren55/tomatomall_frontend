@@ -17,6 +17,7 @@ import post from './modules/post'
 import reply from './modules/reply'
 import image from './modules/image'
 import store from './modules/store'
+import notification from './modules/notification'
 
 export default {
     user,
@@ -32,5 +33,6 @@ export default {
     reply,
     image
     ,store
+    ,notification
 }
 
