@@ -12,6 +12,23 @@ async function registerBuiltinComponents() {
     registerNotificationComponent('ORDER_PAID', paid)
     registerNotificationComponent('ORDER_SHIPPED', shipped)
     registerNotificationComponent('ORDER_COMPLETED', completed)
+    // register simple navigators for built-in types
+    try {
+      const { registerNotificationNavigator } = await import('@/utils/notificationNavigatorRegistry')
+      const { resolveNotificationPath } = await import('@/utils/notificationRouteResolver')
+      const navigatorForPayload = async (payload: any) => {
+        const path = resolveNotificationPath(payload)
+        if (path) {
+          const router = (await import('@/router')).default
+          await router.push(path)
+        }
+      }
+      registerNotificationNavigator('ORDER_PAID', navigatorForPayload)
+      registerNotificationNavigator('ORDER_SHIPPED', navigatorForPayload)
+      registerNotificationNavigator('ORDER_COMPLETED', navigatorForPayload)
+    } catch (e) {
+      /* ignore navigator registration errors */
+    }
   } catch (e) {
     console.warn('registerBuiltinComponents failed', e)
   }

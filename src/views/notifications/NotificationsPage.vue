@@ -11,7 +11,12 @@
         <div class="left">
           <div class="type">{{ item.type }}</div>
           <div class="payload">
-            <component v-if="getComponent(item.type)" :is="getComponent(item.type)" :payload="item.__payload" />
+            <component
+              v-if="getComponent(item.type)"
+              :is="getComponent(item.type)"
+              :payload="item.__payload"
+              @open="open(item)"
+            />
             <div v-else v-html="formatPayload(item)"></div>
           </div>
         </div>
@@ -89,6 +94,8 @@ const formatTime = (ts: any) => {
   }
 }
 
+import { getNotificationNavigator } from '@/utils/notificationNavigatorRegistry'
+
 const open = async (it: Notification) => {
   if (!it) return
   // mark read via bulk API
@@ -100,18 +107,27 @@ const open = async (it: Notification) => {
   } catch (e) {
     console.warn('mark read failed', e)
   }
-  // if payload contains orderId, navigate to order detail
+
+  // delegate to navigator if exists, otherwise fallback to path resolver
   const p = (it as any).__payload || {}
-  const orderId = p.orderId ?? p.orderid ?? null
-  if (orderId) {
+  const navigator = getNotificationNavigator(it.type ?? '')
+  if (navigator) {
     try {
-      const router = (await import('@/router')).default
-      const path = resolveNotificationPath(p)
-      if (path) {
-        router.push(path).catch(()=>{})
-      }
-    } catch (e) {}
+      await navigator(p, it)
+      return
+    } catch (e) {
+      console.warn('notification navigator failed', e)
+    }
   }
+
+  // fallback default navigation using resolveNotificationPath
+  try {
+    const path = resolveNotificationPath(p)
+    if (path) {
+      const router = (await import('@/router')).default
+      router.push(path).catch(()=>{})
+    }
+  } catch (e) {}
 }
 
 const markAllRead = async () => {

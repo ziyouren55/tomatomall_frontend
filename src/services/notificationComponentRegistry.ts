@@ -15,4 +15,7 @@ export function clearNotificationRegistry() {
   registry.clear()
 }
 
+// also export a simple hook to register navigators alongside components
+// consumer can import registerNotificationNavigator from '@/utils/notificationNavigatorRegistry'
+
 

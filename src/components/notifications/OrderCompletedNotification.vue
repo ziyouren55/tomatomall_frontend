@@ -12,13 +12,10 @@
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
-import { resolveNotificationPath } from '@/utils/notificationRouteResolver'
 const props = defineProps<{ payload: any }>()
-const router = useRouter()
+const emit = defineEmits(['open'])
 const goOrder = () => {
-  const path = resolveNotificationPath(props.payload)
-  if (path) router.push(path).catch(()=>{})
+  emit('open')
 }
 </script>
 
