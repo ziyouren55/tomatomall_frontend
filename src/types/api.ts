@@ -411,3 +411,27 @@ export interface SchoolVerificationRequest {
     certificateUrl: string
 }
 
+/**
+ * 地区相关类型
+ */
+export interface Province {
+    code: string
+    name: string
+    [key: string]: any
+}
+
+export interface City {
+    code: string
+    name: string
+    province_code?: string
+    [key: string]: any
+}
+
+export interface School {
+    code: string
+    name: string
+    province_code?: string
+    city_code?: string
+    [key: string]: any
+}
+

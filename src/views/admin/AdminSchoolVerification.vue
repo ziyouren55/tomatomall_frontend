@@ -10,6 +10,7 @@
           <option value="REJECTED">已驳回</option>
         </select>
         <button class="refresh-btn" @click="fetchList">刷新</button>
+        <button class="refresh-btn" @click="goToSchoolManager">学校管理</button>
       </div>
     </div>
 
@@ -64,6 +65,7 @@
 import { ref, onMounted } from 'vue'
 import api from '@/api'
 import type { SchoolVerification } from '@/types/api'
+import { useRouter } from 'vue-router'
 
 const items = ref<SchoolVerification[]>([])
 const loading = ref(false)
@@ -117,6 +119,10 @@ async function rejectConfirm() {
 onMounted(() => {
   fetchList()
 })
+const router = useRouter()
+function goToSchoolManager() {
+  router.push('/admin/schools')
+}
 function openImage(url: string | undefined) {
   if (!url) return
   modalImageUrl.value = url

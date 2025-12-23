@@ -5,14 +5,38 @@
       <button @click="$emit('submitted')">关闭</button>
     </div>
     <div v-else>
-      <div class="form-group">
-        <label>学校名称 <span class="required">*</span></label>
-        <input v-model="form.schoolName" type="text" placeholder="例如：北京大学" />
+    <div class="form-group">
+      <label>省/直辖市 <span class="required">*</span></label>
+      <select v-model="provinceCode" @change="onProvinceChange">
+        <option value="">请选择省/直辖市</option>
+        <option v-for="p in provinces" :key="p.code" :value="p.code">{{ p.name }}</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>城市 <span class="required">*</span></label>
+      <select v-model="cityCode" @change="onCityChange" :disabled="!provinceCode">
+        <option value="">请选择城市</option>
+        <option v-for="c in cities" :key="c.code" :value="c.code">{{ c.name }}</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>学校（可搜索） <span class="required">*</span></label>
+      <input v-model="schoolQuery" @input="onSchoolQuery" placeholder="请输入学校关键字搜索" />
+      <select v-model="selectedSchoolCode" :disabled="!cityCode">
+        <option value="">请选择学校（或留空手动输入下方）</option>
+        <option v-for="s in schools" :key="s.code" :value="s.code">{{ s.name }}</option>
+      </select>
+      <div style="margin-top:8px;">
+        <input v-model="manualSchoolName" type="text" placeholder="若未找到学校，可在此手动输入学校名称" />
       </div>
-      <div class="form-group">
-        <label>学号 <span class="required">*</span></label>
-        <input v-model="form.studentId" type="text" placeholder="请输入学号" />
-      </div>
+    </div>
+
+    <div class="form-group">
+      <label>学号 <span class="required">*</span></label>
+      <input v-model="form.studentId" type="text" placeholder="请输入学号" />
+    </div>
       <div class="form-group">
         <label>证件图片 <span class="required">*</span></label>
         <div class="upload-row">
@@ -34,9 +58,9 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import api from '@/api'
-import type { SchoolVerificationRequest } from '@/types/api'
+import type { SchoolVerificationRequest, Province, City, School } from '@/types/api'
 
 const emit = defineEmits(['submitted','cancel'])
 
@@ -46,12 +70,59 @@ const form = ref<SchoolVerificationRequest>({
   certificateUrl: ''
 })
 
+// location selectors
+const provinces = ref<Province[]>([])
+const cities = ref<City[]>([])
+const schools = ref<School[]>([])
+const provinceCode = ref<string>('')
+const cityCode = ref<string>('')
+const selectedSchoolCode = ref<string>('')
+const schoolQuery = ref<string>('')
+const manualSchoolName = ref<string>('')
+
 const fileInput = ref<HTMLInputElement | null>(null)
 const loading = ref(false)
 const uploading = ref(false)
 const error = ref('')
 const submitted = ref(false)
 const status = ref('')
+
+onMounted(async () => {
+  await loadProvinces()
+})
+
+async function loadProvinces() {
+  const res = await api.location.getProvinces()
+  if (res && res.code === '200') provinces.value = res.data || []
+}
+
+async function onProvinceChange() {
+  cityCode.value = ''
+  selectedSchoolCode.value = ''
+  schools.value = []
+  if (!provinceCode.value) { cities.value = []; return }
+  const res = await api.location.getCities(provinceCode.value)
+  if (res && res.code === '200') cities.value = res.data || []
+}
+
+async function onCityChange() {
+  selectedSchoolCode.value = ''
+  schools.value = []
+  if (!cityCode.value) return
+  await loadSchools()
+}
+
+let schoolTimer: any = null
+function onSchoolQuery() {
+  clearTimeout(schoolTimer)
+  schoolTimer = setTimeout(loadSchools, 300)
+}
+
+async function loadSchools() {
+  if (!cityCode.value) return
+  const res = await api.location.getSchools(cityCode.value, schoolQuery.value || '', 50)
+  if (res && res.code === '200') schools.value = res.data || []
+}
 
 function triggerFile() {
   fileInput.value?.click()
@@ -86,8 +157,11 @@ async function handleFileSelect(e: Event) {
 }
 
 async function handleSubmit() {
-  if (!form.value.schoolName.trim()) {
-    error.value = '请输入学校名称'
+  // build schoolName: manual > selected from list
+  const chosenName = (manualSchoolName.value && manualSchoolName.value.trim()) ? manualSchoolName.value.trim()
+                    : (selectedSchoolCode.value ? (schools.value.find(s => s.code === selectedSchoolCode.value)?.name || '') : '')
+  if (!chosenName) {
+    error.value = '请选择或输入学校名称'
     return
   }
   if (!(form.value.studentId ?? '').trim()) {
@@ -101,7 +175,7 @@ async function handleSubmit() {
   loading.value = true
   try {
     const payload = {
-      schoolName: form.value.schoolName,
+      schoolName: chosenName,
       studentId: form.value.studentId ?? '',
       certificateUrl: form.value.certificateUrl
     }

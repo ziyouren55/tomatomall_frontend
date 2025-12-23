@@ -58,6 +58,13 @@ const adminRoutes: RouteRecordRaw[] = [
     }
     ,
     {
+        path: '/admin/schools',
+        name: 'AdminSchools',
+        component: () => import('@/views/admin/AdminSchools.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+    }
+    ,
+    {
         path: '/admin/stores',
         name: 'AdminStores',
         component: () => import('@/views/admin/AdminStoreManagePage.vue'),

@@ -18,9 +18,12 @@ import reply from './modules/reply'
 import image from './modules/image'
 import store from './modules/store'
 import notification from './modules/notification'
+import location from './modules/location'
 
 export default {
     user,
+    // location APIs (province/city/school)
+    location,
     product,
     cart,
     order,
