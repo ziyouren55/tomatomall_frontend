@@ -23,10 +23,24 @@
               <span class="role-badge" :class="(userProfile.role || 'USER').toLowerCase()">
                 {{ getRoleLabel(userProfile.role) }}
               </span>
+              <div style="margin-top:8px">
+                <template v-if="schoolVerification && schoolVerification.status === 'VERIFIED'">
+                  <span class="badge" style="background:#22c55e;color:#fff;padding:4px 8px;border-radius:6px">学校认证：已认证</span>
+                </template>
+                <template v-else-if="schoolVerification && schoolVerification.status === 'PENDING'">
+                  <span class="badge" style="background:#f59e0b;color:#fff;padding:4px 8px;border-radius:6px">学校认证：审核中</span>
+                </template>
+                <template v-else>
+                  <button class="edit-button" style="margin-top:6px" @click="openVerification">去认证</button>
+                </template>
+              </div>
             </div>
           </div>
           
           <div class="profile-content">
+            <div v-if="showVerificationForm" style="margin-bottom:16px">
+              <SchoolVerificationForm @submitted="onVerificationSubmitted" @cancel="showVerificationForm = false" />
+            </div>
             <div v-if="!isEditing" class="profile-details">
               <div class="info-group">
                 <label>手机号</label>
@@ -135,6 +149,8 @@
   <script lang="ts">
   import { defineComponent } from 'vue'
   import api from '@/api';
+  import SchoolVerificationForm from '@/components/user/SchoolVerificationForm.vue'
+  import type { SchoolVerification } from '@/types/api'
   import type { UserInfo, ErrorResponse } from '@/types/api'
   import type { AxiosError } from 'axios'
   import { UserRole, USER_ROLE_LABELS, getRoleLabel as getRoleLabelUtil, normalizeRole } from '@/utils/constants'
@@ -163,12 +179,37 @@
         // 在模板中使用的常量
         UserRole,
         USER_ROLE_LABELS
+        ,
+        showVerificationForm: false,
+        schoolVerification: null as SchoolVerification | null
       };
     },
     created() {
       this.fetchUserProfile();
     },
+    components: {
+      SchoolVerificationForm
+    },
     methods: {
+      async fetchSchoolVerification(): Promise<void> {
+        try {
+          const username = this.userProfile.username;
+          if (!username) return;
+          const res = await api.user.getSchoolVerification(username);
+          if (res && res.code === '200') {
+            this.schoolVerification = res.data || null;
+          }
+        } catch (e) {
+          // ignore
+        }
+      },
+      openVerification() {
+        this.showVerificationForm = true;
+      },
+      onVerificationSubmitted() {
+        this.showVerificationForm = false;
+        this.fetchSchoolVerification();
+      },
       getRoleLabel(role: string | UserRole | undefined | null): string {
         // 使用导入的 getRoleLabel 工具函数
         return getRoleLabelUtil(role);
@@ -191,6 +232,8 @@
             this.userProfile = response.data;
             // 初始化编辑表单
             this.initEditForm();
+            // 拉取学校认证状态
+            this.fetchSchoolVerification();
           } else {
             this.error = response.msg || '获取用户信息失败';
           }

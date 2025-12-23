@@ -386,3 +386,28 @@ export interface EditForm {
     role: UserRole
 }
 
+/**
+ * 学校认证（后端 SchoolVerificationVO）
+ */
+export interface SchoolVerification {
+    id?: number
+    userId?: number
+    schoolName: string
+    // 不在响应中暴露明文学号，只有提交时携带
+    certificateUrl?: string
+    status?: 'UNVERIFIED' | 'PENDING' | 'VERIFIED' | 'REJECTED'
+    submittedAt?: string
+    verifiedAt?: string
+    rejectedReason?: string
+    [key: string]: any
+}
+
+/**
+ * 学校认证提交请求体
+ */
+export interface SchoolVerificationRequest {
+    schoolName: string
+    studentId?: string
+    certificateUrl: string
+}
+

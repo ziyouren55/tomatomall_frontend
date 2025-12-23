@@ -151,6 +151,15 @@
                       优惠券管理
                     </span>
                   </el-dropdown-item>
+                <el-dropdown-item command="admin-school-verifications" v-if="isAdmin">
+                  <span class="menu-item">
+                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path d="M3 7h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"></path>
+                      <path d="M7 7v-2a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    学校认证审核
+                  </span>
+                </el-dropdown-item>
                   <el-dropdown-item command="logout" divided>
                     <span class="menu-item">
                       <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -389,6 +398,9 @@ const handleUserCommand = async (command: string) => {
       break;
     case 'admin-coupons':
       router.push('/admin/coupons');
+      break;
+    case 'admin-school-verifications':
+      router.push('/admin/school-verifications');
       break;
     case 'admin-stores':
       router.push('/admin/stores');

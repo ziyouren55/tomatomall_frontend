@@ -54,6 +54,7 @@
             <RefreshCcw class="w-4 h-4" />
             <span>{{ loading ? '刷新中...' : '刷新' }}</span>
           </button>
+          <!-- (school verification UI removed from member page) -->
                   </div>
       </section>
                 
