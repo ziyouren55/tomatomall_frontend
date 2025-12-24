@@ -39,6 +39,11 @@ const orderApi = {
         return request.post(`/orders/${orderId}/confirmReceipt`)
     },
 
+    // 取消订单
+    cancelOrder(orderId: number): Promise<ApiResponse<{ message: string }>> {
+        return request.post(`/orders/${orderId}/cancel`)
+    },
+
     // 发起支付
     payOrder(orderId: number): Promise<ApiResponse<{ paymentForm: string; orderId: string; paymentMethod: string; totalAmount: number }>> {
         return request.post(`/orders/${orderId}/pay`)

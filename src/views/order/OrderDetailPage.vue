@@ -6,6 +6,15 @@
         <el-button size="small" @click="$router.push('/order')">返回订单列表</el-button>
         <el-button size="small" type="primary" @click="$router.push('/')">返回首页</el-button>
         <el-button
+          v-if="order && order.status === 'PENDING'"
+          size="small"
+          type="danger"
+          @click="handleCancelOrder"
+          :loading="cancelLoading"
+        >
+          取消订单
+        </el-button>
+        <el-button
           v-if="order && order.status === 'DELIVERED'"
           size="small"
           type="success"
@@ -65,7 +74,7 @@
 import { defineComponent } from 'vue';
 import api from '@/api';
 import type { AxiosError } from 'axios';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 
 export default defineComponent({
   name: 'OrderDetail',
@@ -73,6 +82,7 @@ export default defineComponent({
     return {
       order: null as any,
       loading: false,
+      cancelLoading: false,
       errorMessage: '',
       items: [] as any[]
     };
@@ -132,6 +142,36 @@ export default defineComponent({
         ElMessage.error(msg);
       } finally {
         this.loading = false;
+      }
+    },
+
+    async handleCancelOrder() {
+      if (!this.order || !this.order.orderId) return;
+
+      const result = await ElMessageBox.confirm(
+        '确定要取消这个订单吗？取消后无法恢复。',
+        '确认取消',
+        {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning',
+        }
+      );
+
+      if (result !== 'confirm') return;
+
+      try {
+        this.cancelLoading = true;
+        const res = await api.order.cancelOrder(Number(this.order.orderId));
+        ElMessage.success((res as any)?.data?.message || '订单取消成功');
+        // reload order detail
+        await this.fetchDetail();
+      } catch (e: unknown) {
+        const err = e as AxiosError<any>;
+        const msg = err.response?.data?.msg || err.response?.data?.message || '取消订单失败';
+        ElMessage.error(msg);
+      } finally {
+        this.cancelLoading = false;
       }
     },
     formatDate(dateString: string | undefined) {

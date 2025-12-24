@@ -33,11 +33,16 @@
         :class="{ active: selectedTab === 'toreceive' }"
         @click="setTab('toreceive')"
       >待收货</button>
-      <button 
-        class="tab-btn" 
+      <button
+        class="tab-btn"
         :class="{ active: selectedTab === 'tocomment' }"
         @click="setTab('tocomment')"
       >待评价</button>
+      <button
+        class="tab-btn"
+        :class="{ active: selectedTab === 'cancelled' }"
+        @click="setTab('cancelled')"
+      >已取消</button>
     </div>
     
     <!-- Error Message -->
@@ -114,15 +119,24 @@
           </div>
           
           <div class="order-actions">
-            <button 
-              v-if="order.status === 'PENDING'" 
-              @click="payOrder(order.orderId)" 
+            <button
+              v-if="order.status === 'PENDING'"
+              @click="cancelOrder(order.orderId)"
+              class="btn btn-outline-danger"
+              :disabled="cancelLoading === order.orderId"
+              style="margin-right:8px;"
+            >
+              {{ cancelLoading === order.orderId ? '取消中...' : '取消订单' }}
+            </button>
+            <button
+              v-if="order.status === 'PENDING'"
+              @click="payOrder(order.orderId)"
               class="btn btn-primary"
               :disabled="paymentLoading === order.orderId"
             >
               {{ paymentLoading === order.orderId ? '处理中...' : '去支付' }}
             </button>
-            <button 
+            <button
               @click="viewOrderDetails(order.orderId)"
               class="btn btn-outline-primary"
             >
@@ -184,12 +198,13 @@ export default defineComponent({
       orders: [] as Order[],
       loading: false,
       paymentLoading: null as number | null, // 记录正在支付的订单ID
+      cancelLoading: null as number | null, // 记录正在取消的订单ID
       errorMessage: '',
       showPaymentForm: false,
       paymentForm: null as string | null,
       currentOrderId: null as number | null,
       formSubmitted: false,
-      selectedTab: 'all' as 'all' | 'unpaid' | 'toship' | 'toreceive' | 'tocomment'
+      selectedTab: 'all' as 'all' | 'unpaid' | 'toship' | 'toreceive' | 'tocomment' | 'cancelled'
     };
   },
   computed: {
@@ -212,6 +227,10 @@ export default defineComponent({
       // 待评价：COMPLETED
       if (this.selectedTab === 'tocomment') {
         return this.orders.filter(o => o.status === 'COMPLETED');
+      }
+      // 已取消：CANCELLED
+      if (this.selectedTab === 'cancelled') {
+        return this.orders.filter(o => o.status === 'CANCELLED');
       }
       return this.orders;
     }
@@ -249,7 +268,7 @@ export default defineComponent({
       return order?.orderItems || order?.cartItems || [];
     },
 
-    setTab(tab: 'all' | 'unpaid' | 'toship' | 'toreceive' | 'tocomment') {
+    setTab(tab: 'all' | 'unpaid' | 'toship' | 'toreceive' | 'tocomment' | 'cancelled') {
       this.selectedTab = tab;
     },
     
@@ -320,6 +339,31 @@ export default defineComponent({
         console.error('确认收货失败', error);
         const axiosError = error as AxiosError<ErrorResponse>;
         alert(axiosError.response?.data?.msg || axiosError.response?.data?.message || '确认收货失败');
+      }
+    },
+
+    // 取消订单
+    async cancelOrder(orderId: number) {
+      if (!confirm('确定要取消这个订单吗？取消后无法恢复。')) {
+        return;
+      }
+
+      this.cancelLoading = orderId;
+
+      try {
+        const res = await api.order.cancelOrder(orderId);
+        if (res && (res as any).code === '200') {
+          alert((res as any).data?.message || '订单取消成功');
+          this.refreshOrders();
+        } else {
+          alert((res as any).msg || '订单取消失败');
+        }
+      } catch (error: unknown) {
+        console.error('取消订单失败', error);
+        const axiosError = error as AxiosError<ErrorResponse>;
+        alert(axiosError.response?.data?.msg || axiosError.response?.data?.message || '取消订单失败');
+      } finally {
+        this.cancelLoading = null;
       }
     },
     
