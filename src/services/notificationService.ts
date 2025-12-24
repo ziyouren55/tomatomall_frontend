@@ -35,9 +35,14 @@ export async function initNotificationService(backendBase = '') {
     const token = (() => {
       try { return getToken() } catch (e) { return null }
     })()
-    const baseWs = backendBase.endsWith('/') ? backendBase + 'ws' : backendBase + '/ws'
+    // 确保backendBase是基础URL，不包含/api路径
+    const cleanBase = backendBase.replace(/\/api\/?$/, '').replace(/\/$/, '')
+    const baseWs = `${cleanBase}/api/ws`
     const sockUrl = token ? `${baseWs}?token=${encodeURIComponent(token)}` : baseWs
-    const socketFactory = () => new SockJS(sockUrl)
+    const socketFactory = () => new SockJS(sockUrl, undefined, {
+      // 配置SockJS传输方式，优先使用websocket，避免iframe等fallback
+      transports: ['websocket', 'xhr-streaming', 'xhr-polling']
+    })
 
     client = new Client({
       webSocketFactory: socketFactory,

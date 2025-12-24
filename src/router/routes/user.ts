@@ -111,6 +111,12 @@ const userRoutes: RouteRecordRaw[] = [
         name: 'PostDetail',
         component: () => import('@/views/forum/PostDetailPage.vue'),
         meta: { requiresAuth: true }
+    },
+    {
+        path: '/chat',
+        name: 'Chat',
+        component: () => import('@/views/chat/ChatPage.vue'),
+        meta: { requiresAuth: true }
     }
 ]
 

@@ -11,6 +11,12 @@
           <span class="role">{{ roleLabel }}</span>
           <p v-if="user.location">所在地：{{ user.location }}</p>
         </div>
+        <div class="profile-actions" v-if="canChat">
+          <el-button type="primary" @click="startChat" :loading="chatLoading">
+            <el-icon><ChatDotRound /></el-icon>
+            聊天
+          </el-button>
+        </div>
       </div>
 
       <section v-if="isMerchant" class="merchant-section">
@@ -46,14 +52,19 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { ChatDotRound } from '@element-plus/icons-vue'
 import api from '@/api'
 import storeApi from '@/api/modules/store'
 import productApi from '@/api/modules/product'
+import chatApi from '@/api/modules/chat'
 import { getRoleLabel as getRoleLabelUtil } from '@/utils/constants'
+import store from '@/store'
 import ProductCard from '@/components/business/product/ProductCard.vue'
 
 const route = useRoute()
 const router = useRouter()
+// 使用store
 const usernameParam = String(route.params.username || '')
 
 const loading = ref(true)
@@ -61,8 +72,20 @@ const error = ref('')
 const user: any = ref({})
 const defaultAvatar = 'https://tse2-mm.cn.bing.net/th/id/OIP-C.UfPq2yu1ycxTGG9LfpogugHaHY?rs=1&pid=ImgDetMain&cb=idpwebpc2'
 
+const chatLoading = ref(false)
+
 const isMerchant = computed(() => (user.value?.role || '').toUpperCase() === 'MERCHANT')
 const roleLabel = computed(() => getRoleLabelUtil(user.value?.role))
+
+// 判断是否可以聊天（不能和自己聊天）
+const canChat = computed(() => {
+  const currentUser = store.state.user.userInfo
+  const isLoggedIn = !!store.state.user.token
+  return isLoggedIn &&
+         user.value?.id &&
+         user.value.id !== currentUser?.id &&
+         isMerchant.value // 只有商家才能被顾客发起聊天
+})
 
 const stores = ref<any[]>([])
 const storesLoading = ref(false)
@@ -118,6 +141,39 @@ function handleViewProduct(productId: number) {
   router.push(`/product/${productId}`)
 }
 
+// 开始聊天
+async function startChat() {
+  if (!canChat.value) return
+
+  chatLoading.value = true
+  try {
+    // 找到该商家的店铺（这里简化处理，取第一个店铺）
+    if (!stores.value || stores.value.length === 0) {
+      ElMessage.warning('该商家暂无店铺，无法发起聊天')
+      return
+    }
+
+    const storeId = stores.value[0].id
+
+    // 创建或获取聊天会话
+    const response = await chatApi.createChatSession({ storeId })
+    if (response && response.code === '200' && response.data) {
+      // 跳转到聊天页面，并传递会话ID
+      router.push({
+        path: '/chat',
+        query: { sessionId: response.data.id }
+      })
+    } else {
+      ElMessage.error('创建聊天会话失败')
+    }
+  } catch (error) {
+    console.error('发起聊天失败:', error)
+    ElMessage.error('发起聊天失败，请稍后重试')
+  } finally {
+    chatLoading.value = false
+  }
+}
+
 onMounted(() => {
   fetchUser()
 })
@@ -126,7 +182,7 @@ onMounted(() => {
 <style scoped>
 .public-profile-page { padding: 24px; min-height: 60vh; }
 .profile-card { max-width: 1000px; margin: 0 auto; background:#fff; padding:20px; border-radius:8px }
-.profile-header { display:flex; gap:16px; align-items:center; }
+.profile-header { display:flex; gap:16px; align-items:center; justify-content: space-between; }
 .avatar { width:96px; height:96px; object-fit:cover; border-radius:8px }
 .user-meta h2 { margin:0; }
 .username { color:#666 }

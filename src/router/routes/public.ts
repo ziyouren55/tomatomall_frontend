@@ -31,6 +31,19 @@ const publicRoutes: RouteRecordRaw[] = [
         name: 'Search',
         component: () => import('@/views/search/SearchPage.vue'),
         meta: { requiresAuth: false } // 搜索页面不需要登录
+    },
+    // WebSocket相关路径处理 - 避免Vue Router拦截SockJS请求
+    {
+        path: '/api/ws/:pathMatch(.*)*',
+        name: 'WebSocket',
+        component: { render: () => null }, // 空组件，不渲染任何内容
+        meta: { requiresAuth: false }
+    },
+    {
+        path: '/ws/:pathMatch(.*)*',
+        name: 'WebSocketLegacy',
+        component: { render: () => null }, // 空组件，不渲染任何内容
+        meta: { requiresAuth: false }
     }
 ]
 

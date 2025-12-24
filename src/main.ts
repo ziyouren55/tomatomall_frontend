@@ -26,7 +26,7 @@ try {
 
 // initialize notification service non-blocking (does not block app startup)
 try {
-  const backendBase = (import.meta.env.VITE_BACKEND_BASE_URL || import.meta.env.VITE_API_BASE_URL || '') as string
+  const backendBase = (import.meta.env.VITE_BACKEND_BASE_URL || 'http://localhost:8080') as string
   import('./services/notificationService').then(module => {
     module.initNotificationService(backendBase)
   }).catch(e => console.warn('notification service init failed', e))
