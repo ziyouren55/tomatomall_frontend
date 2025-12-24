@@ -26,6 +26,9 @@
         <div class="product-title">
           <h1>{{ product.title }}</h1>
         </div>
+        <div class="merchant-mini" v-if="props.product?.storeId || props.product?.store?.id" style="margin-top:8px;">
+          <UserMiniCard :storeId="props.product?.storeId" :size="36" :showName="true" />
+        </div>
 
         <!-- 商品价格 -->
         <div class="product-price">
@@ -96,13 +99,7 @@
             >
               前往店铺
             </button>
-            <button
-              class="btn btn-merchant"
-              @click="goToMerchantProfile"
-              :disabled="!props.product?.storeId && !props.product?.store?.id"
-            >
-              查看商家
-            </button>
+            
           </div>
         </div>
       </div>
@@ -116,8 +113,7 @@ import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import type { Stockpile, CartItem } from '@/types/api'
 import type { Product } from '@/api/modules/product'
-import api from '@/api'
-import storeApi from '@/api/modules/store'
+import UserMiniCard from '@/components/common/UserMiniCard.vue'
 
 // 接收商品数据和相关状态
 const props = defineProps<{
@@ -246,41 +242,7 @@ const goToStore = () => {
   router.push(`/stores/${storeId}`)
 }
 
-// 跳转到商家公共主页（通过 store -> merchantId -> username）
-const goToMerchantProfile = async () => {
-  try {
-    const storeId = props.product?.storeId || props.product?.store?.id
-    if (!storeId) {
-      ElMessage.warning('未找到所属店铺')
-      return
-    }
-    const storeRes = await storeApi.getStoreById(storeId)
-    if (!storeRes || storeRes.code !== '200' || !storeRes.data) {
-      ElMessage.warning('未找到店铺信息')
-      return
-    }
-    const merchantId = storeRes.data.merchantId
-    if (!merchantId) {
-      ElMessage.warning('未找到商家信息')
-      return
-    }
-    // 通过后端新增接口按用户ID获取用户详情
-    const userRes = await api.user.getUserById(merchantId)
-    if (!userRes || userRes.code !== '200' || !userRes.data) {
-      ElMessage.warning('未找到商家账户')
-      return
-    }
-    const merchantUsername = userRes.data.username
-    if (!merchantUsername) {
-      ElMessage.warning('商家无用户名')
-      return
-    }
-    router.push(`/users/${merchantUsername}`)
-  } catch (e) {
-    console.error('跳转商家页面失败', e)
-    ElMessage.error('跳转失败，请稍后再试')
-  }
-}
+ 
 
 // 计算可用库存
 const getAvailableStock = () => {

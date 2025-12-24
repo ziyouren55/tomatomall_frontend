@@ -1,6 +1,6 @@
 <template>
   <div class="post-detail-page" v-if="post">
-    <div class="post-card">
+  <div class="post-card">
       <div class="post-header">
         <div class="title">
           <span v-if="post.isSticky" class="tag sticky">置顶</span>
@@ -8,7 +8,10 @@
           {{ post.title }}
         </div>
         <div class="meta">
-          <span>{{ post.username || '用户' }}</span>
+          <span v-if="post.username">
+            <UserMiniCard :username="post.username" :size="36" :showName="true" />
+          </span>
+          <span v-else>用户</span>
           <span>{{ formatTime(post.createTime) }}</span>
           <span>浏览 {{ post.viewCount ?? 0 }}</span>
           <span>回复 {{ post.replyCount ?? 0 }}</span>
@@ -38,7 +41,10 @@
       <div v-else>
         <div v-for="reply in replies" :key="reply.id" class="reply-item">
           <div class="reply-meta">
-            <span>{{ reply.username || '用户' }}</span>
+            <span v-if="reply.username">
+              <UserMiniCard :username="reply.username" :size="28" :showName="true" />
+            </span>
+            <span v-else>用户</span>
             <span>{{ formatTime(reply.createTime) }}</span>
           </div>
           <div class="reply-content">{{ reply.content }}</div>
@@ -50,7 +56,10 @@
           <div v-if="reply.childReplies?.length" class="child-replies">
             <div v-for="child in reply.childReplies" :key="child.id" class="child-item">
               <div class="reply-meta">
-                <span>{{ child.username || '用户' }}</span>
+                <span v-if="child.username">
+                  <UserMiniCard :username="child.username" :size="24" :showName="true" />
+                </span>
+                <span v-else>用户</span>
                 <span>{{ formatTime(child.createTime) }}</span>
               </div>
               <div class="reply-content">
@@ -72,6 +81,7 @@ import { useRoute } from 'vue-router'
 import api from '@/api'
 import type { PostItem } from '@/api/modules/post'
 import type { ReplyItem } from '@/api/modules/reply'
+import UserMiniCard from '@/components/common/UserMiniCard.vue'
 
 const route = useRoute()
 const post = ref<PostItem | null>(null)
