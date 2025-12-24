@@ -18,33 +18,12 @@
       <p v-else>暂无商品</p>
     </div>
     <div v-else class="products-grid">
-      <div v-for="product in products" :key="product.id" class="product-card" @click="viewProduct(product.id)"
-        @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
-        <div class="product-image-container">
-          <img :src="product.cover" :alt="product.title" class="product-image" @error="handleImageError">
-          <div class="product-overlay">
-            <span class="view-details">查看详情</span>
-          </div>
-        </div>
-        <div class="product-info">
-          <h3 class="product-title" :title="product.title">{{ product.title }}</h3>
-          <div class="product-price">
-            <span class="price-symbol">¥</span>
-            <span class="price-value">{{ product.price.toFixed(2) }}</span>
-          </div>
-        </div>
-        <div class="product-stats">
-          <div class="product-rating" v-if="product.rate">
-            <span class="stars">
-              <span v-for="n in 5" :key="n" :class="['star', { filled: n <= Math.round(product.rate / 2) }]">★</span>
-            </span>
-            <span class="rate-text">{{ product.rate }}</span>
-          </div>
-          <div class="product-sales" v-if="product.salesCount">
-            <span class="sales-text">{{ product.salesCount }}人购买</span>
-          </div>
-        </div>
-      </div>
+      <ProductCard
+        v-for="product in products"
+        :key="product.id"
+        :product="product"
+        @view="viewProduct"
+      />
     </div>
     
     <!-- 加载更多指示器 -->
@@ -65,9 +44,11 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import api from '@/api';
+import ProductCard from './ProductCard.vue'
 
 export default defineComponent({
   name: 'ProductList',
+  components: { ProductCard },
   props: {
     searchKeyword: {
       type: String,

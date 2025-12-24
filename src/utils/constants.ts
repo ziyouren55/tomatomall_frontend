@@ -28,14 +28,14 @@ export const ROUTE_NAMES = {
 
 // 用户角色枚举（与后端保持一致）
 export enum UserRole {
-    USER = 'USER',
+    CUSTOMER = 'CUSTOMER',
     ADMIN = 'ADMIN',
     MERCHANT = 'MERCHANT'
 }
 
 // 角色显示名称映射
 export const USER_ROLE_LABELS: Record<UserRole, string> = {
-    [UserRole.USER]: '顾客',
+    [UserRole.CUSTOMER]: '顾客',
     [UserRole.ADMIN]: '管理员',
     [UserRole.MERCHANT]: '商家'
 }
@@ -43,13 +43,13 @@ export const USER_ROLE_LABELS: Record<UserRole, string> = {
 // 向后兼容的常量对象
 export const USER_ROLES = {
     ADMIN: UserRole.ADMIN,
-    USER: UserRole.USER,
+    USER: UserRole.CUSTOMER,
     MERCHANT: UserRole.MERCHANT
 } as const
 
 // 角色验证工具函数
 export const isValidRole = (role: string): role is UserRole => {
-    return role === UserRole.USER || role === UserRole.ADMIN || role === UserRole.MERCHANT
+    return role === UserRole.CUSTOMER || role === UserRole.ADMIN || role === UserRole.MERCHANT
 }
 
 // 规范化角色（将小写转换为大写）
@@ -61,17 +61,17 @@ export const normalizeRole = (role: string): UserRole => {
     if (upperRole === UserRole.MERCHANT) {
         return UserRole.MERCHANT
     }
-    return UserRole.USER // 默认返回 USER
+    return UserRole.CUSTOMER // 默认返回 USER
 }
 
 // 获取角色显示标签（支持字符串和枚举值）
 export const getRoleLabel = (role: string | UserRole | undefined | null): string => {
     if (!role) {
-        return USER_ROLE_LABELS[UserRole.USER]
+        return USER_ROLE_LABELS[UserRole.CUSTOMER]
     }
     // 如果是字符串，转换为枚举值
     const roleEnum = typeof role === 'string' ? normalizeRole(role) : role
-    return USER_ROLE_LABELS[roleEnum] || USER_ROLE_LABELS[UserRole.USER]
+    return USER_ROLE_LABELS[roleEnum] || USER_ROLE_LABELS[UserRole.CUSTOMER]
 }
 
 

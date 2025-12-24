@@ -11,9 +11,9 @@
         <template v-else>
           <div class="profile-header">
             <div class="avatar-container">
-              <img 
-                :src="userProfile.avatar || 'https://tse2-mm.cn.bing.net/th/id/OIP-C.UfPq2yu1ycxTGG9LfpogugHaHY?rs=1&pid=ImgDetMain&cb=idpwebpc2'" 
-                :alt="userProfile.name" 
+              <img
+                :src="userProfile.avatar || 'https://tse2-mm.cn.bing.net/th/id/OIP-C.UfPq2yu1ycxTGG9LfpogugHaHY?rs=1&pid=ImgDetMain&cb=idpwebpc2'"
+                :alt="userProfile.name"
                 class="avatar"
               />
             </div>
@@ -36,7 +36,7 @@
               </div>
             </div>
           </div>
-          
+
           <div class="profile-content">
             <div v-if="showVerificationForm" style="margin-bottom:16px">
               <SchoolVerificationForm @submitted="onVerificationSubmitted" @cancel="showVerificationForm = false" />
@@ -56,14 +56,14 @@
               </div>
               <button class="edit-button" @click="startEditing">编辑资料</button>
             </div>
-            
+
             <div v-else class="profile-form">
               <div class="form-group">
                 <label for="edit-name">姓名 <span class="required">*</span></label>
-                <input 
-                  type="text" 
-                  id="edit-name" 
-                  v-model="editForm.name" 
+                <input
+                  type="text"
+                  id="edit-name"
+                  v-model="editForm.name"
                   placeholder="请输入姓名"
                 />
               </div>
@@ -76,8 +76,8 @@
                       <span>点击选择头像</span>
                     </div>
                   </div>
-                  <input 
-                    type="file" 
+                  <input
+                    type="file"
                     ref="fileInput"
                     @change="handleFileSelect"
                     accept="image/*"
@@ -88,52 +88,52 @@
               <div class="form-group">
                 <label for="edit-role">角色 <span class="required">*</span></label>
                 <select id="edit-role" v-model="editForm.role">
-                  <option :value="UserRole.USER">{{ USER_ROLE_LABELS[UserRole.USER] }}</option>
+                  <option :value="UserRole.CUSTOMER">{{ USER_ROLE_LABELS[UserRole.CUSTOMER] }}</option>
                   <option :value="UserRole.ADMIN">{{ USER_ROLE_LABELS[UserRole.ADMIN] }}</option>
                 </select>
               </div>
               <div class="form-group">
                 <label for="edit-telephone">手机号</label>
-                <input 
-                  type="text" 
-                  id="edit-telephone" 
-                  v-model="editForm.telephone" 
+                <input
+                  type="text"
+                  id="edit-telephone"
+                  v-model="editForm.telephone"
                   placeholder="请输入手机号（选填）"
                 />
               </div>
               <div class="form-group">
                 <label for="edit-email">邮箱</label>
-                <input 
-                  type="email" 
-                  id="edit-email" 
-                  v-model="editForm.email" 
+                <input
+                  type="email"
+                  id="edit-email"
+                  v-model="editForm.email"
                   placeholder="请输入邮箱（选填）"
                 />
               </div>
               <div class="form-group">
                 <label for="edit-location">所在地</label>
-                <input 
-                  type="text" 
-                  id="edit-location" 
-                  v-model="editForm.location" 
+                <input
+                  type="text"
+                  id="edit-location"
+                  v-model="editForm.location"
                   placeholder="请输入所在地（选填）"
                 />
               </div>
               <div class="form-group">
                 <label for="edit-password">修改密码 (留空则不修改)</label>
-                <input 
-                  type="password" 
-                  id="edit-password" 
-                  v-model="editForm.password" 
+                <input
+                  type="password"
+                  id="edit-password"
+                  v-model="editForm.password"
                   placeholder="请输入新密码"
                 />
               </div>
               <div class="error-message" v-if="editError">{{ editError }}</div>
               <div class="button-group">
                 <button class="cancel-button" @click="cancelEditing">取消</button>
-                <button 
-                  class="save-button" 
-                  @click="saveProfile" 
+                <button
+                  class="save-button"
+                  @click="saveProfile"
                   :disabled="isSaving"
                 >
                   {{ isSaving ? '保存中...' : '保存' }}
@@ -145,7 +145,7 @@
       </div>
     </div>
   </template>
-  
+
   <script lang="ts">
   import { defineComponent } from 'vue'
   import api from '@/api';
@@ -155,7 +155,7 @@
   import type { AxiosError } from 'axios'
   import { UserRole, USER_ROLE_LABELS, getRoleLabel as getRoleLabelUtil, normalizeRole } from '@/utils/constants'
   import type { EditForm } from '@/types/api';
-  
+
   export default defineComponent({
     name: 'ProfilePage',
     data() {
@@ -172,7 +172,7 @@
           email: '',
           location: '',
           password: '',
-          role: UserRole.USER
+          role: UserRole.CUSTOMER
         } as EditForm,
         editError: '',
         isSaving: false,
@@ -217,7 +217,7 @@
       async fetchUserProfile(): Promise<void> {
         this.isLoading = true;
         this.error = null;
-        
+
         try {
           // 从本地存储获取用户名
           const username = localStorage.getItem('username');
@@ -225,15 +225,19 @@
             this.$router.push('/login');
             return;
           }
-          
+
           const response = await api.user.getUserDetails(username);
-          
+
           if (response.code === '200') {
             this.userProfile = response.data;
             // 初始化编辑表单
             this.initEditForm();
             // 拉取学校认证状态
-            this.fetchSchoolVerification();
+            await this.fetchSchoolVerification();
+            // 如果路由携带 openVerify 参数，自动打开认证表单
+            if (this.$route && this.$route.query && this.$route.query.openVerify) {
+              this.showVerificationForm = true;
+            }
           } else {
             this.error = response.msg || '获取用户信息失败';
           }
@@ -245,7 +249,7 @@
           this.isLoading = false;
         }
       },
-      
+
       initEditForm() {
         this.editForm = {
           username: this.userProfile.username,
@@ -255,46 +259,46 @@
           email: this.userProfile.email || '',
           location: this.userProfile.location || '',
           password: '',
-          role: this.userProfile.role ? (typeof this.userProfile.role === 'string' ? normalizeRole(this.userProfile.role) : this.userProfile.role) : UserRole.USER
+          role: this.userProfile.role ? (typeof this.userProfile.role === 'string' ? normalizeRole(this.userProfile.role) : this.userProfile.role) : UserRole.CUSTOMER
         };
       },
-      
+
       startEditing() {
         this.isEditing = true;
         this.editError = '';
       },
-      
+
       cancelEditing() {
         this.isEditing = false;
         this.editError = '';
         // 重置表单
         this.initEditForm();
       },
-      
+
       triggerFileInput() {
         const fileInput = this.$refs.fileInput as HTMLInputElement | undefined
         if (fileInput) {
           fileInput.click()
         }
       },
-      
+
       handleFileSelect(event: Event): void {
         const target = event.target as HTMLInputElement
         const file = target.files?.[0]
         if (!file) return;
-        
+
         // 验证文件类型
         if (!file.type.startsWith('image/')) {
           this.editError = '请选择图片文件';
           return;
         }
-        
+
         // 验证文件大小（限制为5MB）
         if (file.size > 5 * 1024 * 1024) {
           this.editError = '图片大小不能超过5MB';
           return;
         }
-        
+
         // 创建文件读取器
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -307,7 +311,7 @@
         };
         reader.readAsDataURL(file);
       },
-      
+
       validateForm(): boolean {
         // 验证必填字段
         if (!this.editForm.name) {
@@ -318,32 +322,32 @@
           this.editError = '请选择角色';
           return false;
         }
-        
+
         // 验证手机号格式
         if (this.editForm.telephone && !/^1\d{10}$/.test(this.editForm.telephone)) {
           this.editError = '请输入正确的手机号格式';
           return false;
         }
-        
+
         // 验证邮箱格式
         if (this.editForm.email && !/^\S+@\S+\.\S+$/.test(this.editForm.email)) {
           this.editError = '请输入正确的邮箱格式';
           return false;
         }
-        
+
         return true;
       },
-      
+
       async saveProfile(): Promise<void> {
         if (!this.validateForm()) {
           return;
         }
-        
+
         this.isSaving = true;
         this.editError = '';
-        
+
         // 创建要提交的数据对象
-        const updateData: Partial<UserInfo> = { 
+        const updateData: Partial<UserInfo> = {
           username: this.editForm.username,
           name: this.editForm.name,
           avatar: this.editForm.avatar,
@@ -352,15 +356,15 @@
           location: this.editForm.location,
           role: this.editForm.role
         };
-        
+
         // 如果密码不为空，则添加密码字段
         if (this.editForm.password) {
           (updateData as any).password = this.editForm.password;
         }
-        
+
         try {
           const response = await api.user.updateUserInfo(updateData);
-          
+
           if (response.code === '200') {
             // 更新成功，刷新用户信息
             this.isEditing = false;
@@ -380,7 +384,7 @@
     }
   });
   </script>
-  
+
   <style scoped>
   .profile-container {
     display: flex;
@@ -390,7 +394,7 @@
     background-color: #f5f5f5;
     padding: 2rem 0;
   }
-  
+
   .profile-card {
     width: 100%;
     max-width: 700px;
@@ -399,12 +403,12 @@
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     overflow: hidden;
   }
-  
+
   .loading, .error-container {
     padding: 2rem;
     text-align: center;
   }
-  
+
   .error-container button {
     background-color: #f44336;
     color: white;
@@ -414,18 +418,18 @@
     cursor: pointer;
     margin-top: 1rem;
   }
-  
+
   .profile-header {
     display: flex;
     padding: 2rem;
     background-color: #f0f8ff;
     border-bottom: 1px solid #eee;
   }
-  
+
   .avatar-container {
     margin-right: 2rem;
   }
-  
+
   .avatar {
     width: 100px;
     height: 100px;
@@ -434,23 +438,23 @@
     border: 3px solid white;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   }
-  
+
   .user-info {
     display: flex;
     flex-direction: column;
     justify-content: center;
   }
-  
+
   .user-info h2 {
     margin: 0 0 0.5rem 0;
     font-size: 1.5rem;
   }
-  
+
   .username {
     color: #666;
     margin: 0 0 0.5rem 0;
   }
-  
+
   .role-badge {
     display: inline-block;
     padding: 0.25rem 0.75rem;
@@ -461,35 +465,35 @@
     color: white;
     width: fit-content;
   }
-  
+
   .role-badge.admin {
     background-color: #ff7043;
   }
-  
+
   .role-badge.user {
     background-color: #4CAF50;
   }
-  
+
   .profile-content {
     padding: 2rem;
   }
-  
+
   .profile-details .info-group {
     margin-bottom: 1.5rem;
   }
-  
+
   .profile-details label {
     display: block;
     color: #666;
     font-size: 0.875rem;
     margin-bottom: 0.25rem;
   }
-  
+
   .profile-details p {
     margin: 0;
     font-size: 1rem;
   }
-  
+
   .edit-button {
     background-color: #2196F3;
     color: white;
@@ -500,25 +504,25 @@
     font-size: 1rem;
     margin-top: 1rem;
   }
-  
+
   .edit-button:hover {
     background-color: #0b7dda;
   }
-  
+
   .profile-form .form-group {
     margin-bottom: 1.5rem;
   }
-  
+
   .profile-form label {
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 500;
   }
-  
+
   .required {
     color: #f44336;
   }
-  
+
   .profile-form input, .profile-form select {
     width: 100%;
     padding: 0.75rem;
@@ -526,17 +530,17 @@
     border-radius: 4px;
     font-size: 1rem;
   }
-  
+
   .profile-form select {
     height: 2.75rem;
   }
-  
+
   .avatar-section {
     display: flex;
     justify-content: center;
     margin-top: 0.5rem;
   }
-  
+
   .avatar-preview {
     position: relative;
     width: 100px;
@@ -547,17 +551,17 @@
     border: 2px solid #ddd;
     transition: border-color 0.3s;
   }
-  
+
   .avatar-preview:hover {
     border-color: #4CAF50;
   }
-  
+
   .avatar-preview img {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
-  
+
   .avatar-overlay {
     position: absolute;
     top: 0;
@@ -575,17 +579,17 @@
     text-align: center;
     padding: 0.25rem;
   }
-  
+
   .avatar-preview:hover .avatar-overlay {
     opacity: 1;
   }
-  
+
   .button-group {
     display: flex;
     justify-content: space-between;
     margin-top: 1.5rem;
   }
-  
+
   .cancel-button {
     padding: 0.75rem 1.5rem;
     background-color: #f5f5f5;
@@ -597,7 +601,7 @@
     flex: 1;
     margin-right: 0.5rem;
   }
-  
+
   .save-button {
     padding: 0.75rem 1.5rem;
     background-color: #4CAF50;
@@ -609,16 +613,16 @@
     flex: 1;
     margin-left: 0.5rem;
   }
-  
+
   .save-button:hover {
     background-color: #45a049;
   }
-  
+
   .save-button:disabled {
     background-color: #cccccc;
     cursor: not-allowed;
   }
-  
+
   .error-message {
     color: #f44336;
     margin-bottom: 1rem;

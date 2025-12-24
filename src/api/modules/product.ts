@@ -143,6 +143,15 @@ const productApi = {
     ): Promise<ApiResponse<SearchResult>> {
         return request.get(`/products/store/${storeId}`, { params: { page, pageSize } })
     }
+    ,
+    // 获取附近推荐（后端按 token 推断用户并优先返回同校/同城商品）
+    getNearbyRecommendations(
+        page: number = 0,
+        pageSize: number = 12
+    ): Promise<ApiResponse<SearchResult>> {
+        const params: any = { page, pageSize };
+        return request.get('/products/recommend', { params });
+    }
 }
 
 export default productApi

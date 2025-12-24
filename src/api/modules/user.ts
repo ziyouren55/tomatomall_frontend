@@ -38,6 +38,15 @@ export default {
     getSchoolVerification(username: string): Promise<ApiResponse<SchoolVerification | null>> {
         return request.get(`/accounts/${username}/school-verification`)
     }
+    ,
+    // 获取某用户的学校信息（UserSchoolVO / profile）
+    getUserSchool(username: string): Promise<ApiResponse<any>> {
+        return request.get(`/accounts/${username}/school`)
+    },
+    // 获取组合 profile：{ account, school }
+    getProfile(username: string): Promise<ApiResponse<any>> {
+        return request.get(`/accounts/${username}/profile`)
+    }
 ,
     // ========== 管理员接口 ==========
     adminListSchoolVerifications(status?: string): Promise<ApiResponse<SchoolVerification[]>> {

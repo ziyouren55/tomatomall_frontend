@@ -11,9 +11,25 @@
     <!-- 商品列表区域 -->
     <div class="products-section">
       <div class="section-header">
-        <h2 class="section-title">{{ searchKeyword ? '搜索结果' : '热门商品' }}</h2>
+        <h2 class="section-title">
+          {{ searchKeyword ? '搜索结果' : (currentTab === 'hot' ? '热门商品' : '附近推荐') }}
+        </h2>
       </div>
-      <ProductList :searchKeyword="searchKeyword" />
+
+      <!-- 如果在搜索模式，隐藏切换，直接显示搜索结果 -->
+      <div v-if="!searchKeyword" class="tab-bar">
+        <button :class="['tab-btn', { active: currentTab === 'hot' }]" @click="switchTab('hot')">
+          热门
+        </button>
+        <button :class="['tab-btn', { active: currentTab === 'nearby' }]" @click="switchTab('nearby')">
+          附近推荐
+        </button>
+      </div>
+
+      <div class="tab-content">
+        <ProductList v-if="searchKeyword || currentTab === 'hot'" :searchKeyword="searchKeyword" />
+        <NearbyRecommendations v-if="!searchKeyword && currentTab === 'nearby'" />
+      </div>
     </div>
   </div>
 </template>
@@ -21,16 +37,28 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import ProductList from '@/components/business/product/ProductList.vue'
+import NearbyRecommendations from '@/components/business/product/NearbyRecommendations.vue'
 
 export default defineComponent({
   name: 'IndexPage',
   components: {
-    ProductList
+    ProductList,
+    NearbyRecommendations
+  },
+  data() {
+    return {
+      currentTab: 'hot'
+    };
   },
   computed: {
     searchKeyword(): string {
       const search = this.$route.query.search
       return typeof search === 'string' ? search : ''
+    }
+  },
+  methods: {
+    switchTab(tab: string) {
+      this.currentTab = tab;
     }
   }
 });
@@ -89,5 +117,25 @@ export default defineComponent({
   padding: 0 0 12px 0;
   border-bottom: 2px solid #ff6b35;
   display: inline-block;
+}
+
+.tab-bar {
+  margin: 12px 0 18px;
+  display: flex;
+  gap: 8px;
+}
+.tab-btn {
+  background: white;
+  border: 1px solid #eee;
+  padding: 8px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #666;
+}
+.tab-btn.active {
+  background: #ff6b35;
+  color: white;
+  border-color: #ff6b35;
 }
 </style>
