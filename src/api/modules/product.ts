@@ -134,6 +134,15 @@ const productApi = {
         }
         return request.get('/products/search', { params })
     }
+,
+    // 根据店铺ID获取该店铺的产品（分页）
+    getProductsByStore(
+        storeId: number,
+        page: number = 0,
+        pageSize: number = 20
+    ): Promise<ApiResponse<SearchResult>> {
+        return request.get(`/products/store/${storeId}`, { params: { page, pageSize } })
+    }
 }
 
 export default productApi

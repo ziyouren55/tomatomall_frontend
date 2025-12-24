@@ -19,6 +19,10 @@ export default {
     getUserDetails(username: string): Promise<UserDetailsResponse> {
         return request.get(`/accounts/${username}`)
     },
+    // 根据用户ID获取用户详情（用于通过 merchantId 获取用户名）
+    getUserById(id: number): Promise<UserDetailsResponse> {
+        return request.get(`/accounts/id/${id}`)
+    },
 
     // 更新用户信息
     updateUserInfo(userData: Partial<UserInfo>): Promise<ApiResponse> {

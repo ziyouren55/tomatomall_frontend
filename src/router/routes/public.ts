@@ -12,7 +12,13 @@ const publicRoutes: RouteRecordRaw[] = [
     {
         path: '/stores/:id',
         name: 'StoreDetail',
-        component: () => import('@/views/store/StoreDetail.vue'),
+        component: () => import('@/views/store/StoreDetailPage.vue'),
+        meta: { requiresAuth: false }
+    },
+    {
+        path: '/users/:username',
+        name: 'UserPublicProfile',
+        component: () => import('@/views/user/UserPublicDetailPage.vue'),
         meta: { requiresAuth: false }
     },
     {

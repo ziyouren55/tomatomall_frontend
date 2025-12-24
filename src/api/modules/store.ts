@@ -16,6 +16,10 @@ const storeApi = {
     getMerchantStores(page: number = 0, pageSize: number = 20): Promise<ApiResponse<any>> {
         return request.get('/stores/merchant', { params: { page, pageSize } })
     },
+    // 根据商家ID获取该商家的所有店铺（公开）
+    getStoresByMerchantId(merchantId: number): Promise<ApiResponse<any[]>> {
+        return request.get(`/stores/merchant/${merchantId}`)
+    },
     // 获取所有店铺（管理员用） - 后端若支持 /stores 列表接口则可使用
     getAllStores(page: number = 0, pageSize: number = 1000): Promise<ApiResponse<any>> {
         return request.get('/stores', { params: { page, pageSize } })

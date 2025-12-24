@@ -13,13 +13,13 @@ const userRoutes: RouteRecordRaw[] = [
     {
         path: '/product/:id',
         name: 'productdetail',
-        component: () => import('@/views/product/ProductDetail.vue'),
+        component: () => import('@/views/product/ProductDetailPage.vue'),
         meta: { requiresAuth: true } // 商品详情页需要登录
     },
     {
         path: '/profile',
         name: 'Profile',
-        component: () => import('@/views/user/ProfilePage.vue'),
+        component: () => import('@/views/user/UserPrivateDetailPage.vue'),
         meta: { requiresAuth: true }
     },
     {
@@ -37,13 +37,13 @@ const userRoutes: RouteRecordRaw[] = [
     {
         path: '/order/:orderId',
         name: 'OrderDetail',
-        component: () => import('@/views/order/OrderDetail.vue'),
+        component: () => import('@/views/order/OrderDetailPage.vue'),
         meta: { requiresAuth: true }
     },
     {
         path: '/pay/result',
         name: 'PayResult',
-        component: () => import('@/views/order/PayResult.vue'),
+        component: () => import('@/views/order/PayResultPage.vue'),
         meta: { requiresAuth: false }
     },
     {
@@ -85,7 +85,7 @@ const userRoutes: RouteRecordRaw[] = [
     {
         path: '/member',
         name: 'usermember',
-        component: () => import('@/views/user/UserMember.vue'),
+        component: () => import('@/views/user/UserMemberPage.vue'),
         meta: { requiresAuth: true }
     },
     {
