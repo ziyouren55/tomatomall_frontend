@@ -44,7 +44,7 @@
             </div>
             <div class="search-box">
           <input 
-            type="text" 
+            type="default" 
             v-model="searchKeyword" 
             placeholder="搜索图书名称..."
             @input="searchProducts"

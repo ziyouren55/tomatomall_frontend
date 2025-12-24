@@ -2,7 +2,7 @@
   <div class="search-container">
     <input
       v-model="searchTerm"
-      type="text"
+      type="default"
       placeholder="搜索论坛名称..."
       class="search-input"
       @input="handleSearch"

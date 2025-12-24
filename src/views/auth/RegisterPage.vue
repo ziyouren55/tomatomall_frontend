@@ -34,7 +34,7 @@
         <div class="form-group">
           <label for="username">用户名 <span class="required">*</span></label>
           <input
-            type="text"
+            type="default"
             id="username"
             v-model="registerForm.username"
             placeholder="请输入用户名"
@@ -52,7 +52,7 @@
         <div class="form-group">
           <label for="name">姓名 <span class="required">*</span></label>
           <input
-            type="text"
+            type="default"
             id="name"
             v-model="registerForm.name"
             placeholder="请输入姓名"
@@ -74,7 +74,7 @@
         <div class="form-group">
           <label for="telephone">手机号</label>
           <input
-            type="text"
+            type="default"
             id="telephone"
             v-model="registerForm.telephone"
             placeholder="请输入手机号（选填）"
@@ -92,7 +92,7 @@
         <div class="form-group">
           <label for="location">所在地</label>
           <input
-            type="text"
+            type="default"
             id="location"
             v-model="registerForm.location"
             placeholder="请输入所在地（选填）"

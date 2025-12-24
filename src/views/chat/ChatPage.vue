@@ -15,6 +15,7 @@
         <ChatDialog
           :session="currentSession"
           @session-archived="onSessionArchived"
+          @session-read="onSessionRead"
         />
       </div>
     </div>
@@ -57,6 +58,14 @@ function onSelectSession(session: ChatSessionVO) {
 function onSessionArchived() {
   currentSession.value = null
   // 刷新会话列表
+  if (sessionListRef.value) {
+    sessionListRef.value.refresh()
+  }
+}
+
+// 会话被标记为已读
+function onSessionRead() {
+  // 刷新会话列表以更新红点显示
   if (sessionListRef.value) {
     sessionListRef.value.refresh()
   }

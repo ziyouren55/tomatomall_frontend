@@ -32,11 +32,17 @@ const messageListeners = new Set<(message: ChatMessageVO) => void>()
 // 添加消息监听器
 export function addMessageListener(listener: (message: ChatMessageVO) => void) {
   messageListeners.add(listener)
+  if (import.meta.env.DEV) {
+    console.log('[CHAT WS] Listener added, total:', messageListeners.size)
+  }
 }
 
 // 移除消息监听器
 export function removeMessageListener(listener: (message: ChatMessageVO) => void) {
   messageListeners.delete(listener)
+  if (import.meta.env.DEV) {
+    console.log('[CHAT WS] Listener removed, total:', messageListeners.size)
+  }
 }
 
 // 初始化聊天WebSocket服务
@@ -56,62 +62,105 @@ export async function initChatService(backendBase = '') {
     const cleanBase = backendBase.replace(/\/api\/?$/, '').replace(/\/$/, '')
     const baseWs = `${cleanBase}/api/ws`
     const sockUrl = token ? `${baseWs}?token=${encodeURIComponent(token)}` : baseWs
+
+    if (import.meta.env.DEV) {
+      console.log('[CHAT WS] Connecting...', !!token ? 'with token' : 'no token')
+    }
+
     const socketFactory = () => new SockJS(sockUrl, undefined, {
-      // 配置SockJS传输方式，优先使用websocket，避免iframe等fallback
-      transports: ['websocket', 'xhr-streaming', 'xhr-polling']
+      transports: ['websocket', 'xhr-streaming', 'xhr-polling'],
+      timeout: 10000
     })
 
     client = new Client({
       webSocketFactory: socketFactory,
       reconnectDelay: 5000,
-      debug: (m: any) => console.log('[CHAT STOMP DEBUG]', m)
+      debug: import.meta.env.DEV ? (m: any) => console.log('[CHAT STOMP]', m) : undefined,
+      heartbeatIncoming: 10000,
+      heartbeatOutgoing: 10000
     })
 
+    // 添加连接状态监听 - 只在开发环境下输出
+    if (import.meta.env.DEV) {
+      client.beforeConnect = () => {
+        console.log('[CHAT WS] Connecting...')
+      }
+    }
+
     client.onConnect = () => {
-      console.log('[CHAT WS] connected')
+      console.log('[CHAT WS] ✅ Connected')
       chatState.connected = true
       connected = true
 
-      // 订阅聊天消息
-      client.subscribe('/user/chat', (msg: any) => {
-        try {
-          const message: ChatMessageVO = msg.body ? JSON.parse(msg.body) : {}
-          console.log('[CHAT WS] received message', message)
+      // 订阅聊天消息 - 使用与通知功能一致的路径模式
+      console.log('[CHAT WS] Setting up subscriptions...')
 
-          // 通知所有监听器
-          messageListeners.forEach(listener => {
-            try {
-              listener(message)
-            } catch (e) {
-              console.warn('[CHAT WS] listener error', e)
-            }
-          })
-
-          // 更新未读计数
-          updateUnreadCount()
-
-        } catch (e) {
-          console.warn('[CHAT WS] parse message failed', e)
-        }
+      // 主要订阅路径（与通知功能一致）
+      client.subscribe('/user/queue/chat', (msg: any) => {
+        handleReceivedMessage(msg, '/user/queue/chat')
       })
+
+      // 备用订阅路径
+      client.subscribe('/user/chat', (msg: any) => {
+        handleReceivedMessage(msg, '/user/chat')
+      })
+
+      client.subscribe('/queue/chat', (msg: any) => {
+        handleReceivedMessage(msg, '/queue/chat')
+      })
+
+      console.log('[CHAT WS] ✅ Subscriptions ready')
     }
 
-    // 附加token用于握手/CONNECT头，以便服务器可以分配Principal
-    try {
-      const token = getToken()
-      if (token) client.connectHeaders = { token }
-    } catch (e) {
-      // ignore
+    // 统一的消息处理函数 - 在收到消息时打印原始数据
+    const handleReceivedMessage = (msg: any, source: string) => {
+      // 首先打印完整的原始消息数据
+      console.log(`[CHAT WS] 🔴 RECEIVED RAW MESSAGE from ${source}:`, msg)
+      console.log(`[CHAT WS] 🔴 MESSAGE BODY:`, msg.body)
+      console.log(`[CHAT WS] 🔴 MESSAGE HEADERS:`, msg.headers)
+
+      try {
+        const message: ChatMessageVO = msg.body ? JSON.parse(msg.body) : {}
+
+        console.log(`[CHAT WS] ✅ PARSED MESSAGE from ${source}:`, message)
+
+        // 通知所有监听器
+        messageListeners.forEach((listener) => {
+          try {
+            console.log(`[CHAT WS] 📢 Notifying listener with message:`, message)
+            listener(message)
+          } catch (e) {
+            console.warn(`[CHAT WS] Listener error:`, e)
+          }
+        })
+
+        // 更新未读计数
+        updateUnreadCount()
+        console.log(`[CHAT WS] ✅ Unread count updated`)
+
+      } catch (e) {
+        console.warn(`[CHAT WS] Parse message failed from ${source}:`, e)
+        console.warn(`[CHAT WS] Raw message that failed to parse:`, msg)
+      }
     }
+
+    // 注意：SockJS不支持CONNECT帧的自定义headers，token通过URL参数传递
+    // TokenHandshakeHandler会从查询参数中解析token
 
     client.onStompError = (frame: any) => {
-      console.error('[CHAT STOMP ERROR]', frame)
+      console.error('[CHAT WS] STOMP error:', frame.headers?.message || 'Unknown error')
       chatState.connected = false
       connected = false
     }
 
-    client.onWebSocketClose = () => {
-      console.log('[CHAT WS] disconnected')
+    client.onWebSocketError = (error: any) => {
+      console.error('[CHAT WS] WebSocket error')
+      chatState.connected = false
+      connected = false
+    }
+
+    client.onWebSocketClose = (evt: any) => {
+      console.log('[CHAT WS] Disconnected')
       chatState.connected = false
       connected = false
     }
@@ -134,22 +183,42 @@ export function stopChatService() {
   }
 }
 
-// 发送聊天消息
+// 发送聊天消息 - 只在开发环境下输出详细信息
 export function sendChatMessage(message: ChatWebSocketMessage) {
   if (!client || !connected) {
-    console.warn('[CHAT] not connected, cannot send message')
+    if (import.meta.env.DEV) {
+      console.warn('[CHAT WS] Not connected, cannot send message')
+    }
     return false
   }
 
   try {
+    if (import.meta.env.DEV) {
+      console.log('[CHAT WS] 📤 Sending:', message.content?.substring(0, 50))
+    }
+
     client.publish({
       destination: '/app/chat.send',
       body: JSON.stringify(message)
     })
     return true
   } catch (e) {
-    console.error('[CHAT] send message failed', e)
+    console.error('[CHAT WS] Send failed:', e)
     return false
+  }
+}
+
+// 测试连接状态
+export function testWebSocketConnection() {
+  return {
+    clientExists: !!client,
+    connected,
+    chatStateConnected: chatState.connected,
+    listenersCount: messageListeners.size,
+    clientState: client ? {
+      connected: client.connected,
+      active: client.active
+    } : null
   }
 }
 

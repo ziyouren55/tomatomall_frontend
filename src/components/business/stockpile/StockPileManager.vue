@@ -871,7 +871,7 @@
             <path d="m21 21-4.35-4.35"></path>
           </svg>
           <input 
-            type="text" 
+            type="default" 
             v-model="searchKeyword" 
             @input="handleSearchInput"
             placeholder="搜索产品名称..."

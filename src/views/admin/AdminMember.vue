@@ -92,7 +92,7 @@
           <div class="form-group">
             <label>等级名称 *</label>
             <input 
-              type="text" 
+              type="default" 
               v-model="formData.levelName" 
               required 
               class="form-control"

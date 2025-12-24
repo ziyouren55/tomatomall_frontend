@@ -79,7 +79,7 @@
               <input
                 id="title"
                 v-model="form.title"
-                type="text"
+                type="default"
                 class="form-control"
                 :class="{ error: errors.title }"
                 placeholder="请输入广告标题"
@@ -128,7 +128,7 @@
               <input
                 id="productId"
                 v-model="form.productId"
-                type="text"
+                type="default"
                 class="form-control"
                 :class="{ error: errors.productId }"
                 placeholder="请输入关联的商品ID"

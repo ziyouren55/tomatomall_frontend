@@ -22,7 +22,7 @@
         <div class="form-group">
           <label for="title">标题*</label>
           <input 
-            type="text" 
+            type="default" 
             id="title" 
             v-model="formData.title" 
             required

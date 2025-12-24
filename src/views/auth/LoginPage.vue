@@ -5,7 +5,7 @@
       <div class="form-group">
         <label for="username">用户名</label>
         <input 
-          type="text" 
+          type="default" 
           id="username" 
           v-model="loginForm.username" 
           placeholder="请输入用户名"

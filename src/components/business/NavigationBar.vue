@@ -13,7 +13,7 @@
         <!-- 搜索框区域 -->
         <div class="search-container">
           <input 
-            type="text" 
+            type="default" 
             v-model="searchQuery" 
             @keyup.enter="performSearch" 
             placeholder="搜索商品、店铺..."

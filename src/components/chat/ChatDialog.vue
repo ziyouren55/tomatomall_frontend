@@ -22,11 +22,17 @@
             <div class="partner-status">
               <span :class="['status-dot', { online: isOnline }]"></span>
               {{ isOnline ? '在线' : '离线' }}
+              <span class="ws-status" :class="{ connected: chatState.connected }">
+                WS: {{ chatState.connected ? '已连接' : '未连接' }}
+              </span>
             </div>
           </div>
         </div>
         <div class="chat-actions">
-          <el-button type="text" @click="archiveSession" size="small">
+          <el-button type="default" @click="testConnection" size="small">
+            调试WS
+          </el-button>
+          <el-button type="default" @click="archiveSession" size="small">
             <el-icon><Delete /></el-icon>
           </el-button>
         </div>
@@ -105,7 +111,7 @@ import { Delete } from '@element-plus/icons-vue'
 import type { ChatSessionVO, ChatMessageVO } from '@/api/modules/chat'
 import chatApi from '@/api/modules/chat'
 import store from '@/store'
-import { addMessageListener, removeMessageListener, sendChatMessage } from '@/services/chatService'
+import { addMessageListener, removeMessageListener, sendChatMessage, chatState, testWebSocketConnection } from '@/services/chatService'
 
 interface Props {
   session: ChatSessionVO | null
@@ -164,16 +170,6 @@ function isOwnMessage(message: ChatMessageVO): boolean {
   const currentUser = currentUserInfo.value
   const isOwn = currentUser?.id !== undefined && message.senderId === currentUser.id
 
-  // 调试日志（仅在开发环境下）
-  if (import.meta.env.DEV) {
-    console.log('isOwnMessage check:', {
-      messageSenderId: message.senderId,
-      currentUserId: currentUser?.id,
-      currentUser,
-      isOwn
-    })
-  }
-
   return isOwn
 }
 
@@ -209,7 +205,12 @@ function formatMessageTime(timeStr: string): string {
 function scrollToBottom() {
   nextTick(() => {
     if (messagesContainer.value) {
-      messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+      // 确保滚动到底部，添加一个小延迟以防图片等内容还没加载完成
+      setTimeout(() => {
+        if (messagesContainer.value) {
+          messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+        }
+      }, 100)
     }
   })
 }
@@ -220,11 +221,23 @@ async function loadMessages() {
 
   loadingMessages.value = true
   try {
-    const response = await chatApi.getSessionMessages(currentSession.value.id)
-    if (response && response.code === '200' && response.data) {
+    // 并行执行两个请求：获取消息和标记已读
+    const [messagesResponse, markReadResponse] = await Promise.all([
+      chatApi.getSessionMessages(currentSession.value.id),
+      chatApi.markSessionAsRead(currentSession.value.id)
+    ])
+
+    // 处理消息加载
+    if (messagesResponse && messagesResponse.code === '200' && messagesResponse.data) {
       // 反转消息顺序，因为API返回的是倒序的
-      messages.value = response.data.data.reverse()
+      messages.value = messagesResponse.data.data.reverse()
       scrollToBottom()
+    }
+
+    // 处理标记已读
+    if (markReadResponse && markReadResponse.code === '200') {
+      // 标记已读成功，触发父组件刷新会话列表以更新红点
+      emit('session-read')
     }
   } catch (error) {
     console.error('加载消息失败:', error)
@@ -281,6 +294,17 @@ async function sendMessage() {
   } finally {
     sending.value = false
   }
+}
+
+// 测试WebSocket连接
+function testConnection() {
+  const status = testWebSocketConnection()
+
+  if (import.meta.env.DEV) {
+    console.log('[CHAT WS] Connection status:', status)
+  }
+
+  ElMessage.info(`WS状态: ${status.chatStateConnected ? '已连接' : '未连接'}, 监听器: ${status.listenersCount}`)
 }
 
 // 归档会话
@@ -346,6 +370,16 @@ watch(() => props.session, (newSession) => {
   }
 }, { immediate: true })
 
+// 监听消息变化，确保每次有新消息时都滚动到底部
+watch(() => messages.value, (newMessages) => {
+  if (newMessages && newMessages.length > 0) {
+    // 使用nextTick确保DOM更新后再滚动
+    nextTick(() => {
+      scrollToBottom()
+    })
+  }
+}, { deep: true })
+
 // 监听用户信息变化，确保用户状态加载完成后重新计算消息显示
 watch(() => currentUserInfo.value, (newUser, oldUser) => {
   if (import.meta.env.DEV) {
@@ -364,6 +398,7 @@ onUnmounted(() => {
 
 const emit = defineEmits<{
   'session-archived': []
+  'session-read': []
 }>()
 </script>
 
@@ -437,6 +472,19 @@ const emit = defineEmits<{
   color: #666;
   display: flex;
   align-items: center;
+  gap: 8px;
+}
+
+.ws-status {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: #f56c6c;
+  color: white;
+}
+
+.ws-status.connected {
+  background: #67c23a;
 }
 
 .status-dot {
