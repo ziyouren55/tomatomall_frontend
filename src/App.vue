@@ -4,9 +4,6 @@
     <main class="main-content">
       <router-view></router-view>
     </main>
-    <footer class="footer">
-      <p>&copy; {{ currentYear }} 商城系统. 保留所有权利.</p>
-    </footer>
   </div>
 </template>
 

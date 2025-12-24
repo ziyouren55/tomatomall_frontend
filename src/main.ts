@@ -16,6 +16,26 @@ app.use(router)
 // Vuex 4 的 Store 类型与 Vue 3 的 Plugin 类型兼容，但 TypeScript 需要类型断言
 app.use(store as any)
 
+// 恢复用户状态（从localStorage）
+try {
+  const token = localStorage.getItem('token')
+  const userInfoStr = localStorage.getItem('userInfo')
+
+  if (token && userInfoStr) {
+    const userInfo = JSON.parse(userInfoStr)
+    console.log('Restoring user state:', { token: token.substring(0, 10) + '...', userInfo })
+    store.commit('user/SET_TOKEN', token)
+    store.commit('user/SET_USER_INFO', userInfo)
+
+    // 验证store状态
+    console.log('Store state after restore:', store.state.user)
+  } else {
+    console.log('No stored user state found')
+  }
+} catch (e) {
+  console.warn('Failed to restore user state:', e)
+}
+
 // Register notification components at startup so pages can render history without waiting for websocket init
 try {
   // register synchronously so registry is ready before pages mount

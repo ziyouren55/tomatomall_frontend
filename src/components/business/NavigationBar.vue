@@ -41,6 +41,12 @@
 
           <!-- 已登录状态 -->
           <template v-else>
+            <!-- 聊天入口 -->
+            <router-link to="/chat" class="nav-link chat-link" :class="{ 'has-unread': chatUnreadCount > 0 }">
+              <el-icon><ChatDotRound /></el-icon>
+              <span v-if="chatUnreadCount > 0" class="unread-badge">{{ chatUnreadCount }}</span>
+            </router-link>
+
             <router-link to="/bookcomment" class="nav-link desktop-link">书评</router-link>
             <router-link to="/coupon-center" class="nav-link desktop-link">领券中心</router-link>
             <!-- 用户名下拉菜单 -->
@@ -206,7 +212,9 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { ChatDotRound } from '@element-plus/icons-vue';
 import api from '@/api';
+import chatApi from '@/api/modules/chat';
 import { removeToken } from '@/utils/storage';
 import { UserRole } from '@/utils/constants';
 import type { AxiosError } from 'axios';
@@ -222,7 +230,9 @@ const isMerchant = ref<boolean>(false);
 const username = ref<string>('');
 const userAvatar = ref<string>('');
 const unreadCount = ref<number>(0);
+const chatUnreadCount = ref<number>(0);
 let cartPollingInterval: ReturnType<typeof setInterval> | null = null;
+let chatPollingInterval: ReturnType<typeof setInterval> | null = null;
 
 // 监听路由变化，在搜索页面时同步搜索关键词
 watch(() => route.path, () => {
@@ -309,12 +319,16 @@ const checkLoginStatus = () => {
     }
   }
 
-  // Update cart count if logged in
+  // Update cart count and chat unread count if logged in
   if (isLoggedIn.value) {
     fetchCartCount();
+    fetchChatUnreadCount();
     startCartPolling();
+    startChatPolling();
   } else {
     stopCartPolling();
+    stopChatPolling();
+    chatUnreadCount.value = 0;
     username.value = '';
     userAvatar.value = '';
     isAdmin.value = false;
@@ -359,6 +373,22 @@ const fetchUnreadCount = async () => {
   }
 }
 
+const fetchChatUnreadCount = async () => {
+  if (!isLoggedIn.value) {
+    chatUnreadCount.value = 0;
+    return;
+  }
+  try {
+    const res = await chatApi.getUnreadCount();
+    if (res && res.code === '200') {
+      chatUnreadCount.value = res.data || 0;
+    }
+  } catch (e) {
+    console.warn('Failed to fetch chat unread count', e);
+    chatUnreadCount.value = 0;
+  }
+}
+
 const startCartPolling = () => {
   // Poll for cart updates every 30 seconds
   cartPollingInterval = setInterval(() => {
@@ -370,6 +400,20 @@ const stopCartPolling = () => {
   if (cartPollingInterval) {
     clearInterval(cartPollingInterval);
     cartPollingInterval = null;
+  }
+};
+
+const startChatPolling = () => {
+  // Poll for chat unread count every 10 seconds
+  chatPollingInterval = setInterval(() => {
+    fetchChatUnreadCount();
+  }, 10000);
+};
+
+const stopChatPolling = () => {
+  if (chatPollingInterval) {
+    clearInterval(chatPollingInterval);
+    chatPollingInterval = null;
   }
 };
 
@@ -494,9 +538,10 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-  // Clear interval when component is destroyed
+  // Clear intervals when component is destroyed
   stopCartPolling();
-  
+  stopChatPolling();
+
   // 移除事件监听
   window.removeEventListener('loginStatusChanged', checkLoginStatus);
   window.removeEventListener('loginStatusChanged', fetchUnreadCount);
@@ -756,6 +801,53 @@ watch(() => route.path, () => {
 
 .cart-text {
   font-size: 14px;
+}
+
+/* 聊天链接样式 */
+.chat-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: transparent;
+  color: #666;
+  transition: all 0.3s ease;
+  margin-right: 8px;
+}
+
+.chat-link:hover {
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+.chat-link.has-unread {
+  color: #409eff;
+}
+
+.chat-link .el-icon {
+  font-size: 20px;
+}
+
+.unread-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background-color: #ff4444;
+  color: white;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* Element Plus 下拉菜单样式覆盖 */

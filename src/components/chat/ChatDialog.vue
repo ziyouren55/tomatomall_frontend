@@ -136,9 +136,12 @@ const partnerName = computed(() => {
   }
 })
 
+// 当前用户信息（响应式）
+const currentUserInfo = computed(() => store.state.user.userInfo)
+
 const partnerAvatar = computed(() => {
   if (!currentSession.value) return defaultAvatar
-  const currentUser = store.state.user.userInfo
+  const currentUser = currentUserInfo.value
   // 根据当前用户角色显示对方头像
   if (currentUser?.id === currentSession.value.customerId) {
     return currentSession.value.merchantAvatar || defaultAvatar
@@ -158,8 +161,20 @@ const canSend = computed(() => {
 
 // 判断是否是自己的消息
 function isOwnMessage(message: ChatMessageVO): boolean {
-  const currentUser = store.state.user.userInfo
-  return message.senderId === currentUser?.id
+  const currentUser = currentUserInfo.value
+  const isOwn = currentUser?.id !== undefined && message.senderId === currentUser.id
+
+  // 调试日志（仅在开发环境下）
+  if (import.meta.env.DEV) {
+    console.log('isOwnMessage check:', {
+      messageSenderId: message.senderId,
+      currentUserId: currentUser?.id,
+      currentUser,
+      isOwn
+    })
+  }
+
+  return isOwn
 }
 
 // 格式化消息时间
@@ -237,8 +252,26 @@ async function sendMessage() {
     })
 
     if (messageSent) {
+      // 发送成功后，立即在本地添加消息到列表（发送方能立即看到自己的消息）
+      const currentUser = store.state.user.userInfo
+      const tempMessage: ChatMessageVO = {
+        id: Date.now(), // 临时ID，后端消息会替换这个
+        sessionId: currentSession.value.id,
+        senderId: currentUser?.id || 0,
+        senderRole: '', // 暂时为空，后端消息会包含正确的值
+        senderName: currentUser?.name || '',
+        senderAvatar: currentUser?.avatar || '',
+        content: content,
+        messageType: 'TEXT',
+        status: 'SENT',
+        createdAt: new Date().toISOString()
+      }
+
+      messages.value.push(tempMessage)
       newMessage.value = ''
-      // 消息会通过WebSocket监听器自动添加到列表中
+      scrollToBottom()
+
+      // 真正的后端消息会通过WebSocket推送来更新这条临时消息
     } else {
       throw new Error('发送失败')
     }
@@ -278,7 +311,28 @@ async function archiveSession() {
 // 监听新消息
 function onNewMessage(message: ChatMessageVO) {
   if (message.sessionId === currentSession.value?.id) {
-    messages.value.push(message)
+    // 检查是否是重复消息（发送方收到后端推送的真实消息）
+    // 查找最近5秒内发送的相同内容的消息
+    const existingIndex = messages.value.findIndex(m =>
+      m.sessionId === message.sessionId &&
+      m.senderId === message.senderId &&
+      m.content === message.content &&
+      Math.abs(new Date(m.createdAt).getTime() - new Date(message.createdAt).getTime()) < 5000 // 5秒内
+    )
+
+    if (existingIndex >= 0) {
+      // 替换临时消息为真实消息
+      messages.value[existingIndex] = message
+    } else {
+      // 添加新消息
+      messages.value.push(message)
+
+      // 限制显示的消息数量，避免性能问题
+      const MAX_DISPLAY_MESSAGES = 100
+      if (messages.value.length > MAX_DISPLAY_MESSAGES) {
+        messages.value = messages.value.slice(-MAX_DISPLAY_MESSAGES)
+      }
+    }
     scrollToBottom()
   }
 }
@@ -292,6 +346,14 @@ watch(() => props.session, (newSession) => {
   }
 }, { immediate: true })
 
+// 监听用户信息变化，确保用户状态加载完成后重新计算消息显示
+watch(() => currentUserInfo.value, (newUser, oldUser) => {
+  if (import.meta.env.DEV) {
+    console.log('User info changed:', { oldUser: oldUser?.id, newUser: newUser?.id })
+  }
+  // 用户信息变化时会自动重新计算computed属性和重新渲染
+}, { immediate: true })
+
 onMounted(() => {
   addMessageListener(onNewMessage)
 })
@@ -300,7 +362,7 @@ onUnmounted(() => {
   removeMessageListener(onNewMessage)
 })
 
-defineEmits<{
+const emit = defineEmits<{
   'session-archived': []
 }>()
 </script>
@@ -334,6 +396,7 @@ defineEmits<{
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0; /* 确保flex子项能够缩小 */
 }
 
 .chat-header {
@@ -390,9 +453,32 @@ defineEmits<{
 
 .messages-container {
   flex: 1;
+  height: 0; /* 关键：让flex子项占据剩余空间 */
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 16px;
   background: #f8f9fa;
+  min-height: 200px;
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: #ccc transparent; /* Firefox */
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+.messages-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.messages-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.messages-container::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.messages-container::-webkit-scrollbar-thumb:hover {
+  background: #999;
 }
 
 .loading-messages, .no-messages {
@@ -405,6 +491,7 @@ defineEmits<{
   display: flex;
   flex-direction: column;
   gap: 12px;
+  padding-bottom: 16px; /* 确保最后一条消息不会被遮挡 */
 }
 
 .message-item {
