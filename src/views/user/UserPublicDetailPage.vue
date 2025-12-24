@@ -22,15 +22,18 @@
             <h4>{{ s.name }}</h4>
             <p class="store-desc">{{ s.description || '暂无店铺描述' }}</p>
             <div class="products-list">
-              <div v-if="productsByStore[s.id]?.length">
-                <div v-for="p in productsByStore[s.id]" :key="p.id" class="product-card">
-                  <img :src="p.cover" class="product-cover" />
-                  <div class="product-info">
-                    <div class="title">{{ p.title || p.name }}</div>
-                    <div class="price">¥{{ (p.price || 0).toFixed(2) }}</div>
-                  </div>
+              <template v-if="productsByStore[s.id]?.length">
+                <div
+                  v-for="p in productsByStore[s.id]"
+                  :key="p.id"
+                  class="product-item"
+                >
+                  <ProductCard
+                    :product="p"
+                    @view="handleViewProduct"
+                  />
                 </div>
-              </div>
+              </template>
               <div v-else class="no-products">暂无商品</div>
             </div>
           </div>
@@ -42,13 +45,15 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import api from '@/api'
 import storeApi from '@/api/modules/store'
 import productApi from '@/api/modules/product'
 import { getRoleLabel as getRoleLabelUtil } from '@/utils/constants'
+import ProductCard from '@/components/business/product/ProductCard.vue'
 
 const route = useRoute()
+const router = useRouter()
 const usernameParam = String(route.params.username || '')
 
 const loading = ref(true)
@@ -109,6 +114,10 @@ async function fetchStoresAndProducts(merchantId: number) {
   }
 }
 
+function handleViewProduct(productId: number) {
+  router.push(`/product/${productId}`)
+}
+
 onMounted(() => {
   fetchUser()
 })
@@ -123,11 +132,33 @@ onMounted(() => {
 .username { color:#666 }
 .merchant-section { margin-top:20px }
 .store-block { margin-bottom:18px; padding:12px; border:1px solid #eee; border-radius:6px }
-.products-list { margin-top:8px }
-.product-card { display:inline-block; width:140px; margin:8px; vertical-align:top }
-.product-cover { width:100%; height:100px; object-fit:cover; border-radius:4px }
-.product-info { padding:6px 0 }
-.price { color:#e53935; font-weight:600 }
+.products-list {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+/* 限制子项高度，防止长标题撑高卡片（参考 ProductList 的布局行为） */
+.products-list .product-item {
+  height: 320px;
+  overflow: hidden;
+  display: block;
+  align-self: start;
+}
+
+/* 让内部的 ProductCard 充满父容器并使用列布局（使用 deep 选择器作用于子组件根元素） */
+.products-list .product-item :deep(.product-card) {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.products-list .product-item :deep(.product-image-container) {
+  flex: 0 0 auto;
+}
+.products-list .product-item :deep(.product-info) {
+  flex: 1 1 auto;
+  overflow: hidden;
+}
 </style>
 
 

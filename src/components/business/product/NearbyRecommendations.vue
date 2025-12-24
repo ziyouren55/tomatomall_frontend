@@ -9,17 +9,23 @@
       <button @click="goToCert" class="cert-btn">去认证</button>
     </div>
 
-    <div v-else>
+      <div v-else>
       <div v-if="loading" class="loading">加载中...</div>
       <div v-else-if="error" class="error">{{ error }}</div>
       <div v-else-if="products.length === 0" class="no-products">暂无推荐</div>
       <div v-else class="products-grid">
-        <ProductCard
-          v-for="p in products"
-          :key="p.id"
-          :product="p"
-          @view="viewProduct"
-        />
+        <template v-if="products && products.length">
+          <div
+            v-for="p in products"
+            :key="p.id"
+            class="product-item"
+          >
+            <ProductCard
+              :product="p"
+              @view="viewProduct"
+            />
+          </div>
+        </template>
       </div>
     </div>
   </div>
@@ -118,6 +124,28 @@ export default defineComponent({
 .product-image { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; }
 .product-info { padding:8px; }
 .product-title { font-size:14px; margin:0 0 6px 0; color:#333; height:2.4em; overflow:hidden; }
+
+/* 限制子项高度，防止长标题撑高卡片（与个人页做法一致） */
+.products-grid .product-item {
+  height: 320px;
+  overflow: hidden;
+  display: block;
+  align-self: start;
+}
+
+/* 让内部的 ProductCard 充满父容器并使用列布局 */
+.products-grid .product-item :deep(.product-card) {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.products-grid .product-item :deep(.product-image-container) {
+  flex: 0 0 auto;
+}
+.products-grid .product-item :deep(.product-info) {
+  flex: 1 1 auto;
+  overflow: hidden;
+}
 .product-price { color:#ff6b35; font-weight:700; }
 .loading, .error, .no-products { padding:16px; text-align:center; color:#666; }
 </style>
