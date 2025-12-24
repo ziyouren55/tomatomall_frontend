@@ -50,7 +50,20 @@ export default defineComponent({
           // backend may return {items} or {products}
           const payload: any = res.data as any;
           const items = payload.items || payload.products || payload;
-          products.value = Array.isArray(items) ? items : [];
+          if (Array.isArray(items)) {
+            // 新后端可能返回 RecommendProductVO: { product: ProductVO, priority: string }
+            const normalized = items.map((it: any) => {
+              if (it && it.product) {
+                // 将 priority 注入到 product 上，方便前端复用现有 ProductCard 逻辑
+                it.product.priority = it.priority || it.product.priority;
+                return it.product;
+              }
+              return it;
+            });
+            products.value = normalized;
+          } else {
+            products.value = [];
+          }
         } else {
           // handle not verified case via message
           if (res && res.msg && res.msg.includes('SCHOOL_NOT_VERIFIED')) {

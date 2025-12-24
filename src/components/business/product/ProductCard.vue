@@ -2,6 +2,9 @@
   <div class="product-card" @click="onView" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
     <div class="product-image-container">
       <img :src="product.cover" :alt="product.title" class="product-image" @error="handleImageError" />
+      <div v-if="product.priority" :class="['location-badge', product.priority]">
+        {{ priorityLabel(product.priority) }}
+      </div>
       <div class="product-overlay"><span class="view-details">查看详情</span></div>
     </div>
     <div class="product-info">
@@ -21,7 +24,7 @@
           <span class="sales-text">{{ product.salesCount }}人购买</span>
         </div>
       </div>
-      <div v-if="product.priority" class="priority-tag">{{ priorityLabel(product.priority) }}</div>
+      <!-- priority badge shown on image -->
     </div>
   </div>
 </template>
@@ -102,6 +105,21 @@ export default defineComponent({
   opacity: 0;
   transition: opacity 0.3s ease;
 }
+.location-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 5;
+}
+.location-badge.same_school { background: #28a745; } /* 绿 - 同校 */
+.location-badge.same_city   { background: #007bff; } /* 蓝 - 同城 */
+.location-badge.other       { background: rgba(0,0,0,0.6); } /* 其他 */
 .product-card:hover .product-overlay {
   opacity: 1;
 }

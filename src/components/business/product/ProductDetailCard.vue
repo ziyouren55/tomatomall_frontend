@@ -5,6 +5,9 @@
       <div class="product-image-section">
         <div class="main-image">
           <img :src="product.cover" :alt="product.title" />
+        <div v-if="props.product?.priority" :class="['detail-location-badge', props.product.priority]">
+          {{ props.product.priority === 'same_school' ? '同校' : props.product.priority === 'same_city' ? '同城' : '其他' }}
+        </div>
         </div>
         <!-- 缩略图列表（可选） -->
         <div class="thumbnail-list">
@@ -301,6 +304,22 @@ watch(() => getAvailableStock(), (newAvailableStock) => {
   object-fit: contain;
   border-radius: 8px;
 }
+
+.detail-location-badge {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  padding: 6px 10px;
+  border-radius: 14px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+  z-index: 6;
+}
+.detail-location-badge.same_school { background: #28a745; }
+.detail-location-badge.same_city   { background: #007bff; }
+.detail-location-badge.other       { background: rgba(0,0,0,0.6); }
 
 .thumbnail-list {
   display: flex;
