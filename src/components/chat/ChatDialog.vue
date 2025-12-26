@@ -29,6 +29,18 @@
           </div>
         </div>
         <div class="chat-actions">
+          <!-- 商家专用：发放优惠券按钮 -->
+          <el-button
+            v-if="isMerchant"
+            type="success"
+            @click="showCouponDialog = true"
+            size="small"
+            :disabled="!currentSession"
+          >
+            <el-icon><Present /></el-icon>
+            发优惠券
+          </el-button>
+
           <el-button type="default" @click="testConnection" size="small">
             调试WS
           </el-button>
@@ -101,17 +113,26 @@
         </div>
       </div>
     </div>
+
+    <!-- 优惠券发放弹窗 -->
+    <ChatCouponDialog
+      v-model:visible="showCouponDialog"
+      :session="currentSession"
+      @coupon-issued="onCouponIssued"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Delete } from '@element-plus/icons-vue'
+import { Delete, Present } from '@element-plus/icons-vue'
 import type { ChatSessionVO, ChatMessageVO } from '@/api/modules/chat'
 import chatApi from '@/api/modules/chat'
 import store from '@/store'
 import { addMessageListener, removeMessageListener, sendChatMessage, chatState, testWebSocketConnection } from '@/services/chatService'
+import ChatCouponDialog from './ChatCouponDialog.vue'
+import { UserRole } from '@/utils/constants'
 
 interface Props {
   session: ChatSessionVO | null
@@ -126,6 +147,9 @@ const newMessage = ref('')
 const sending = ref(false)
 const messagesContainer = ref<HTMLElement>()
 const messageInputRef = ref()
+
+// 优惠券弹窗相关
+const showCouponDialog = ref(false)
 
 const defaultAvatar = 'https://tse2-mm.cn.bing.net/th/id/OIP-C.UfPq2yu1ycxTGG9LfpogugHaHY?rs=1&pid=ImgDetMain&cb=idpwebpc2'
 
@@ -163,6 +187,12 @@ const isOnline = computed(() => {
 
 const canSend = computed(() => {
   return newMessage.value.trim().length > 0 && !sending.value
+})
+
+// 判断当前用户是否为商家
+const isMerchant = computed(() => {
+  const currentUser = currentUserInfo.value
+  return currentUser?.role === UserRole.MERCHANT
 })
 
 // 判断是否是自己的消息
@@ -400,6 +430,12 @@ const emit = defineEmits<{
   'session-archived': []
   'session-read': []
 }>()
+
+// 优惠券发放成功回调
+function onCouponIssued() {
+  // 可以在这里添加一些提示或者刷新消息列表等操作
+  ElMessage.success('优惠券已发放给对方！')
+}
 </script>
 
 <style scoped>

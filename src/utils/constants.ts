@@ -74,6 +74,52 @@ export const getRoleLabel = (role: string | UserRole | undefined | null): string
     return USER_ROLE_LABELS[roleEnum] || USER_ROLE_LABELS[UserRole.CUSTOMER]
 }
 
+// 优惠券类型枚举（与后端保持一致）
+export enum CouponType {
+    REPEAT = 'REPEAT',
+    PRIVATE = 'PRIVATE'
+}
+
+// 优惠券类型显示名称映射
+export const COUPON_TYPE_LABELS: Record<CouponType, string> = {
+    [CouponType.REPEAT]: '可重复兑换',
+    [CouponType.PRIVATE]: '私人优惠券'
+}
+
+// 获取优惠券类型显示标签（大小写兼容）
+export const getCouponTypeLabel = (type: string | CouponType | undefined | null): string => {
+    if (!type) {
+        return COUPON_TYPE_LABELS[CouponType.REPEAT]
+    }
+
+    // 统一转换为大写字符串进行比较，提高兼容性
+    const typeStr = typeof type === 'string' ? type.toUpperCase() : type.toString().toUpperCase()
+
+    // 尝试匹配枚举值
+    if (typeStr === 'REPEAT') {
+        return COUPON_TYPE_LABELS[CouponType.REPEAT]
+    } else if (typeStr === 'PRIVATE') {
+        return COUPON_TYPE_LABELS[CouponType.PRIVATE]
+    }
+
+    // 默认返回可重复兑换
+    return COUPON_TYPE_LABELS[CouponType.REPEAT]
+}
+
+// 标准化优惠券类型（确保返回大写格式）
+export const normalizeCouponType = (type: string | undefined | null): CouponType => {
+    if (!type) {
+        return CouponType.REPEAT
+    }
+
+    const upperType = type.toUpperCase()
+    if (upperType === 'PRIVATE') {
+        return CouponType.PRIVATE
+    }
+
+    return CouponType.REPEAT
+}
+
 
 
 

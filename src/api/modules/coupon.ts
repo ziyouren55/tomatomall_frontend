@@ -1,5 +1,6 @@
 import request from '../config/request'
-import { ApiResponse, Coupon, UserCoupon, IssueCouponData, ApplyCouponData, ReleaseCouponData } from '@/types/api'
+import { ApiResponse, Coupon, UserCoupon, IssueCouponData, ApplyCouponData, ReleaseCouponData, IssueChatCouponData } from '@/types/api'
+import type { Product } from './product'
 
 /**
  * 优惠券相关 API
@@ -82,11 +83,23 @@ const couponApi = {
     // 释放优惠券
     releaseCoupon(releaseData: ReleaseCouponData): Promise<ApiResponse<void>> {
         return request.post('/coupons/release', releaseData)
+    },
+
+    // ========== 商家优惠券 API ==========
+    // 获取商家管理的商品列表
+    getMerchantProducts(): Promise<ApiResponse<Product[]>> {
+        return request.get('/merchant/coupons/products')
+    },
+
+    // 为聊天用户发放优惠券
+    issueChatCoupon(issueData: IssueChatCouponData): Promise<ApiResponse<UserCoupon>> {
+        return request.post('/merchant/coupons/issue-to-chat', issueData)
+    },
+
+    // 获取商家发放的优惠券历史
+    getIssuedCouponsHistory(): Promise<ApiResponse<UserCoupon[]>> {
+        return request.get('/merchant/coupons/issued-history')
     }
 }
 
 export default couponApi
-
-
-
-

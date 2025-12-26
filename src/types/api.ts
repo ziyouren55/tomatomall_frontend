@@ -57,6 +57,7 @@ export interface Coupon {
     pointsRequired?: number
     status?: number // 0: 未使用, 1: 已使用
     terms?: string[]
+    type?: string // 优惠券类型：REPEAT-可重复兑换，PRIVATE-私人优惠券
     [key: string]: any
 }
 
@@ -312,6 +313,19 @@ export interface ReleaseCouponData {
     userCouponId: number
     orderId?: number
     [key: string]: any
+}
+
+/**
+ * 聊天优惠券发放数据
+ */
+export interface IssueChatCouponData {
+    sessionId: number
+    productId: number
+    discountAmount?: number | null
+    discountPercentage?: number | null
+    minimumPurchase: number
+    validDays: number
+    remark?: string
 }
 
 /**
