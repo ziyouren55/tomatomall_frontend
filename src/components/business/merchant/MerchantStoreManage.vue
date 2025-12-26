@@ -19,7 +19,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import storeApi from '@/api/modules/store'
-import type { Store } from '@/api/modules/store'
+import type { Store } from '@/types/api'
 import { ElMessage } from 'element-plus'
 import StoreListCore from '@/components/business/store/StoreListCore.vue'
 

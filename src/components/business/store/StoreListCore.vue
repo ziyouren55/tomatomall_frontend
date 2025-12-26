@@ -33,7 +33,7 @@
 
 <script setup lang="ts">
 import type { PropType } from 'vue'
-import type { Store } from '@/api/modules/store'
+import type { Store } from '@/types/api'
 
 const props = defineProps({
   stores: { type: Array as PropType<Store[]>, default: () => [] },

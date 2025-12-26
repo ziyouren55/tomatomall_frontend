@@ -1,56 +1,5 @@
 import request from '../config/request'
-import { ApiResponse } from '@/types/api'
-
-/**
- * 会员管理相关 API
- * 包含管理员和用户两套 API
- */
-
-export interface MemberLevel {
-    id: number
-    memberLevel: number
-    levelName: string
-    pointsRequired: number
-    discountRate: number
-    description?: string
-    isActive: boolean
-    [key: string]: any
-}
-
-export interface MemberInfo {
-    points: MemberPoints
-    level: MemberLevel
-    isMember?: boolean
-    memberLevelId?: number
-    [key: string]: any
-}
-
-export interface MemberPoints {
-    userId: number
-    currentPoints: number
-    totalPoints: number
-    currentLevelId: number
-    currentLevelName?: string
-    updateTime?: string
-}
-
-export interface PointsHistory {
-    id: number
-    userId: number
-    pointsChange: number
-    recordType: string
-    referenceId?: number
-    description?: string
-    createTime?: string
-    [key: string]: any
-}
-
-export interface AdjustmentData {
-    userId: number
-    points: number
-    description?: string
-    [key: string]: any
-}
+import { ApiResponse, MemberLevel, MemberInfo, MemberPoints, PointsHistory, AdjustmentData } from '@/types/api'
 
 const memberApi = {
     // ========== 管理员会员 API ==========

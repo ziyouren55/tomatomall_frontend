@@ -1,50 +1,5 @@
 import request from '../config/request'
-import { ApiResponse, Stockpile } from '@/types/api'
-
-/**
- * 产品相关 API
- */
-
-export interface Product {
-    id?: number
-    title?: string
-    name?: string
-    price: number
-    rate?: number
-    description?: string
-    cover?: string
-    detail?: string
-    salesCount?: number
-    stockpile?: number
-    [key: string]: any
-}
-
-export interface StockpileData {
-    amount: number
-    frozen?: number
-    [key: string]: any
-}
-
-// 导出Stockpile类型
-export type { Stockpile }
-
-// 搜索结果接口
-export interface SearchResult {
-    products: Product[]
-    total: number
-    page: number
-    pageSize: number
-    totalPages: number
-}
-
-// 分页结果接口（用于库存）
-export interface PageResult<T> {
-    data: T[]
-    total: number
-    page: number
-    pageSize: number
-    totalPages: number
-}
+import { ApiResponse, Stockpile, Product, StockpileData, SearchResult, PageResult } from '@/types/api'
 
 const productApi = {
     // 获取所有产品（分页）

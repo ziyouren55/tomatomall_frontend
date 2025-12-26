@@ -31,7 +31,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import type { Product } from '@/api/modules/product';
+import type { Product } from '@/types/api';
 
 export default defineComponent({
   name: 'ProductCard',

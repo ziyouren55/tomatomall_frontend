@@ -1,8 +1,8 @@
 import { registerNotificationComponent } from './notificationComponentRegistry'
 import { registerNotificationNavigator } from '@/utils/notificationNavigatorRegistry'
-import OrderPaid from '@/components/notifications/OrderPaidNotification.vue'
-import OrderShipped from '@/components/notifications/OrderShippedNotification.vue'
-import OrderCompleted from '@/components/notifications/OrderCompletedNotification.vue'
+import OrderPaid from '@/components/business/notifications/OrderPaidNotification.vue'
+import OrderShipped from '@/components/business/notifications/OrderShippedNotification.vue'
+import OrderCompleted from '@/components/business/notifications/OrderCompletedNotification.vue'
 import { resolveNotificationPath } from '@/utils/notificationRouteResolver'
 
 // Register built-in notification components and default navigators synchronously at app startup

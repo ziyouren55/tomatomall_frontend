@@ -77,7 +77,7 @@
 import { defineComponent } from 'vue'
 import { ElMessage } from 'element-plus'
 import api from '@/api';
-import type { BookComment } from '@/api/modules/review';
+import type { BookComment } from '@/types/api';
 
 export default defineComponent({
   name: 'BookReviewList',

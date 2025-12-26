@@ -1,34 +1,5 @@
 import request from '../config/request'
-import { ApiResponse, PageResult } from '@/types/api'
-
-export interface PostCreatePayload {
-    forumId: number
-    title: string
-    content: string
-    imageUrlList?: string[]
-}
-
-export interface PostItem {
-    id: number
-    forumId: number
-    userId: number
-    title: string
-    content: string
-    imageUrls?: string[]
-    viewCount?: number
-    likeCount?: number
-    replyCount?: number
-    isSticky?: boolean
-    isEssence?: boolean
-    status?: string
-    lastReplyTime?: string
-    createTime?: string
-    updateTime?: string
-    username?: string
-    userAvatar?: string
-    forumName?: string
-    isLiked?: boolean
-}
+import { ApiResponse, PageResult, PostCreatePayload, PostItem } from '@/types/api'
 
 const postApi = {
     createPost(data: PostCreatePayload): Promise<ApiResponse<PostItem>> {

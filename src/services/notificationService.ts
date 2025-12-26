@@ -6,9 +6,9 @@ import { registerNotificationComponent, getNotificationComponent } from './notif
 // register built-in components (lazy-import to keep bundle reasonable)
 async function registerBuiltinComponents() {
   try {
-    const paid = (await import('@/components/notifications/OrderPaidNotification.vue')).default
-    const shipped = (await import('@/components/notifications/OrderShippedNotification.vue')).default
-    const completed = (await import('@/components/notifications/OrderCompletedNotification.vue')).default
+    const paid = (await import('@/components/business/notifications/OrderPaidNotification.vue')).default
+    const shipped = (await import('@/components/business/notifications/OrderShippedNotification.vue')).default
+    const completed = (await import('@/components/business/notifications/OrderCompletedNotification.vue')).default
     registerNotificationComponent('ORDER_PAID', paid)
     registerNotificationComponent('ORDER_SHIPPED', shipped)
     registerNotificationComponent('ORDER_COMPLETED', completed)

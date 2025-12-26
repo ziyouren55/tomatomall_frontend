@@ -26,10 +26,10 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import type { ChatSessionVO } from '@/api/modules/chat'
+import type { ChatSessionVO } from '@/types/api'
 import chatApi from '@/api/modules/chat'
-import ChatSessionList from '@/components/chat/ChatSessionList.vue'
-import ChatDialog from '@/components/chat/ChatDialog.vue'
+import ChatSessionList from '@/components/business/chat/ChatSessionList.vue'
+import ChatDialog from '@/components/business/chat/ChatDialog.vue'
 import { initChatService, stopChatService, setCurrentSession, chatState } from '@/services/chatService'
 import store from '@/store'
 

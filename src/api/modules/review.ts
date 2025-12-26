@@ -1,31 +1,5 @@
 import request from '../config/request'
-import { ApiResponse } from '@/types/api'
-
-/**
- * 书评相关 API
- * 对应后端 BookCommentController
- */
-
-export interface BookCommentData {
-    commentText: string
-}
-
-export interface BookComment {
-    id: number
-    productId: number
-    commentText: string
-    name: string
-    userId?: number
-    createTime?: string
-}
-
-export interface PageResult<T> {
-    content: T[]
-    totalElements: number
-    totalPages: number
-    number: number
-    size: number
-}
+import { ApiResponse, BookCommentData, BookComment, PageResult } from '@/types/api'
 
 const reviewApi = {
     // 发布书评

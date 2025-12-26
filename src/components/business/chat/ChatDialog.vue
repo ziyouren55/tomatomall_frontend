@@ -127,12 +127,12 @@
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Delete, Present } from '@element-plus/icons-vue'
-import type { ChatSessionVO, ChatMessageVO } from '@/api/modules/chat'
-import chatApi from '@/api/modules/chat'
+import type { ChatSessionVO, ChatMessageVO } from '@/types/api'
+import chatApi from '@/api/modules/chat.ts'
 import store from '@/store'
-import { addMessageListener, removeMessageListener, sendChatMessage, chatState, testWebSocketConnection } from '@/services/chatService'
+import { addMessageListener, removeMessageListener, sendChatMessage, chatState, testWebSocketConnection } from '@/services/chatService.ts'
 import ChatCouponDialog from './ChatCouponDialog.vue'
-import { UserRole } from '@/utils/constants'
+import { UserRole } from '@/utils/constants.ts'
 
 interface Props {
   session: ChatSessionVO | null
@@ -146,7 +146,6 @@ const loadingMessages = ref(false)
 const newMessage = ref('')
 const sending = ref(false)
 const messagesContainer = ref<HTMLElement>()
-const messageInputRef = ref()
 
 // 优惠券弹窗相关
 const showCouponDialog = ref(false)

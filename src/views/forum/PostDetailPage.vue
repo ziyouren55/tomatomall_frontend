@@ -79,8 +79,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/api'
-import type { PostItem } from '@/api/modules/post'
-import type { ReplyItem } from '@/api/modules/reply'
+import type { PostItem, ReplyItem } from '@/types/api'
 import UserMiniCard from '@/components/common/UserMiniCard.vue'
 
 const route = useRoute()

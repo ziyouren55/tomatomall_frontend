@@ -1,6 +1,6 @@
 import { reactive } from 'vue'
 import { getToken } from '@/utils/storage'
-import type { ChatMessageVO, ChatSessionVO } from '@/api/modules/chat'
+import type { ChatMessageVO, ChatSessionVO } from '@/types/api'
 import store from '@/store'
 
 export interface ChatWebSocketMessage {
@@ -205,13 +205,13 @@ export async function initChatService(backendBase = '') {
       connected = false
     }
 
-    client.onWebSocketError = (error: any) => {
+    client.onWebSocketError = () => {
       console.error('[CHAT WS] WebSocket error')
       chatState.connected = false
       connected = false
     }
 
-    client.onWebSocketClose = (evt: any) => {
+    client.onWebSocketClose = () => {
       console.log('[CHAT WS] Disconnected')
       chatState.connected = false
       connected = false

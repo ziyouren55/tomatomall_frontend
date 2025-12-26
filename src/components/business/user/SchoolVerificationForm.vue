@@ -60,7 +60,7 @@
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue'
 import api from '@/api'
-import type { SchoolVerificationRequest, Province, City, School } from '@/types/api'
+import type { SchoolVerificationRequest, Province, City, School } from '@/types/api.ts'
 
 const emit = defineEmits(['submitted','cancel'])
 

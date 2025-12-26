@@ -149,7 +149,7 @@
   <script lang="ts">
   import { defineComponent } from 'vue'
   import api from '@/api';
-  import SchoolVerificationForm from '@/components/user/SchoolVerificationForm.vue'
+  import SchoolVerificationForm from '@/components/business/user/SchoolVerificationForm.vue'
   import type { SchoolVerification } from '@/types/api'
   import type { UserInfo, ErrorResponse } from '@/types/api'
   import type { AxiosError } from 'axios'

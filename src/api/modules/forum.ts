@@ -1,22 +1,5 @@
 import request from '../config/request'
-import {ApiResponse, PageResult} from '@/types/api'
-
-/**
- * 论坛相关 API
- */
-
-export interface Forum {
-    id: number
-    name: string
-    bookId?: number
-    description?: string
-    postCount?: number
-    status?: string
-    bookTitle?: string
-    bookCover?: string
-    createTime?: string
-    updateTime?: string
-}
+import {ApiResponse, PageResult, Forum} from '@/types/api'
 
 const forumApi = {
     // 获取所有论坛

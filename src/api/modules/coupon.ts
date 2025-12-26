@@ -1,6 +1,5 @@
 import request from '../config/request'
-import { ApiResponse, Coupon, UserCoupon, IssueCouponData, ApplyCouponData, ReleaseCouponData, IssueChatCouponData } from '@/types/api'
-import type { Product } from './product'
+import { ApiResponse, Coupon, UserCoupon, IssueCouponData, ApplyCouponData, ReleaseCouponData, IssueChatCouponData, Product } from '@/types/api'
 
 /**
  * 优惠券相关 API

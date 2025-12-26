@@ -113,11 +113,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch } from 'vue'
+import { ref, reactive, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import type { ChatSessionVO } from '@/api/modules/chat'
-import couponApi from '@/api/modules/coupon'
-import type { Product } from '@/api/modules/product'
+import type { ChatSessionVO } from '@/types/api'
+import couponApi from '@/api/modules/coupon.ts'
+import type { Product } from '@/types/api'
 
 interface Props {
   session: ChatSessionVO | null
@@ -160,7 +160,7 @@ const formRules = {
   discountValue: [
     { required: true, message: '请输入优惠金额', trigger: 'blur' },
     {
-      validator: (rule: any, value: any, callback: any) => {
+      validator: (_rule: any, value: any, callback: any) => {
         if (value <= 0) {
           callback(new Error('优惠金额必须大于0'))
         } else {
@@ -173,7 +173,7 @@ const formRules = {
   minimumPurchase: [
     { required: true, message: '请输入最低消费金额', trigger: 'blur' },
     {
-      validator: (rule: any, value: any, callback: any) => {
+      validator: (_rule: any, value: any, callback: any) => {
         if (value < 0) {
           callback(new Error('最低消费金额不能为负数'))
         } else {
@@ -186,7 +186,7 @@ const formRules = {
   validDays: [
     { required: true, message: '请输入有效期', trigger: 'blur' },
     {
-      validator: (rule: any, value: any, callback: any) => {
+      validator: (_rule: any, value: any, callback: any) => {
         if (value < 1 || value > 365) {
           callback(new Error('有效期必须在1-365天之间'))
         } else {
@@ -200,12 +200,6 @@ const formRules = {
 
 // 发放状态
 const issuing = ref(false)
-
-// 计算属性：对话框显示状态
-const dialogVisible = computed({
-  get: () => props.visible,
-  set: (value) => emit('update:visible', value)
-})
 
 // 监听对话框显示状态
 watch(() => props.visible, (newVisible) => {

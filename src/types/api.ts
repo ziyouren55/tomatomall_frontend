@@ -123,7 +123,7 @@ export interface PageResult<T> {
 /**
  * 论坛
  */
-export interface ForumInfo {
+export interface Forum {
     id: number
     name: string
     bookId?: number
@@ -150,9 +150,19 @@ export interface Store {
 }
 
 /**
+ * 帖子创建请求
+ */
+export interface PostCreatePayload {
+    forumId: number
+    title: string
+    content: string
+    imageUrlList?: string[]
+}
+
+/**
  * 帖子
  */
-export interface PostInfo {
+export interface PostItem {
     id: number
     forumId: number
     userId: number
@@ -175,9 +185,18 @@ export interface PostInfo {
 }
 
 /**
+ * 回复创建请求
+ */
+export interface ReplyCreatePayload {
+    postId: number
+    content: string
+    parentId?: number
+}
+
+/**
  * 回复
  */
-export interface ReplyInfo {
+export interface ReplyItem {
     id: number
     postId: number
     userId: number
@@ -189,7 +208,7 @@ export interface ReplyInfo {
     updateTime?: string
     username?: string
     userAvatar?: string
-    childReplies?: ReplyInfo[]
+    childReplies?: ReplyItem[]
     isLiked?: boolean
     parentUsername?: string
 }
@@ -446,6 +465,233 @@ export interface School {
     name: string
     province_code?: string
     city_code?: string
+    [key: string]: any
+}
+
+/**
+ * 聊天会话信息
+ */
+export interface ChatSessionVO {
+    id: number
+    customerId: number
+    merchantId: number
+    storeId: number
+    storeName?: string
+    customerName?: string
+    customerAvatar?: string
+    merchantName?: string
+    merchantAvatar?: string
+    lastMessage?: string
+    lastMessageTime?: string
+    unreadCountCustomer: number
+    unreadCountMerchant: number
+    status: string
+}
+
+/**
+ * 聊天消息信息
+ */
+export interface ChatMessageVO {
+    id: number
+    sessionId: number
+    senderId: number
+    senderRole: string
+    senderName?: string
+    senderAvatar?: string
+    content: string
+    messageType: string
+    status: string
+    createdAt: string
+}
+
+/**
+ * 创建会话请求
+ */
+export interface CreateSessionRequest {
+    storeId: number
+}
+
+/**
+ * 发送消息请求
+ */
+export interface SendMessageRequest {
+    content: string
+    messageType?: string
+}
+
+/**
+ * 分页结果（聊天专用）
+ */
+export interface PageResultVO<T> {
+    data: T[]
+    total: number
+    page: number
+    pageSize: number
+    totalPages: number
+}
+
+/**
+ * 产品信息
+ */
+export interface Product {
+    id?: number
+    title?: string
+    name?: string
+    price: number
+    rate?: number
+    description?: string
+    cover?: string
+    detail?: string
+    salesCount?: number
+    stockpile?: number
+    [key: string]: any
+}
+
+/**
+ * 库存数据
+ */
+export interface StockpileData {
+    amount: number
+    frozen?: number
+    [key: string]: any
+}
+
+/**
+ * 搜索结果
+ */
+export interface SearchResult {
+    products: Product[]
+    total: number
+    page: number
+    pageSize: number
+    totalPages: number
+}
+
+/**
+ * 通知信息
+ */
+export interface Notification {
+    id: number
+    type?: string
+    payload?: any
+    readFlag?: boolean
+    createdAt?: string
+    [key: string]: any
+}
+
+/**
+ * 书评数据
+ */
+export interface BookCommentData {
+    commentText: string
+}
+
+/**
+ * 书评
+ */
+export interface BookComment {
+    id: number
+    productId: number
+    commentText: string
+    name: string
+    userId?: number
+    createTime?: string
+}
+
+/**
+ * 会员等级
+ */
+export interface MemberLevel {
+    id: number
+    memberLevel: number
+    levelName: string
+    pointsRequired: number
+    discountRate: number
+    description?: string
+    isActive: boolean
+    [key: string]: any
+}
+
+/**
+ * 会员积分信息
+ */
+export interface MemberPoints {
+    userId: number
+    currentPoints: number
+    totalPoints: number
+    currentLevelId: number
+    currentLevelName?: string
+    updateTime?: string
+}
+
+/**
+ * 会员信息
+ */
+export interface MemberInfo {
+    points: MemberPoints
+    level: MemberLevel
+    isMember?: boolean
+    memberLevelId?: number
+    [key: string]: any
+}
+
+/**
+ * 积分历史记录
+ */
+export interface PointsHistory {
+    id: number
+    userId: number
+    pointsChange: number
+    recordType: string
+    referenceId?: number
+    description?: string
+    createTime?: string
+    [key: string]: any
+}
+
+/**
+ * 积分调整数据
+ */
+export interface AdjustmentData {
+    userId: number
+    points: number
+    description?: string
+    [key: string]: any
+}
+
+/**
+ * 添加购物车数据
+ */
+export interface AddToCartData {
+    productId: number
+    quantity: number
+}
+
+/**
+ * 更新购物车项数据
+ */
+export interface UpdateCartItemData {
+    quantity: number
+}
+
+/**
+ * 收货人信息
+ */
+export interface ReceiverInfo {
+    receiverName: string
+    phone: string
+    zipCode?: string
+    address: string
+    [key: string]: any
+}
+
+/**
+ * 订单结算数据
+ */
+export interface OrderCheckoutData {
+    cartItemIds: (string | number)[]
+    paymentMethod: string
+    receiverInfoVO: ReceiverInfo
     [key: string]: any
 }
 

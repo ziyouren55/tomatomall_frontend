@@ -49,8 +49,8 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/api'
-import type { Forum } from '@/api/modules/forum'
-import type { PostItem } from '@/api/modules/post'
+import type { Forum } from '@/types/api'
+import type { PostItem } from '@/types/api'
 
 const route = useRoute()
 const router = useRouter()

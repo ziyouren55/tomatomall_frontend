@@ -47,7 +47,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import storeApi from '@/api/modules/store'
-import type { Store } from '@/api/modules/store'
+import type { Store } from '@/types/api'
 import { ElMessage } from 'element-plus'
 
 const route = useRoute()
@@ -64,7 +64,7 @@ const load = async () => {
     if (res && res.data) form.value = res.data
   } catch (e: any) {
     ElMessage({ type: 'error', message: e?.message || String(e) })
-    router.push('/merchant/stores')
+    await router.push('/merchant/stores')
   }
 }
 
@@ -77,7 +77,7 @@ const onSubmit = async () => {
       await storeApi.createStore(form.value)
       ElMessage({ type: 'success', message: '创建成功' })
     }
-    router.push('/merchant/stores')
+    await router.push('/merchant/stores')
   } catch (e: any) {
     ElMessage({ type: 'error', message: e?.message || String(e) })
   }

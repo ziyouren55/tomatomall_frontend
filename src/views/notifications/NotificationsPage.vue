@@ -35,7 +35,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import api from '@/api'
-import type { Notification } from '@/api/modules/notification'
+import type { Notification } from '@/types/api'
 import { getNotificationComponent } from '@/services/notificationComponentRegistry'
 import { handleNotificationClickShared } from '@/utils/notificationClickHandler'
 

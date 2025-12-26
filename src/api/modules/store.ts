@@ -1,15 +1,5 @@
 import request from '../config/request'
-import { ApiResponse } from '@/types/api'
-
-export interface Store {
-    id?: number
-    name: string
-    description?: string
-    status?: string
-    merchantId?: number
-    createTime?: string
-    [key: string]: any
-}
+import { ApiResponse, Store } from '@/types/api'
 
 const storeApi = {
     // 获取当前商家的店铺（分页）

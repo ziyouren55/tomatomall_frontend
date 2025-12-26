@@ -128,7 +128,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { Crown, RefreshCcw } from 'lucide-vue-next'
 import api from '@/api'
-import type { MemberInfo, MemberLevel, MemberPoints, PointsHistory } from '@/api/modules/member'
+import type { MemberInfo, MemberLevel, MemberPoints, PointsHistory } from '@/types/api'
 
 const loading = ref<boolean>(false)
 const memberInfo = ref<MemberInfo | null>(null)

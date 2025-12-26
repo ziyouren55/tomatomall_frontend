@@ -166,7 +166,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
 import api from '@/api'
-import type { MemberLevel } from '@/api/modules/member'
+import type { MemberLevel } from '@/types/api'
 
 // 状态管理
 const memberLevels = ref<MemberLevel[]>([])

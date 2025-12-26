@@ -1,52 +1,5 @@
 import request from '@/api/config/request'
-import { ApiResponse } from '@/types/api'
-
-export interface ChatSessionVO {
-  id: number
-  customerId: number
-  merchantId: number
-  storeId: number
-  storeName?: string
-  customerName?: string
-  customerAvatar?: string
-  merchantName?: string
-  merchantAvatar?: string
-  lastMessage?: string
-  lastMessageTime?: string
-  unreadCountCustomer: number
-  unreadCountMerchant: number
-  status: string
-}
-
-export interface ChatMessageVO {
-  id: number
-  sessionId: number
-  senderId: number
-  senderRole: string
-  senderName?: string
-  senderAvatar?: string
-  content: string
-  messageType: string
-  status: string
-  createdAt: string
-}
-
-export interface CreateSessionRequest {
-  storeId: number
-}
-
-export interface SendMessageRequest {
-  content: string
-  messageType?: string
-}
-
-export interface PageResultVO<T> {
-  data: T[]
-  total: number
-  page: number
-  pageSize: number
-  totalPages: number
-}
+import { ApiResponse, ChatSessionVO, ChatMessageVO, CreateSessionRequest, SendMessageRequest, PageResultVO } from '@/types/api'
 
 const chatApi = {
   // 获取用户的聊天会话列表

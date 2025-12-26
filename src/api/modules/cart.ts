@@ -1,34 +1,5 @@
 import request from '../config/request'
-import { ApiResponse, CartItem } from '@/types/api'
-
-/**
- * 购物车相关 API
- * CartItem类型定义在types/api.ts中
- */
-
-export interface AddToCartData {
-    productId: number
-    quantity: number
-}
-
-export interface UpdateCartItemData {
-    quantity: number
-}
-
-export interface ReceiverInfo {
-    receiverName: string
-    phone: string
-    zipCode?: string
-    address: string
-    [key: string]: any
-}
-
-export interface OrderCheckoutData {
-    cartItemIds: (string | number)[]
-    paymentMethod: string
-    receiverInfoVO: ReceiverInfo
-    [key: string]: any
-}
+import { ApiResponse, CartItem, OrderCheckoutData } from '@/types/api'
 
 const cartApi = {
     // 添加商品到购物车

@@ -53,7 +53,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import storeApi, { Store } from '@/api/modules/store.ts'
+import storeApi from '@/api/modules/store'
+import type { Store } from '@/types/api'
 import StoreListCore from '@/components/business/store/StoreListCore.vue'
 
 const stores = ref<Store[]>([])

@@ -1,14 +1,5 @@
 import request from '@/api/config/request'
-import { ApiResponse, PageResult } from '@/types/api'
-
-export interface Notification {
-  id: number
-  type?: string
-  payload?: any
-  readFlag?: boolean
-  createdAt?: string
-  [key: string]: any
-}
+import { ApiResponse, PageResult, Notification } from '@/types/api'
 
 export default {
   unreadCount(): Promise<ApiResponse<{ unreadCount: number }>> {

@@ -1,7 +1,7 @@
 <template>
   <div class="book-review-page">
     <NavigationBar />
-    
+
     <div class="container">
       <header class="hero">
         <div class="hero-text">
@@ -13,7 +13,7 @@
           <router-link class="cta ghost" to="/">返回首页</router-link>
         </div>
       </header>
-        
+
       <div class="main-grid">
         <!-- 左侧：书评列表 -->
         <section class="panel review-panel">
@@ -43,27 +43,27 @@
               <p class="hint">点击卡片以查看该书书评</p>
             </div>
             <div class="search-box">
-          <input 
-            type="default" 
-            v-model="searchKeyword" 
+          <input
+            type="email"
+            v-model="searchKeyword"
             placeholder="搜索图书名称..."
             @input="searchProducts"
           />
             </div>
         </div>
-        
+
           <div class="products-grid" :class="{ loading: loadingProducts }">
             <div v-if="loadingProducts" class="loading">正在加载图书列表...</div>
             <template v-else>
-          <div 
-            v-for="product in filteredProducts" 
+          <div
+            v-for="product in filteredProducts"
             :key="product.id"
             class="product-card"
             :class="{ active: selectedProductId === product.id }"
             @click="selectProduct(product.id)"
           >
             <div class="product-image">
-              <img 
+              <img
                     :src="product.cover || product.imageUrl || placeholderImg"
                     :alt="product.title || product.name"
                 @error="handleImageError"
@@ -78,7 +78,7 @@
               <div v-if="filteredProducts.length === 0" class="no-products">暂无图书数据</div>
             </template>
         </div>
-        
+
           <div class="selector-actions">
             <div class="pagination">
               <button class="btn ghost" :disabled="page === 0 || loadingProducts" @click="fetchPage(page - 1)">
@@ -136,7 +136,7 @@ export default defineComponent({
   },
   mounted() {
     this.loadProducts();
-    
+
     // 从路由参数中获取预选的产品ID
     const productId = this.$route.query.productId
     if (productId) {
@@ -158,7 +158,7 @@ export default defineComponent({
         this.loadingProducts = false;
       }
     },
-    
+
     async fetchPage(targetPage: number): Promise<void> {
       this.page = targetPage;
       try {
@@ -185,7 +185,7 @@ export default defineComponent({
         this.loadingProducts = false;
       }
     },
-    
+
     searchProducts(): void {
       const keyword = this.searchKeyword.trim();
       if (!keyword) {
@@ -198,16 +198,16 @@ export default defineComponent({
       // 搜索直接拉取远端数据（全量搜索，分页）
       this.fetchPage(0);
     },
-    
+
     selectProduct(productId: number): void {
       this.selectedProductId = productId;
-      
+
       // 更新URL参数
       this.$router.replace({
         query: { ...this.$route.query, productId }
       });
     },
-    
+
     handleImageError(event: any): void {
       // 防止无限循环触发error事件
       event.target.onerror = null;

@@ -1328,8 +1328,9 @@ export default defineComponent({
         // 使用分页API获取库存
         const response = await api.product.getAllStockpile(this.currentPage, this.pageSize);
         if (response.code === '200' && response.data) {
+          // response.data 是 PageResult<Stockpile> 类型
           // 原始库存数据（未经过滤）
-          this.stockpiles = Array.isArray(response.data.data) ? response.data.data : [];
+          this.stockpiles = Array.isArray(response.data.content) ? response.data.content : [];
 
           // 先获取当前页相关的产品信息，以便根据产品归属的 storeId 做过滤
           await this.fetchProductsInfo();
@@ -1343,7 +1344,7 @@ export default defineComponent({
             });
           }
 
-          this.total = this.stockpiles.length || response.data.total || 0;
+          this.total = response.data.totalElements || 0;
           this.totalPages = response.data.totalPages || 0;
 
           // 如果有传入productId，则自动选中对应的库存

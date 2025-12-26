@@ -41,7 +41,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api'
-import type { Forum } from '@/api/modules/forum'
+import type { Forum } from '@/types/api'
 
 const router = useRouter()
 const activeTab = ref<'active' | 'all'>('active')

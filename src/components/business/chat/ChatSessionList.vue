@@ -43,10 +43,10 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import type { ChatSessionVO } from '@/api/modules/chat'
-import chatApi from '@/api/modules/chat'
+import type { ChatSessionVO } from '@/types/api'
+import chatApi from '@/api/modules/chat.ts'
 import store from '@/store'
-import { chatState, updateUnreadCount } from '@/services/chatService'
+import { chatState, updateUnreadCount } from '@/services/chatService.ts'
 
 interface Props {
   currentSessionId?: number

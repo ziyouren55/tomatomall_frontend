@@ -115,7 +115,7 @@ import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import type { Stockpile, CartItem } from '@/types/api'
-import type { Product } from '@/api/modules/product'
+import type { Product } from '@/types/api'
 import UserMiniCard from '@/components/common/UserMiniCard.vue'
 
 // 接收商品数据和相关状态
