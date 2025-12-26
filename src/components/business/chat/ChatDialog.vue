@@ -15,7 +15,8 @@
           <img
             :src="partnerAvatar"
             :alt="partnerName"
-            class="partner-avatar"
+            class="partner-avatar clickable-avatar"
+            @click="navigateToPartnerProfile"
           />
           <div class="partner-info">
             <div class="partner-name">{{ partnerName }}</div>
@@ -71,6 +72,8 @@
               <img
                 :src="message.senderAvatar || defaultAvatar"
                 :alt="message.senderName"
+                class="clickable-avatar"
+                @click="navigateToUserProfile(message.senderId)"
               />
             </div>
 
@@ -125,10 +128,12 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Delete, Present } from '@element-plus/icons-vue'
 import type { ChatSessionVO, ChatMessageVO } from '@/types/api'
 import chatApi from '@/api/modules/chat.ts'
+import api from '@/api'
 import store from '@/store'
 import { addMessageListener, removeMessageListener, sendChatMessage, chatState, testWebSocketConnection } from '@/services/chatService.ts'
 import ChatCouponDialog from './ChatCouponDialog.vue'
@@ -139,6 +144,8 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+
+const router = useRouter()
 
 // 使用store
 const messages = ref<ChatMessageVO[]>([])
@@ -153,6 +160,9 @@ const showCouponDialog = ref(false)
 const defaultAvatar = 'https://tse2-mm.cn.bing.net/th/id/OIP-C.UfPq2yu1ycxTGG9LfpogugHaHY?rs=1&pid=ImgDetMain&cb=idpwebpc2'
 
 const currentSession = computed(() => props.session)
+
+// 用户名映射缓存，避免重复请求
+const usernameCache = ref<Record<number, string>>({})
 
 const partnerName = computed(() => {
   if (!currentSession.value) return ''
@@ -200,6 +210,53 @@ function isOwnMessage(message: ChatMessageVO): boolean {
   const isOwn = currentUser?.id !== undefined && message.senderId === currentUser.id
 
   return isOwn
+}
+
+// 获取用户ID对应的用户名（带缓存）
+async function getUsernameById(userId: number): Promise<string> {
+  if (usernameCache.value[userId]) {
+    return usernameCache.value[userId]
+  }
+
+  try {
+    const response = await api.user.getUserById(userId)
+    if (response && response.code === '200' && response.data?.username) {
+      usernameCache.value[userId] = response.data.username
+      return response.data.username
+    }
+  } catch (error) {
+    console.error('获取用户名失败:', error)
+  }
+
+  return '' // 返回空字符串表示获取失败
+}
+
+// 跳转到用户个人详情页
+async function navigateToUserProfile(userId: number) {
+  const username = await getUsernameById(userId)
+  if (username) {
+    router.push(`/users/${username}`)
+  } else {
+    ElMessage.error('无法获取用户信息')
+  }
+}
+
+// 跳转到聊天对方的个人详情页
+async function navigateToPartnerProfile() {
+  if (!currentSession.value) return
+
+  const currentUser = currentUserInfo.value
+  // 根据当前用户角色确定对方的ID
+  let partnerId: number | undefined
+  if (currentUser?.id === currentSession.value.customerId) {
+    partnerId = currentSession.value.merchantId
+  } else {
+    partnerId = currentSession.value.customerId
+  }
+
+  if (partnerId) {
+    await navigateToUserProfile(partnerId)
+  }
 }
 
 // 格式化消息时间
@@ -489,6 +546,15 @@ function onCouponIssued() {
   border-radius: 50%;
   object-fit: cover;
   margin-right: 12px;
+}
+
+.clickable-avatar {
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.clickable-avatar:hover {
+  opacity: 0.8;
 }
 
 .partner-info {

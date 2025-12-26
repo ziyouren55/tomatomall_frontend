@@ -50,8 +50,16 @@ try {
   import('./services/notificationService').then(module => {
     module.initNotificationService(backendBase)
   }).catch(e => console.warn('notification service init failed', e))
+  
+  // initialize chat service non-blocking (only if user is logged in)
+  import('./services/chatService').then(module => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      module.initChatService(backendBase).catch(e => console.warn('chat service init failed', e))
+    }
+  }).catch(e => console.warn('chat service dynamic import failed', e))
 } catch (e) {
-  console.warn('notification service dynamic import failed', e)
+  console.warn('services dynamic import failed', e)
 }
 
 app.mount('#app')

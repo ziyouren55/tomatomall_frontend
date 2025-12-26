@@ -45,6 +45,25 @@
           </div>
         </div>
       </section>
+
+      <!-- 顾客信息区域 -->
+      <section v-if="!isMerchant" class="customer-section">
+        <h3>用户资料</h3>
+        <div class="user-stats">
+          <div class="stat-item">
+            <span class="stat-label">注册时间：</span>
+            <span class="stat-value">{{ user.registerTime ? formatDate(user.registerTime) : '未知' }}</span>
+          </div>
+          <div class="stat-item" v-if="user.location">
+            <span class="stat-label">所在地：</span>
+            <span class="stat-value">{{ user.location }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">用户角色：</span>
+            <span class="stat-value">{{ roleLabel }}</span>
+          </div>
+        </div>
+      </section>
     </div>
   </div>
 </template>
@@ -83,8 +102,7 @@ const canChat = computed(() => {
   const isLoggedIn = !!store.state.user.token
   return isLoggedIn &&
          user.value?.id &&
-         user.value.id !== currentUser?.id &&
-         isMerchant.value // 只有商家才能被顾客发起聊天
+         user.value.id !== currentUser?.id // 不能和自己聊天，允许双向聊天
 })
 
 const stores = ref<any[]>([])
@@ -141,22 +159,49 @@ function handleViewProduct(productId: number) {
   router.push(`/product/${productId}`)
 }
 
+// 格式化日期
+function formatDate(dateStr: string): string {
+  if (!dateStr) return '未知'
+  try {
+    const date = new Date(dateStr)
+    return date.toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  } catch {
+    return '未知'
+  }
+}
+
 // 开始聊天
 async function startChat() {
   if (!canChat.value) return
 
   chatLoading.value = true
   try {
-    // 找到该商家的店铺（这里简化处理，取第一个店铺）
-    if (!stores.value || stores.value.length === 0) {
-      ElMessage.warning('该商家暂无店铺，无法发起聊天')
+    const currentUser = store.state.user.userInfo
+    const isCurrentUserMerchant = currentUser?.role?.toUpperCase() === 'MERCHANT'
+
+    let response
+
+    if (isCurrentUserMerchant && !isMerchant.value) {
+      // 商家联系顾客 - 直接通过顾客ID创建会话
+      response = await chatApi.createChatSessionWithCustomer({ customerId: user.value.id })
+    } else if (!isCurrentUserMerchant && isMerchant.value) {
+      // 顾客联系商家 - 通过店铺ID创建会话（原有逻辑）
+      if (!stores.value || stores.value.length === 0) {
+        ElMessage.warning('该商家暂无店铺，无法发起聊天')
+        return
+      }
+      const storeId = stores.value[0].id
+      response = await chatApi.createChatSession({ storeId })
+    } else {
+      // 同角色用户间的聊天（暂时不支持）
+      ElMessage.warning('暂不支持同角色用户间的聊天')
       return
     }
 
-    const storeId = stores.value[0].id
-
-    // 创建或获取聊天会话
-    const response = await chatApi.createChatSession({ storeId })
     if (response && response.code === '200' && response.data) {
       // 跳转到聊天页面，并传递会话ID
       router.push({
@@ -214,6 +259,41 @@ onMounted(() => {
 .products-list .product-item :deep(.product-info) {
   flex: 1 1 auto;
   overflow: hidden;
+}
+
+.customer-section {
+  margin-top: 20px;
+  padding: 16px;
+  background: #f9f9f9;
+  border-radius: 8px;
+}
+
+.customer-section h3 {
+  margin: 0 0 16px 0;
+  color: #333;
+  font-size: 18px;
+}
+
+.user-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.stat-label {
+  font-weight: 500;
+  color: #666;
+  min-width: 80px;
+}
+
+.stat-value {
+  color: #333;
 }
 </style>
 

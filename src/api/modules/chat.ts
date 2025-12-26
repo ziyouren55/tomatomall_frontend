@@ -1,5 +1,5 @@
 import request from '@/api/config/request'
-import { ApiResponse, ChatSessionVO, ChatMessageVO, CreateSessionRequest, SendMessageRequest, PageResultVO } from '@/types/api'
+import { ApiResponse, ChatSessionVO, ChatMessageVO, CreateSessionRequest, CreateSessionWithCustomerRequest, SendMessageRequest, PageResultVO } from '@/types/api'
 
 const chatApi = {
   // 获取用户的聊天会话列表
@@ -26,6 +26,11 @@ const chatApi = {
   // 创建或获取聊天会话
   createChatSession(data: CreateSessionRequest): Promise<ApiResponse<ChatSessionVO>> {
     return request.post('/chat/sessions', data)
+  },
+
+  // 商家创建与顾客的聊天会话
+  createChatSessionWithCustomer(data: CreateSessionWithCustomerRequest): Promise<ApiResponse<ChatSessionVO>> {
+    return request.post('/chat/sessions/with-customer', data)
   },
 
   // 发送消息

@@ -132,8 +132,16 @@ export async function initChatService(backendBase = '') {
           console.log(`[CHAT WS] ✅ PARSED COMPOSITE PAYLOAD from ${source}:`, { message, updatedSession })
 
           // 更新本地会话状态
-          updateSession(updatedSession.id, updatedSession)
-          console.log(`[CHAT WS] ✅ Session updated:`, updatedSession.id)
+          const existingSessionIndex = chatState.sessions.findIndex(s => s.id === updatedSession.id)
+          if (existingSessionIndex >= 0) {
+            // 会话已存在，更新它
+            updateSession(updatedSession.id, updatedSession)
+            console.log(`[CHAT WS] ✅ Session updated:`, updatedSession.id)
+          } else {
+            // 会话不存在，添加新会话
+            addSession(updatedSession)
+            console.log(`[CHAT WS] ✅ New session added:`, updatedSession.id)
+          }
 
           // 检查当前用户是否正在查看该会话，如果是则自动标记已读
           console.log(`[CHAT DEBUG] Checking if user is viewing session ${message.sessionId}`)

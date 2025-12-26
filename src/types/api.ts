@@ -512,6 +512,13 @@ export interface CreateSessionRequest {
 }
 
 /**
+ * 商家创建与顾客的会话请求
+ */
+export interface CreateSessionWithCustomerRequest {
+    customerId: number
+}
+
+/**
  * 发送消息请求
  */
 export interface SendMessageRequest {
