@@ -215,6 +215,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { ChatDotRound } from '@element-plus/icons-vue';
 import api from '@/api';
 import chatApi from '@/api/modules/chat';
+import { chatState } from '@/services/chatService';
 import { removeToken } from '@/utils/storage';
 import { UserRole } from '@/utils/constants';
 import type { AxiosError } from 'axios';
@@ -249,6 +250,11 @@ watch(() => route.query.keyword, (newKeyword) => {
     searchQuery.value = newKeyword;
   }
 });
+
+// 同步聊天未读数状态 - 监听chatState的变化来更新导航栏红点
+watch(() => chatState.unreadCount, (newUnreadCount) => {
+  chatUnreadCount.value = newUnreadCount;
+}, { immediate: true });
 
 const performSearch = (): void => {
   if (!searchQuery.value.trim()) return;
@@ -322,7 +328,9 @@ const checkLoginStatus = () => {
   // Update cart count and chat unread count if logged in
   if (isLoggedIn.value) {
     fetchCartCount();
-    fetchChatUnreadCount();
+    // 同步聊天未读数状态（通过watch监听器自动更新）
+    chatUnreadCount.value = chatState.unreadCount;
+    fetchChatUnreadCount(); // 保留API调用作为状态同步的后备
     startCartPolling();
     startChatPolling();
   } else {
@@ -379,13 +387,16 @@ const fetchChatUnreadCount = async () => {
     return;
   }
   try {
-    const res = await chatApi.getUnreadCount();
-    if (res && res.code === '200') {
-      chatUnreadCount.value = res.data || 0;
+    // 只有在chatState还没有会话数据时才通过API获取，否则依赖实时状态同步
+    if (chatState.sessions.length === 0) {
+      const res = await chatApi.getUnreadCount();
+      if (res && res.code === '200') {
+        chatUnreadCount.value = res.data || 0;
+      }
     }
   } catch (e) {
     console.warn('Failed to fetch chat unread count', e);
-    chatUnreadCount.value = 0;
+    // 出错时不设置chatUnreadCount，让watch监听器处理
   }
 }
 
@@ -504,6 +515,12 @@ const logout = async () => {
     // Stop cart polling
     stopCartPolling();
 
+    // 清理聊天状态
+    chatState.sessions = [];
+    chatState.currentSession = null;
+    chatState.messages = [];
+    chatState.unreadCount = 0;
+
     // 如果当前在需要登录的页面，跳转到首页
     if (route.meta.requiresAuth) {
       router.push('/');
@@ -517,7 +534,10 @@ const logout = async () => {
 onMounted(() => {
   // Check login status when component is created
   checkLoginStatus();
-  
+
+  // 初始化同步聊天未读数状态
+  chatUnreadCount.value = chatState.unreadCount;
+
   // 监听登录状态变化事件
   window.addEventListener('loginStatusChanged', checkLoginStatus);
   window.addEventListener('loginStatusChanged', fetchUnreadCount);

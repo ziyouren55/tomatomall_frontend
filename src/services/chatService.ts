@@ -1,6 +1,7 @@
 import { reactive } from 'vue'
 import { getToken } from '@/utils/storage'
 import type { ChatMessageVO, ChatSessionVO } from '@/api/modules/chat'
+import store from '@/store'
 
 export interface ChatWebSocketMessage {
   sessionId: number
@@ -245,9 +246,15 @@ export function markChatAsRead(sessionId: number) {
 export function updateUnreadCount() {
   // 计算所有会话中的未读消息总数
   const totalUnread = chatState.sessions.reduce((total, session) => {
-    // 这里需要根据当前用户角色来确定使用哪个未读计数
-    // 暂时简化处理，假设当前用户是顾客
-    return total + (session.unreadCountCustomer || 0)
+    // 根据当前用户角色返回对应的未读消息数
+    const currentUser = store.state.user.userInfo
+    let unreadCount = 0
+    if (currentUser?.id === session.customerId) {
+      unreadCount = session.unreadCountCustomer || 0
+    } else {
+      unreadCount = session.unreadCountMerchant || 0
+    }
+    return total + unreadCount
   }, 0)
   chatState.unreadCount = totalUnread
 }

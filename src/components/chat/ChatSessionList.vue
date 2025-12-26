@@ -46,6 +46,7 @@ import { ref, computed, onMounted } from 'vue'
 import type { ChatSessionVO } from '@/api/modules/chat'
 import chatApi from '@/api/modules/chat'
 import store from '@/store'
+import { chatState, updateUnreadCount } from '@/services/chatService'
 
 interface Props {
   currentSessionId?: number
@@ -129,6 +130,9 @@ async function loadSessions() {
     const response = await chatApi.getChatSessions()
     if (response && response.code === '200') {
       sessions.value = response.data || []
+      // 同步更新全局聊天状态
+      chatState.sessions = sessions.value
+      updateUnreadCount()
     }
   } catch (error) {
     console.error('加载聊天会话失败:', error)
