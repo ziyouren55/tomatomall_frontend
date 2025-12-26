@@ -22,18 +22,11 @@
     <div v-if="showShip" class="modal">
       <div class="modal-body">
         <h3>快速发货 - 订单 #{{ shipOrderId }}</h3>
-        <div>
-          <label>快递公司：</label>
-          <input v-model="carrier" />
-        </div>
-        <div style="margin-top:8px;">
-          <label>运单号：</label>
-          <input v-model="trackingNo" />
-        </div>
-        <div style="margin-top:12px;">
-          <button @click="doShip">确认发货</button>
-          <button @click="closeQuickShip" style="margin-left:8px;">取消</button>
-        </div>
+        <ShippingForm
+          :loading="shippingLoading"
+          @ship="handleShip"
+          @cancel="closeQuickShip"
+        />
       </div>
     </div>
   </div>
@@ -43,14 +36,14 @@
 import { ref, onMounted } from 'vue'
 import api from '@/api'
 import { useRouter } from 'vue-router'
+import ShippingForm from '@/components/business/order/ShippingForm.vue'
 
 const orders = ref<any[]>([])
 const loading = ref(true)
 const activeTab = ref<'pending'|'processed'>('pending')
 const showShip = ref(false)
 const shipOrderId = ref<number | null>(null)
-const carrier = ref('')
-const trackingNo = ref('')
+const shippingLoading = ref(false)
 const router = useRouter()
 
 const load = async () => {
@@ -88,18 +81,22 @@ const openQuickShip = (orderId: number) => {
 const closeQuickShip = () => {
   showShip.value = false
   shipOrderId.value = null
-  carrier.value = ''
-  trackingNo.value = ''
+  shippingLoading.value = false
 }
 
-const doShip = async () => {
+const handleShip = async (shipData: { carrier: string; trackingNo: string }) => {
   if (!shipOrderId.value) return
   try {
-    await api.order.shipOrderForMerchant(shipOrderId.value, { carrier: carrier.value, trackingNo: trackingNo.value })
+    shippingLoading.value = true
+    await api.order.shipOrderForMerchant(shipOrderId.value, shipData)
     closeQuickShip()
     await load()
+    alert('发货成功')
   } catch (e) {
     console.warn('quick ship failed', e)
+    alert('发货失败')
+  } finally {
+    shippingLoading.value = false
   }
 }
 

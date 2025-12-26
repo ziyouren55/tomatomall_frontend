@@ -10,18 +10,11 @@
         <button @click="showShip = true">标记已发货</button>
       </template>
       <div v-if="showShip" style="margin-top:8px;">
-        <div>
-          <label>快递公司：</label>
-          <input v-model="carrier" placeholder="例如：顺丰"/>
-        </div>
-        <div style="margin-top:6px;">
-          <label>运单号：</label>
-          <input v-model="trackingNo" placeholder="运单号"/>
-        </div>
-        <div style="margin-top:8px;">
-          <button @click="doShip">确认发货</button>
-          <button @click="showShip = false" style="margin-left:8px;">取消</button>
-        </div>
+        <ShippingForm
+          :loading="shippingLoading"
+          @ship="handleShip"
+          @cancel="showShip = false"
+        />
       </div>
     </div>
       <hr/>
@@ -42,12 +35,12 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/api'
+import ShippingForm from '@/components/business/order/ShippingForm.vue'
 
 const route = useRoute()
 const order = ref<any>(null)
 const showShip = ref(false)
-const carrier = ref('')
-const trackingNo = ref('')
+const shippingLoading = ref(false)
 
 const canShip = computed(() => {
   if (!order.value || !order.value.status) return false
@@ -68,16 +61,19 @@ onMounted(() => {
   load()
 })
 
-const doShip = async () => {
+const handleShip = async (shipData: { carrier: string; trackingNo: string }) => {
   if (!order.value) return
   const orderId = Number(order.value.orderId)
   try {
-    await api.order.shipOrderForMerchant(orderId, { carrier: carrier.value, trackingNo: trackingNo.value })
+    shippingLoading.value = true
+    await api.order.shipOrderForMerchant(orderId, shipData)
     showShip.value = false
     // reload order to reflect new status
     await load()
   } catch (e) {
     console.warn('ship failed', e)
+  } finally {
+    shippingLoading.value = false
   }
 }
 </script>
