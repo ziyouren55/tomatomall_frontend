@@ -42,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import type { ChatSessionVO } from '@/api/modules/chat'
 import chatApi from '@/api/modules/chat'
 import store from '@/store'
@@ -68,6 +68,14 @@ const totalUnread = computed(() => {
     return total + getUnreadCount(session)
   }, 0)
 })
+
+// 监听全局聊天状态变化，同步更新本地会话列表
+watch(() => chatState.sessions, (newSessions) => {
+  if (newSessions && newSessions.length > 0) {
+    // 同步全局状态到本地组件状态
+    sessions.value = [...newSessions]
+  }
+}, { deep: true, immediate: true })
 
 const defaultAvatar = 'https://tse2-mm.cn.bing.net/th/id/OIP-C.UfPq2yu1ycxTGG9LfpogugHaHY?rs=1&pid=ImgDetMain&cb=idpwebpc2'
 
@@ -136,6 +144,10 @@ async function loadSessions() {
     }
   } catch (error) {
     console.error('加载聊天会话失败:', error)
+    // 如果API调用失败，但全局状态已有数据，使用全局状态
+    if (chatState.sessions.length > 0) {
+      sessions.value = [...chatState.sessions]
+    }
   } finally {
     loading.value = false
   }

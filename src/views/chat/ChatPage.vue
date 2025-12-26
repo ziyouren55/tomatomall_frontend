@@ -23,20 +23,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { ChatSessionVO } from '@/api/modules/chat'
 import chatApi from '@/api/modules/chat'
 import ChatSessionList from '@/components/chat/ChatSessionList.vue'
 import ChatDialog from '@/components/chat/ChatDialog.vue'
-import { initChatService, stopChatService } from '@/services/chatService'
+import { initChatService, stopChatService, setCurrentSession, chatState } from '@/services/chatService'
 import store from '@/store'
 
 const route = useRoute()
 // 使用store
-const currentSession = ref<ChatSessionVO | null>(null)
 const sessionListRef = ref()
+
+// 使用全局聊天状态的当前会话
+const currentSession = computed(() => {
+  const session = chatState.currentSession
+  console.log('[CHAT DEBUG] currentSession computed:', session?.id || 'null')
+  return session
+})
 
 // 检查用户是否已登录
 function checkAuth() {
@@ -51,12 +57,14 @@ function checkAuth() {
 
 // 选择会话
 function onSelectSession(session: ChatSessionVO) {
-  currentSession.value = session
+  console.log('[CHAT DEBUG] onSelectSession called with session:', session.id)
+  // 设置全局当前会话状态，用于自动标记已读
+  setCurrentSession(session)
 }
 
 // 会话被删除
 function onSessionArchived() {
-  currentSession.value = null
+  setCurrentSession(null)
   // 刷新会话列表
   if (sessionListRef.value) {
     sessionListRef.value.refresh()
@@ -79,7 +87,7 @@ async function loadSessionFromRoute() {
     try {
       const response = await chatApi.getChatSession(parseInt(sessionId))
       if (response && response.code === '200' && response.data) {
-        currentSession.value = response.data
+        setCurrentSession(response.data)
       }
     } catch (error) {
       console.error('加载会话失败:', error)
@@ -108,6 +116,8 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  // 清除当前会话状态
+  setCurrentSession(null)
   // 停止聊天WebSocket服务
   stopChatService()
 })

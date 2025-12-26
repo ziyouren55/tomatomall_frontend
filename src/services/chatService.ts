@@ -121,23 +121,74 @@ export async function initChatService(backendBase = '') {
       console.log(`[CHAT WS] 🔴 MESSAGE HEADERS:`, msg.headers)
 
       try {
-        const message: ChatMessageVO = msg.body ? JSON.parse(msg.body) : {}
+        const payload = msg.body ? JSON.parse(msg.body) : {}
 
-        console.log(`[CHAT WS] ✅ PARSED MESSAGE from ${source}:`, message)
+        // 检查是否是复合对象（包含消息和会话状态）
+        if (payload.message && payload.updatedSession) {
+          // 复合对象：包含消息和更新的会话状态
+          const message: ChatMessageVO = payload.message
+          const updatedSession: ChatSessionVO = payload.updatedSession
 
-        // 通知所有监听器
-        messageListeners.forEach((listener) => {
-          try {
-            console.log(`[CHAT WS] 📢 Notifying listener with message:`, message)
-            listener(message)
-          } catch (e) {
-            console.warn(`[CHAT WS] Listener error:`, e)
+          console.log(`[CHAT WS] ✅ PARSED COMPOSITE PAYLOAD from ${source}:`, { message, updatedSession })
+
+          // 更新本地会话状态
+          updateSession(updatedSession.id, updatedSession)
+          console.log(`[CHAT WS] ✅ Session updated:`, updatedSession.id)
+
+          // 检查当前用户是否正在查看该会话，如果是则自动标记已读
+          console.log(`[CHAT DEBUG] Checking if user is viewing session ${message.sessionId}`)
+          console.log(`[CHAT DEBUG] Current session:`, chatState.currentSession?.id || 'null')
+          console.log(`[CHAT DEBUG] Message session:`, message.sessionId)
+
+          if (chatState.currentSession && chatState.currentSession.id === message.sessionId) {
+            console.log(`[CHAT WS] 👁️ User is viewing session ${message.sessionId}, auto-marking as read`)
+
+            // 乐观更新：立即将本地会话的未读计数设置为0，避免显示红点
+            const currentUser = store.state.user.userInfo
+            const optimisticUpdates: Partial<ChatSessionVO> = {}
+            if (currentUser?.id === updatedSession.customerId) {
+              optimisticUpdates.unreadCountCustomer = 0
+            } else {
+              optimisticUpdates.unreadCountMerchant = 0
+            }
+
+            console.log(`[CHAT DEBUG] Optimistically updating session ${message.sessionId} unread count to 0`)
+            updateSession(message.sessionId, optimisticUpdates)
+
+            // 发送标记已读的WebSocket消息
+            markChatAsRead(message.sessionId)
+          } else {
+            console.log(`[CHAT DEBUG] User is NOT viewing this session, will show red dot`)
           }
-        })
 
-        // 更新未读计数
-        updateUnreadCount()
-        console.log(`[CHAT WS] ✅ Unread count updated`)
+          // 通知消息监听器
+          messageListeners.forEach((listener) => {
+            try {
+              console.log(`[CHAT WS] 📢 Notifying listener with message:`, message)
+              listener(message)
+            } catch (e) {
+              console.warn(`[CHAT WS] Listener error:`, e)
+            }
+          })
+
+        } else {
+          // 简单对象：只包含消息（发送方收到自己的消息）
+          const message: ChatMessageVO = payload
+
+          console.log(`[CHAT WS] ✅ PARSED SIMPLE MESSAGE from ${source}:`, message)
+
+          // 通知消息监听器
+          messageListeners.forEach((listener) => {
+            try {
+              console.log(`[CHAT WS] 📢 Notifying listener with message:`, message)
+              listener(message)
+            } catch (e) {
+              console.warn(`[CHAT WS] Listener error:`, e)
+            }
+          })
+        }
+
+        console.log(`[CHAT WS] ✅ Message processing completed`)
 
       } catch (e) {
         console.warn(`[CHAT WS] Parse message failed from ${source}:`, e)
@@ -225,16 +276,19 @@ export function testWebSocketConnection() {
 
 // 标记消息为已读
 export function markChatAsRead(sessionId: number) {
+  console.log('[CHAT DEBUG] markChatAsRead called for session:', sessionId)
   if (!client || !connected) {
     console.warn('[CHAT] not connected, cannot mark as read')
     return false
   }
 
   try {
+    console.log('[CHAT DEBUG] Publishing mark-read for session:', sessionId)
     client.publish({
       destination: '/app/chat.mark-read',
       body: JSON.stringify({ sessionId })
     })
+    console.log('[CHAT DEBUG] markChatAsRead published successfully')
     return true
   } catch (e) {
     console.error('[CHAT] mark as read failed', e)
@@ -261,9 +315,24 @@ export function updateUnreadCount() {
 
 // 设置当前会话
 export function setCurrentSession(session: ChatSessionVO | null) {
+  console.log('[CHAT DEBUG] setCurrentSession called with:', session?.id || 'null')
   chatState.currentSession = session
+  console.log('[CHAT DEBUG] chatState.currentSession set to:', chatState.currentSession?.id || 'null')
   if (session) {
+    // 乐观更新：立即将本地会话的未读计数设置为0
+    const currentUser = store.state.user.userInfo
+    const optimisticUpdates: Partial<ChatSessionVO> = {}
+    if (currentUser?.id === session.customerId) {
+      optimisticUpdates.unreadCountCustomer = 0
+    } else {
+      optimisticUpdates.unreadCountMerchant = 0
+    }
+
+    console.log(`[CHAT DEBUG] Optimistically updating session ${session.id} unread count to 0`)
+    updateSession(session.id, optimisticUpdates)
+
     // 标记当前会话为已读
+    console.log('[CHAT DEBUG] Marking session as read:', session.id)
     markChatAsRead(session.id)
   }
 }
