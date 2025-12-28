@@ -158,7 +158,7 @@ const fetchProductDetail = async (): Promise<void> => {
   }
 }
 
-// 处理加入购物车
+// 处理加入购物车（在前端确保购物车中该商品总数量不超过可用库存）
 const handleAddToCart = async (quantity: number) => {
   try {
     loadingActions.value.addToCart = true
@@ -184,16 +184,39 @@ const handleAddToCart = async (quantity: number) => {
     console.log('商品ID:', productIdNum)
     console.log('数量:', quantity)
 
+    // 计算可用库存（总量 - 冻结）
+    const stockpileData = stockpile.value?.data || stockpile.value
+    const availableStock = stockpileData && typeof stockpileData.amount === 'number' && typeof stockpileData.frozen === 'number'
+      ? Math.max(0, stockpileData.amount - stockpileData.frozen)
+      : 0
+
+    if (availableStock <= 0) {
+      ElMessage.warning('商品库存不足')
+      return
+    }
+
     let response
 
-    // 检查商品是否已在购物车中
-    //todo 这里检测有问题
-      if (cartItem.value && cartItem.value.state === 'SHOW') {
-      // 已在购物车中，更新数量
-      const newQuantity = cartItem.value.quantity + quantity
+    // 如果商品已在购物车中，计算合并后的总数量并限制为可用库存
+    if (cartItem.value && cartItem.value.state === 'SHOW') {
+      const existingQuantity = Number(cartItem.value.quantity || 0)
+      const requestedTotal = existingQuantity + quantity
       const cartItemIdNum = parseInt(String(cartItem.value.cartItemId), 10)
-      console.log('更新购物车项，新数量:', newQuantity)
-      response = await api.cart.updateCartItemQuantity(cartItemIdNum, newQuantity)
+
+      if (requestedTotal <= availableStock) {
+        // 在可用库存内，直接更新为合计数量
+        console.log('更新购物车项，新数量:', requestedTotal)
+        response = await api.cart.updateCartItemQuantity(cartItemIdNum, requestedTotal)
+      } else {
+        // 超出库存：提示并将数量更新为可用库存（如果已有数量已经 >= 可用库存则不做更新）
+        if (existingQuantity >= availableStock) {
+          ElMessage.warning(`库存不足，购物车中已达到库存上限(${availableStock}件)`)
+          return
+        }
+        ElMessage.warning(`库存不足，已为您将购物车数量调整为库存上限 ${availableStock} 件`)
+        console.log('更新购物车项，新数量（调整为库存上限）:', availableStock)
+        response = await api.cart.updateCartItemQuantity(cartItemIdNum, availableStock)
+      }
 
       if (response && response.code === '200') {
         ElMessage({
@@ -202,7 +225,11 @@ const handleAddToCart = async (quantity: number) => {
         })
       }
     } else {
-      // 不在购物车中，添加新项
+      // 不在购物车中，先检查请求数量是否超过可用库存
+      if (quantity > availableStock) {
+        ElMessage.warning(`库存不足，最多只能购买 ${availableStock} 件`)
+        return
+      }
       response = await api.cart.addToCart(productIdNum, quantity)
 
       if (response && response.code === '200') {
@@ -213,12 +240,10 @@ const handleAddToCart = async (quantity: number) => {
       }
     }
 
-    // 检查响应状态
+    // 检查响应状态并刷新数据
     if (response && response.code === '200') {
-      // 加入购物车后刷新界面
       await fetchProductDetail()
     } else {
-      // 处理API返回的错误
       throw new Error(response?.msg || '添加购物车失败')
     }
 

@@ -11,7 +11,22 @@
             </svg>
             <h1>商家仓库管理</h1>
           </div>
-          <p class="header-subtitle">管理本店产品和库存信息</p>
+          <div class="header-subtitle">
+            <span>管理本店产品和库存信息</span>
+          </div>
+          <div class="store-switch" v-if="storesLoaded">
+            <button class="switch-btn" @click="showStoreMenu = !showStoreMenu">
+              切换店铺
+              <span class="current" v-if="currentStoreDisplay">：{{ currentStoreDisplay }}</span>
+            </button>
+            <div v-if="showStoreMenu" class="store-menu">
+              <ul>
+                <li v-for="s in stores" :key="s.id" @click="selectStore(s.id)">
+                  <strong>{{ s.name }}</strong> <span class="meta">ID: {{ s.id }}</span>
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -62,6 +77,8 @@ import StoreProductManager from '@/components/business/store/StoreProductManager
 import StoreStockpileManager from '@/components/business/store/StoreStockPileManager.vue'
 import { ref, computed } from 'vue';
 import { useRoute } from 'vue-router';
+import storeApi from '@/api/modules/store'
+import { useRouter } from 'vue-router'
 
 const activeTab = ref<string>('products');
 const route = useRoute();
@@ -71,6 +88,52 @@ const storeId = computed<number | null>(() => {
 });
 
 // 注意：将 storeId 传给店铺专用组件，组件内部会据此创建产品或加载库存
+
+const router = useRouter();
+const stores = ref<any[]>([]);
+const storesLoaded = ref(false);
+const currentStoreId = ref<number | null>(storeId.value);
+
+const loadStores = async () => {
+  try {
+    const res = await storeApi.getMerchantStores(0, 100);
+    const payload = res?.data?.data ?? res?.data?.content ?? res?.data;
+    stores.value = Array.isArray(payload) ? payload : (payload?.content || []);
+    storesLoaded.value = true;
+    // if currentStoreId not set, set to route storeId or first store
+    if (!currentStoreId.value) {
+      currentStoreId.value = storeId.value ?? (stores.value[0] ? stores.value[0].id : null);
+    }
+  } catch (e) {
+    console.error('加载商家店铺失败', e);
+    stores.value = [];
+    storesLoaded.value = true;
+  }
+}
+
+const onSwitchStore = () => {
+  if (currentStoreId.value) {
+    router.push({ name: 'MerchantStoreWarehouse', params: { id: String(currentStoreId.value) }});
+  }
+}
+
+// load stores on mount
+loadStores();
+const showStoreMenu = ref(false);
+
+const currentStoreDisplay = computed(() => {
+  const id = currentStoreId.value ?? storeId.value;
+  const s = stores.value.find(x => x.id === id);
+  return s ? `${s.name} (ID:${s.id})` : id ? `ID:${id}` : null;
+});
+
+const selectStore = (id: number) => {
+  showStoreMenu.value = false;
+  if (id) {
+    currentStoreId.value = id;
+    router.push({ name: 'MerchantStoreWarehouse', params: { id: String(id) }});
+  }
+}
 </script>
 
 <style scoped>
@@ -180,6 +243,52 @@ const storeId = computed<number | null>(() => {
 
 .tab-button.active .tab-icon {
   animation: iconPulse 0.3s ease;
+}
+
+/* 切换店铺按钮样式（绿色） */
+.store-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 12px;
+  position: relative;
+}
+.store-switch .switch-btn {
+  background: #28a745;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(40,167,69,0.2);
+}
+.store-switch .switch-btn:hover {
+  background: #218838;
+}
+.store-switch .store-menu {
+  position: absolute;
+  top: 36px;
+  left: 0;
+  background: #fff;
+  color: #333;
+  margin-top: 8px;
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+  z-index: 50;
+  min-width: 220px;
+}
+.store-switch .store-menu ul {
+  list-style: none;
+  margin: 0;
+  padding: 8px 0;
+}
+.store-switch .store-menu li {
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.store-switch .store-menu li:hover {
+  background: #f5f5f5;
 }
 
 @keyframes iconPulse {

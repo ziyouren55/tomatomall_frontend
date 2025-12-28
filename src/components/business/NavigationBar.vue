@@ -41,9 +41,9 @@
 
           <!-- 已登录状态 -->
           <template v-else>
-            <!-- 聊天入口 -->
+            <!-- 聊天入口（图标改为文字） -->
             <router-link to="/chat" class="nav-link chat-link" :class="{ 'has-unread': chatUnreadCount > 0 }">
-              <el-icon><ChatDotRound /></el-icon>
+              <span class="chat-text">聊天</span>
               <span v-if="chatUnreadCount > 0" class="unread-badge">{{ chatUnreadCount }}</span>
             </router-link>
 
@@ -212,7 +212,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { ChatDotRound } from '@element-plus/icons-vue';
+// Chat icon component removed; using text label "聊天" instead
 import api from '@/api';
 import chatApi from '@/api/modules/chat';
 import { chatState } from '@/services/chatService';
@@ -828,27 +828,28 @@ watch(() => route.path, () => {
   position: relative;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 4px;
   background-color: transparent;
-  color: #666;
+  color: #fff;
   transition: all 0.3s ease;
   margin-right: 8px;
 }
 
 .chat-link:hover {
-  background-color: #f5f5f5;
-  color: #333;
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #fff;
 }
 
 .chat-link.has-unread {
   color: #409eff;
 }
 
-.chat-link .el-icon {
-  font-size: 20px;
+.chat-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
 }
 
 .unread-badge {

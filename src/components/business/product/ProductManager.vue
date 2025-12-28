@@ -323,6 +323,14 @@ export default {
   mounted() {
     this.fetchProducts();
   },
+  watch: {
+    // 监听外部传入的 storeId 变化，切换店铺时重新加载产品
+    storeId(newVal, oldVal) {
+      // 重置分页到第一页并重新加载
+      this.currentPage = 0;
+      this.fetchProducts();
+    }
+  },
   methods: {
     async fetchProducts() {
       this.loading = true;
