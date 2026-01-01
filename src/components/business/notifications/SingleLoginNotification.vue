@@ -1,14 +1,86 @@
-<!-- 此组件现在主要用于注册表，但实际显示由ElMessageBox处理 -->
+<!-- 单点登录通知组件 -->
+<!-- 当单点登录发生时，通过通知系统显示此组件 -->
 
 <script setup lang="ts">
-// 此组件保留用于通知注册表兼容性
-// 实际的单点登录处理已移至notificationService.ts
+import { ref, onMounted } from 'vue'
+import { authService } from '@/services/authService'
 
 const props = defineProps<{
   message: string
   timestamp: number
 }>()
+
+const isVisible = ref(true)
+const timeString = ref('')
+
+// 格式化时间显示
+const formatTime = (timestamp: number) => {
+  const date = new Date(timestamp)
+  const now = new Date()
+  const diff = now.getTime() - date.getTime()
+
+  if (diff < 60000) { // 1分钟内
+    return '刚刚'
+  } else if (diff < 3600000) { // 1小时内
+    return `${Math.floor(diff / 60000)}分钟前`
+  } else if (diff < 86400000) { // 1天内
+    return `${Math.floor(diff / 3600000)}小时前`
+  } else {
+    return date.toLocaleString('zh-CN')
+  }
+}
+
+// 重新登录
+const handleRelogin = async () => {
+  try {
+    isVisible.value = false
+    await authService.forceLogout(props.message)
+  } catch (error) {
+    console.error('Relogin failed:', error)
+  }
+}
+
+onMounted(() => {
+  timeString.value = formatTime(props.timestamp)
+})
 </script>
+
+<template>
+  <div v-if="isVisible" class="single-login-modal-overlay" @click.self="handleRelogin">
+    <div class="single-login-modal">
+      <!-- 头部 -->
+      <div class="modal-header">
+        <div class="warning-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+          </svg>
+        </div>
+        <h3>账号安全提醒</h3>
+      </div>
+
+      <!-- 主体内容 -->
+      <div class="modal-body">
+        <div class="main-message">
+          {{ message || '您的账号在其他设备上登录，您已被迫下线' }}
+        </div>
+        <div class="sub-message">
+          为确保账号安全，请重新登录以继续使用
+        </div>
+        <div class="time-info">
+          <span class="time-label">登录时间：</span>
+          {{ timeString }}
+        </div>
+      </div>
+
+      <!-- 底部按钮 -->
+      <div class="modal-footer">
+        <button class="relogin-btn" @click="handleRelogin">
+          立即重新登录
+        </button>
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .single-login-modal-overlay {
