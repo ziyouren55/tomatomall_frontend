@@ -234,6 +234,7 @@ const unreadCount = ref<number>(0);
 const chatUnreadCount = ref<number>(0);
 let cartPollingInterval: ReturnType<typeof setInterval> | null = null;
 let chatPollingInterval: ReturnType<typeof setInterval> | null = null;
+let tokenCheckInterval: ReturnType<typeof setInterval> | null = null;
 
 // 监听路由变化，在搜索页面时同步搜索关键词
 watch(() => route.path, () => {
@@ -295,13 +296,25 @@ const checkLoginStatus = async () => {
     return;
   }
 
-  try {
-    // 验证token是否仍然有效
-    const validateResponse = await api.user.validateToken();
+      try {
+        // 验证token是否仍然有效
+        const validateResponse = await api.user.validateToken();
 
-    if (validateResponse && validateResponse.code === '200' && validateResponse.data === true) {
-      // token有效，设置为登录状态
-      isLoggedIn.value = true;
+        if (validateResponse && validateResponse.code === '200' && validateResponse.data === true) {
+          // token有效，设置为登录状态
+          isLoggedIn.value = true;
+
+          // 重新初始化WebSocket连接，确保带token连接
+          try {
+            const { reinitializeNotificationService } = await import('@/services/notificationService')
+            await reinitializeNotificationService()
+            console.log('WebSocket connection reinitialized with token')
+          } catch (wsError) {
+            console.warn('Failed to reinitialize WebSocket connection:', wsError)
+          }
+
+          // 启动token定期检查
+          startTokenCheck();
 
       // 获取最新的用户信息
       try {
@@ -494,6 +507,70 @@ const stopChatPolling = () => {
   }
 };
 
+const startTokenCheck = () => {
+  // 每30秒检查一次token有效性，作为WebSocket通知的补充
+  tokenCheckInterval = setInterval(async () => {
+    if (!isLoggedIn.value) return;
+
+    try {
+      const response = await api.user.validateToken();
+      if (!response || response.code !== '200' || response.data !== true) {
+        console.warn('Token validation failed during periodic check, forcing logout');
+        // token无效，执行登出逻辑
+        await performLogout();
+      }
+    } catch (error) {
+      console.warn('Token check failed:', error);
+      // 如果检查失败，可能是网络问题，先不处理
+    }
+  }, 30000); // 30秒检查一次
+};
+
+const stopTokenCheck = () => {
+  if (tokenCheckInterval) {
+    clearInterval(tokenCheckInterval);
+    tokenCheckInterval = null;
+  }
+};
+
+// 执行登出逻辑（用于token检查失败时）
+const performLogout = async () => {
+  try {
+    // 尝试调用登出API（可能失败，但不影响本地清理）
+    await api.user.logout().catch(() => {});
+  } catch (error) {
+    // 忽略API调用错误
+  }
+
+  // 清除本地状态
+  removeToken();
+  localStorage.removeItem('isAdmin');
+  localStorage.removeItem('username');
+  localStorage.removeItem('userInfo');
+
+  // 更新UI状态
+  isLoggedIn.value = false;
+  isAdmin.value = false;
+  isMerchant.value = false;
+  username.value = '';
+  userAvatar.value = '';
+
+    // 停止所有轮询
+    stopCartPolling();
+    stopChatPolling();
+    stopTokenCheck();
+  stopTokenCheck();
+
+  // 显示提示信息
+  const { ElMessage } = await import('element-plus');
+  ElMessage.warning('登录已过期，请重新登录');
+
+  // 跳转到登录页
+  setTimeout(() => {
+    router.push('/login');
+  }, 1000);
+};
+
 const handleUserCommand = async (command: string) => {
   switch (command) {
     case 'profile':
@@ -572,6 +649,15 @@ const logout = async () => {
     localStorage.removeItem('isAdmin');
     localStorage.removeItem('username');
     localStorage.removeItem('userInfo');
+
+    // 重新初始化WebSocket连接（不带token）
+    try {
+      const { reinitializeNotificationService } = await import('@/services/notificationService')
+      await reinitializeNotificationService()
+      console.log('WebSocket connection reinitialized after logout')
+    } catch (wsError) {
+      console.warn('Failed to reinitialize WebSocket after logout:', wsError)
+    }
   } catch (error: unknown) {
     console.error('Logout error:', error);
     // 即使后端登出失败，也要清除本地状态
@@ -636,6 +722,7 @@ onBeforeUnmount(() => {
   // Clear intervals when component is destroyed
   stopCartPolling();
   stopChatPolling();
+  stopTokenCheck();
 
   // 移除事件监听
   window.removeEventListener('loginStatusChanged', checkLoginStatus);
