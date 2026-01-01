@@ -10,6 +10,16 @@ export default {
         return request.post('/accounts/login', { username, password })
     },
 
+    // 验证token有效性
+    validateToken(): Promise<ApiResponse<boolean>> {
+        return request.post('/accounts/validate-token')
+    },
+
+    // 登出
+    logout(): Promise<ApiResponse<string>> {
+        return request.post('/accounts/logout')
+    },
+
     // 注册
     register(userData: Partial<UserInfo>): Promise<ApiResponse> {
         return request.post('/accounts', userData)
@@ -18,6 +28,11 @@ export default {
     // 获取用户详情
     getUserDetails(username: string): Promise<UserDetailsResponse> {
         return request.get(`/accounts/${username}`)
+    },
+
+    // 获取当前登录用户信息
+    getCurrentUser(): Promise<UserDetailsResponse> {
+        return request.get('/accounts/current-user')
     },
     // 根据用户ID获取用户详情（用于通过 merchantId 获取用户名）
     getUserById(id: number): Promise<UserDetailsResponse> {

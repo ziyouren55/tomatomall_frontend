@@ -281,48 +281,86 @@ const performSearch = (): void => {
   }
 };
 
-const checkLoginStatus = () => {
+const checkLoginStatus = async () => {
   // Check if user is logged in based on token presence
   const token = localStorage.getItem('token');
-  isLoggedIn.value = !!token;
 
-  // Check if user is admin - 优先从 userInfo 获取，否则从 isAdmin flag 获取
-  let adminCheck = false;
-  const userInfoStr = localStorage.getItem('userInfo');
-  
-  if (userInfoStr) {
-    try {
-      const userInfo = JSON.parse(userInfoStr);
-      // 使用枚举检查角色
-      adminCheck = userInfo.role === UserRole.ADMIN || userInfo.role === 'ADMIN';
-      // merchant check
-      isMerchant.value = userInfo.role === UserRole.MERCHANT || userInfo.role === 'MERCHANT';
-    } catch (e) {
-      console.error('Failed to parse userInfo:', e);
-    }
+  if (!token) {
+    // 没有token，直接设置为未登录状态
+    isLoggedIn.value = false;
+    isAdmin.value = false;
+    isMerchant.value = false;
+    username.value = '';
+    userAvatar.value = '';
+    return;
   }
-  
-  // 如果没有从 userInfo 获取到，尝试从 isAdmin flag（向后兼容）
-  if (!adminCheck) {
-    adminCheck = localStorage.getItem('isAdmin') === 'true';
-  }
-  
-  isAdmin.value = adminCheck;
-  
-  // Get username
-  username.value = localStorage.getItem('username') || '';
-  
-  // Get user avatar from userInfo
-  userAvatar.value = '';
-  if (userInfoStr) {
-    try {
-      const userInfo = JSON.parse(userInfoStr);
-      if (userInfo.avatar) {
-        userAvatar.value = userInfo.avatar;
+
+  try {
+    // 验证token是否仍然有效
+    const validateResponse = await api.user.validateToken();
+
+    if (validateResponse && validateResponse.code === '200' && validateResponse.data === true) {
+      // token有效，设置为登录状态
+      isLoggedIn.value = true;
+
+      // 获取最新的用户信息
+      try {
+        // 优先使用本地存储的用户信息，避免频繁API调用
+        const userInfoStr = localStorage.getItem('userInfo');
+        if (userInfoStr) {
+          const userInfo = JSON.parse(userInfoStr);
+
+          // 检查角色
+          isAdmin.value = userInfo.role === UserRole.ADMIN || userInfo.role === 'ADMIN';
+          isMerchant.value = userInfo.role === UserRole.MERCHANT || userInfo.role === 'MERCHANT';
+          username.value = userInfo.username || '';
+
+          // 获取头像
+          userAvatar.value = userInfo.avatar || '';
+        } else {
+          // 如果本地没有用户信息，调用API获取当前用户信息
+          const userResponse = await api.user.getCurrentUser();
+          if (userResponse && userResponse.code === '200') {
+            const userInfo = userResponse.data;
+
+            // 更新本地存储的用户信息
+            localStorage.setItem('userInfo', JSON.stringify(userInfo));
+
+            // 检查角色
+            isAdmin.value = userInfo.role === UserRole.ADMIN || userInfo.role === 'ADMIN';
+            isMerchant.value = userInfo.role === UserRole.MERCHANT || userInfo.role === 'MERCHANT';
+            username.value = userInfo.username || '';
+
+            // 获取头像
+            userAvatar.value = userInfo.avatar || '';
+          } else {
+            throw new Error('Failed to fetch current user info');
+          }
+        }
+      } catch (userError) {
+        console.warn('Failed to process user details:', userError);
+        // 如果处理用户信息失败，使用本地存储的信息
+        fallbackToLocalStorage();
       }
-    } catch (e) {
-      // Already handled above
+    } else {
+      throw new Error('Token validation failed');
     }
+
+  } catch (error) {
+    console.warn('Token validation failed, clearing login state:', error);
+
+    // token无效，清除登录状态
+    isLoggedIn.value = false;
+    isAdmin.value = false;
+    isMerchant.value = false;
+    username.value = '';
+    userAvatar.value = '';
+
+    // 清除本地存储
+    localStorage.removeItem('token');
+    localStorage.removeItem('isAdmin');
+    localStorage.removeItem('username');
+    localStorage.removeItem('userInfo');
   }
 
   // Update cart count and chat unread count if logged in
@@ -341,6 +379,34 @@ const checkLoginStatus = () => {
     userAvatar.value = '';
     isAdmin.value = false;
     isMerchant.value = false;
+  }
+};
+
+// 备用方案：使用本地存储的信息（当API调用失败时）
+const fallbackToLocalStorage = () => {
+  const userInfoStr = localStorage.getItem('userInfo');
+
+  if (userInfoStr) {
+    try {
+      const userInfo = JSON.parse(userInfoStr);
+      // 使用枚举检查角色
+      isAdmin.value = userInfo.role === UserRole.ADMIN || userInfo.role === 'ADMIN';
+      isMerchant.value = userInfo.role === UserRole.MERCHANT || userInfo.role === 'MERCHANT';
+      username.value = userInfo.username || '';
+      userAvatar.value = userInfo.avatar || '';
+    } catch (e) {
+      console.error('Failed to parse userInfo:', e);
+    }
+  }
+
+  // 如果没有从 userInfo 获取到，尝试从 isAdmin flag（向后兼容）
+  if (!isAdmin.value) {
+    isAdmin.value = localStorage.getItem('isAdmin') === 'true';
+  }
+
+  // Get username if not set
+  if (!username.value) {
+    username.value = localStorage.getItem('username') || '';
   }
 };
 
@@ -498,12 +564,21 @@ const handleUserCommand = async (command: string) => {
 
 const logout = async () => {
   try {
+    // 调用后端登出API
+    await api.user.logout();
+
     // 清除本地存储
     removeToken();
     localStorage.removeItem('isAdmin');
     localStorage.removeItem('username');
+    localStorage.removeItem('userInfo');
   } catch (error: unknown) {
     console.error('Logout error:', error);
+    // 即使后端登出失败，也要清除本地状态
+    removeToken();
+    localStorage.removeItem('isAdmin');
+    localStorage.removeItem('username');
+    localStorage.removeItem('userInfo');
   } finally {
     // Update component state
     isLoggedIn.value = false;
@@ -526,14 +601,14 @@ const logout = async () => {
       router.push('/');
     } else {
       // 否则刷新当前页面状态
-      checkLoginStatus();
+      checkLoginStatus().catch(console.error);
     }
   }
 };
 
-onMounted(() => {
+onMounted(async () => {
   // Check login status when component is created
-  checkLoginStatus();
+  await checkLoginStatus();
 
   // 初始化同步聊天未读数状态
   chatUnreadCount.value = chatState.unreadCount;
@@ -568,9 +643,9 @@ onBeforeUnmount(() => {
   window.removeEventListener('notificationChanged', fetchUnreadCount);
 });
 
-watch(() => route.path, () => {
+watch(() => route.path, async () => {
   // Watch for route changes to update login status
-  checkLoginStatus();
+  await checkLoginStatus();
 });
 </script>
 
