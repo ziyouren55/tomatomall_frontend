@@ -166,6 +166,20 @@
                     学校认证审核
                   </span>
                 </el-dropdown-item>
+                <el-dropdown-item command="admin-api-statistics" v-if="isAdmin">
+                  <span class="menu-item">
+                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <rect x="3" y="4" width="18" height="12" rx="1"></rect>
+                      <path d="M7 20h10"></path>
+                      <path d="M9 16v4"></path>
+                      <path d="M15 16v4"></path>
+                      <path d="M8 12h.01"></path>
+                      <path d="M16 12h.01"></path>
+                      <path d="M12 12h.01"></path>
+                    </svg>
+                    API统计
+                  </span>
+                </el-dropdown-item>
                   <el-dropdown-item command="logout" divided>
                     <span class="menu-item">
                       <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -602,6 +616,9 @@ const handleUserCommand = async (command: string) => {
       break;
     case 'admin-stores':
       router.push('/admin/stores');
+      break;
+    case 'admin-api-statistics':
+      router.push('/admin/api-statistics');
       break;
     case 'merchant-stores':
       router.push('/merchant/stores');
