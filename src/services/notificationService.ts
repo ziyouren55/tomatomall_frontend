@@ -62,6 +62,8 @@ export async function initNotificationService(backendBase = '') {
     client.onConnect = () => {
       console.log('[WS] connected (notificationService)')
       connected = true
+      // 标记WebSocket连接已建立，用于过滤误报的单点登录通知
+      authService.markWebSocketConnected()
       const handleMsg = async (msg: any, label = '') => {
         try {
           const body = msg.body ? JSON.parse(msg.body) : {}

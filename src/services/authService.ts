@@ -17,6 +17,9 @@ async function registerSingleLoginComponent() {
  * 认证服务 - 处理登录、登出、单点登录等认证相关逻辑
  */
 export class AuthService {
+  // WebSocket连接建立的时间戳，用于过滤刚连接时的误报通知
+  private websocketConnectedTime: number = 0;
+
   /**
    * 普通登出
    */
@@ -83,9 +86,27 @@ export class AuthService {
 
   /**
    * 处理单点登录通知
+   * 添加智能过滤：连接建立后的1秒内忽略通知，避免自己顶替自己的情况
    */
   async handleSingleLoginNotification(notification: any): Promise<void> {
-    await this.forceLogout(notification.message)
+    const now = Date.now();
+    const timeSinceConnection = now - this.websocketConnectedTime;
+
+    // 如果WebSocket连接建立后不到1秒，就忽略这个通知
+    // 这通常是自己刚刚登录导致的误报
+    if (timeSinceConnection < 1000) {
+      console.warn('Ignoring single login notification received too soon after connection establishment');
+      return;
+    }
+
+    await this.forceLogout(notification.message);
+  }
+
+  /**
+   * 标记WebSocket连接已建立
+   */
+  markWebSocketConnected(): void {
+    this.websocketConnectedTime = Date.now();
   }
 
   /**
