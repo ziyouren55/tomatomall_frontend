@@ -36,7 +36,7 @@
     <div v-if="order" class="card">
       <div class="section">
         <h3>基本信息</h3>
-        <p><strong>订单号：</strong>{{ order.orderId }}</p>
+        <p><strong>订单号：</strong>{{ order.orderNo || order.orderId }}</p>
         <p><strong>状态：</strong>{{ statusText(order.status) }}</p>
         <p><strong>创建时间：</strong>{{ formatDate(order.createTime) }}</p>
         <p><strong>支付方式：</strong>{{ order.paymentMethod }}</p>
@@ -110,9 +110,20 @@ export default defineComponent({
         this.errorMessage = '缺少订单号';
         return;
       }
+
+      // 检查orderId是否有效（不是NaN或其他无效值）
+      const orderIdNum = Number(orderId);
+      if (isNaN(orderIdNum) || orderIdNum <= 0) {
+        this.errorMessage = '订单号无效';
+        console.error('无效的订单号:', orderId);
+        // 跳转到订单列表页
+        this.$router.push('/order');
+        return;
+      }
+
       try {
         this.loading = true;
-        const res = await api.order.getOrderById(Number(orderId));
+        const res = await api.order.getOrderById(orderIdNum);
         if (res && (res as any).data) {
           this.order = (res as any).data;
         } else {
@@ -129,9 +140,12 @@ export default defineComponent({
     },
     async handleConfirmReceipt() {
       if (!this.order || !this.order.orderId) return;
+      const orderIdNum = Number(this.order.orderId);
+      if (isNaN(orderIdNum)) return;
+
       try {
         this.loading = true;
-        const res = await api.order.confirmReceipt(Number(this.order.orderId));
+        const res = await api.order.confirmReceipt(orderIdNum);
         // show success
         ElMessage.success((res as any)?.data?.message || '已确认收货');
         // reload order detail
@@ -148,6 +162,9 @@ export default defineComponent({
     async handleCancelOrder() {
       if (!this.order || !this.order.orderId) return;
 
+      const orderIdNum = Number(this.order.orderId);
+      if (isNaN(orderIdNum)) return;
+
       const result = await ElMessageBox.confirm(
         '确定要取消这个订单吗？取消后无法恢复。',
         '确认取消',
@@ -162,7 +179,7 @@ export default defineComponent({
 
       try {
         this.cancelLoading = true;
-        const res = await api.order.cancelOrder(Number(this.order.orderId));
+        const res = await api.order.cancelOrder(orderIdNum);
         ElMessage.success((res as any)?.data?.message || '订单取消成功');
         // reload order detail
         await this.fetchDetail();

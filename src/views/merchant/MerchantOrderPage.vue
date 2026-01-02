@@ -47,7 +47,7 @@
                     <el-icon><Ticket /></el-icon>
                     订单号
                   </div>
-                  <div class="info-value">{{ order.orderId }}</div>
+                  <div class="info-value">{{ order.orderNo || order.orderId }}</div>
                 </div>
                 <div class="info-item">
                   <div class="info-label">
