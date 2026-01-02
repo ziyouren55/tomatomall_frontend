@@ -60,9 +60,9 @@ request.interceptors.response.use(
             if (error.response.status === 401) {
                 const requestUrl = error.config?.url || ''
                 
-                // 公开接口（商品列表、商品详情、图片上传等）的401错误不跳转登录页
+                // 公开接口（商品列表、图片上传等）的401错误不跳转登录页
                 // 让组件自己处理错误，这样未登录用户也能看到商品列表和上传图片（注册时上传头像）
-                const publicEndpoints = ['/products', '/forums', '/advertisements', '/images']
+                const publicEndpoints = ['/products', '/advertisements', '/images']
                 const isPublicEndpoint = publicEndpoints.some(endpoint => 
                     requestUrl.includes(endpoint) && !requestUrl.includes('/cart') && !requestUrl.includes('/orders')
                 )

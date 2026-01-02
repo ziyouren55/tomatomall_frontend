@@ -98,7 +98,7 @@ const userRoutes: RouteRecordRaw[] = [
         path: '/forums/:id',
         name: 'ForumDetail',
         component: () => import('@/views/forum/ForumDetailPage.vue'),
-        meta: { requiresAuth: false }
+        meta: { requiresAuth: true }
     },
     {
         path: '/forums/:id/new-post',
