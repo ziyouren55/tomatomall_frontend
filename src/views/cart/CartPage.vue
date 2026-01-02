@@ -196,7 +196,7 @@
         <div class="modal-body">
           <div v-if="paymentForm" v-html="paymentForm"></div>
           <div v-else>
-            <p>订单号: {{ (currentOrder as any)?.orderId || (currentOrder as any)?.id }}</p>
+            <p>订单号: {{ (currentOrder as any)?.orderNo || (currentOrder as any)?.orderId || (currentOrder as any)?.id }}</p>
             <p>订单金额: ¥{{ (currentOrder as any)?.totalAmount || 0 }}</p>
             <p>正在准备支付...</p>
           </div>

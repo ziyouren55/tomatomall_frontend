@@ -5,12 +5,12 @@
       {{ statusText }}
     </div>
     <div class="info">
-      <p v-if="orderId"><strong>订单号：</strong>{{ orderId }}</p>
+      <p v-if="displayOrderNo"><strong>订单号：</strong>{{ displayOrderNo }}</p>
       <p v-if="amount"><strong>金额：</strong>¥{{ amount }}</p>
     </div>
     <div class="actions">
       <router-link
-        v-if="orderId"
+        v-if="orderId && !isNaN(Number(orderId))"
         class="btn primary"
         :to="`/order/${orderId}`"
       >查看订单</router-link>
@@ -26,9 +26,15 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
+import api from '@/api';
 
 export default defineComponent({
   name: 'PayResult',
+  data() {
+    return {
+      orderDetail: null as any
+    };
+  },
   computed: {
     status(): string {
       return (this.$route.query.status as string) || (this.$route.query.pay as string) || 'success';
@@ -38,6 +44,9 @@ export default defineComponent({
     },
     amount(): string | undefined {
       return this.$route.query.amount as string | undefined;
+    },
+    displayOrderNo(): string | undefined {
+      return this.orderDetail?.orderNo || this.orderId;
     },
     statusText(): string {
       const map: Record<string, string> = {
@@ -51,6 +60,17 @@ export default defineComponent({
     },
     statusClass(): string {
       return this.status && this.status.toLowerCase() === 'success' ? 'ok' : 'fail';
+    }
+  },
+  async mounted() {
+    // 如果有orderId，尝试获取订单详情来显示订单号
+    if (this.orderId) {
+      try {
+        const res = await api.order.getOrderById(Number(this.orderId));
+        this.orderDetail = res;
+      } catch (e) {
+        console.error('获取订单详情失败:', e);
+      }
     }
   }
 });

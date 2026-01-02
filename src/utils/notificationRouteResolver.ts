@@ -13,7 +13,10 @@ export function resolveNotificationPath(payload: any): string | null {
       snap.orderid ??
       (snap.payload && (snap.payload.orderId ?? snap.payload.orderid)) ??
       null
-    if (!orderId) return null
+    if (!orderId || orderId === 'NaN' || isNaN(Number(orderId))) {
+      console.warn('Invalid orderId in notification payload:', orderId)
+      return null
+    }
 
     const merchantId =
       snap.merchantId ??

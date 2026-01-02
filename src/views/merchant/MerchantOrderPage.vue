@@ -2,7 +2,7 @@
   <div class="merchant-order-page">
     <h2>订单详情（商家视图）</h2>
     <div v-if="order">
-      <div>订单号：{{ order.orderId }}</div>
+      <div>订单号：{{ order.orderNo || order.orderId }}</div>
       <div>状态：{{ order.status }}</div>
       <div class="customer-info">
         <span>买家：</span>

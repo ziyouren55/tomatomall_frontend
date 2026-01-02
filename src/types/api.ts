@@ -247,6 +247,7 @@ export interface CartItem {
  */
 export interface Order {
     orderId: number
+    orderNo?: string // 订单号（唯一）
     userId: number
     totalAmount: number
     paymentMethod: string

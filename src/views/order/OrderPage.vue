@@ -64,7 +64,7 @@
       <div v-for="order in filteredOrders" :key="order.orderId" class="order-card">
         <div class="order-header">
           <div class="order-number">
-            订单号：{{ order.orderId }}
+            订单号：{{ order.orderNo || order.orderId }}
           </div>
           <div class="order-date">
             {{ formatDate(order.createTime) }}
