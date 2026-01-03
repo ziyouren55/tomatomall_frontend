@@ -27,7 +27,8 @@
       </div>
 
       <div class="tab-content">
-        <ProductList v-if="searchKeyword || currentTab === 'hot'" :searchKeyword="searchKeyword" />
+        <ProductList v-if="searchKeyword" :searchKeyword="searchKeyword" />
+        <HotRecommendations v-if="!searchKeyword && currentTab === 'hot'" />
         <NearbyRecommendations v-if="!searchKeyword && currentTab === 'nearby'" />
       </div>
     </div>
@@ -38,12 +39,14 @@
 import { defineComponent } from 'vue'
 import ProductList from '@/components/business/product/ProductList.vue'
 import NearbyRecommendations from '@/components/business/product/NearbyRecommendations.vue'
+import HotRecommendations from '@/components/business/product/HotRecommendations.vue'
 
 export default defineComponent({
   name: 'IndexPage',
   components: {
     ProductList,
-    NearbyRecommendations
+    NearbyRecommendations,
+    HotRecommendations
   },
   data() {
     return {

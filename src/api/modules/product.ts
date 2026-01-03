@@ -106,6 +106,15 @@ const productApi = {
     ): Promise<ApiResponse<SearchResult>> {
         const params: any = { page, pageSize };
         return request.get('/products/recommend', { params });
+    },
+
+    // 获取热门推荐（基于销量、点击量、评分等综合热度排序）
+    getHotRecommendations(
+        page: number = 0,
+        pageSize: number = 12
+    ): Promise<ApiResponse<SearchResult>> {
+        const params: any = { page, pageSize };
+        return request.get('/products/hot-recommend', { params });
     }
 }
 
