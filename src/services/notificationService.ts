@@ -135,21 +135,21 @@ export async function initNotificationService(backendBase = '') {
       client.subscribe('/topic/notifications', (msg: any) => handleMsg(msg, 'general'))
       client.subscribe('/user/queue/notifications', (msg: any) => handleMsg(msg, 'user'))
 
-      // 订阅单点登录广播频道（作为用户队列的补充）
-      client.subscribe('/topic/single-login/*', (msg: any) => {
+      // 订阅单点登录专用队列（只接收发送给自己的通知）
+      client.subscribe('/user/queue/single-login', (msg: any) => {
         try {
           const body = msg.body ? JSON.parse(msg.body) : {}
-          console.log('[WS] single-login broadcast received:', body)
+          console.log('[WS] single-login notification received:', body)
 
-          // 如果是单点登录通知，委托给认证服务处理
+          // 处理单点登录通知（消息只发送给自己，无需验证targetUserId）
           if (body.type === 'FORCE_LOGOUT') {
-            console.warn('Single login broadcast detected, delegating to auth service...')
+            console.warn('Single login notification received, forcing logout...')
             authService.handleSingleLoginNotification(body).catch(e => {
-              console.warn('[WS] Failed to handle single-login broadcast:', e)
+              console.warn('[WS] Failed to handle single-login notification:', e)
             })
           }
         } catch (e) {
-          console.warn('[WS] Failed to process single-login broadcast:', e)
+          console.warn('[WS] Failed to process single-login notification:', e)
         }
       })
     }

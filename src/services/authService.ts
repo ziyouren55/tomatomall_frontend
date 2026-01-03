@@ -2,7 +2,6 @@ import { clearAuth, getToken } from '@/utils/storage'
 import api from '@/api'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { registerNotificationComponent } from './notificationComponentRegistry'
-import store from '@/store'
 
 // 注册单点登录通知组件（延迟加载）
 async function registerSingleLoginComponent() {
@@ -87,8 +86,8 @@ export class AuthService {
 
   /**
    * 处理单点登录通知
+   * 使用定向发送机制，通知只会发送给目标用户，无需验证targetUserId
    * 添加智能过滤：连接建立后的1秒内忽略通知，避免自己顶替自己的情况
-   * 添加用户ID验证：只处理针对当前用户的通知
    */
   async handleSingleLoginNotification(notification: any): Promise<void> {
     const now = Date.now();
@@ -101,27 +100,9 @@ export class AuthService {
       return;
     }
 
-    // 获取当前用户信息
-    const currentUserId = store.state.user.userInfo?.id;
-    const targetUserId = notification.targetUserId;
-
-    // 验证通知的目标用户ID
-    if (!currentUserId || !targetUserId) {
-      console.warn('Invalid single login notification: missing user ID', {
-        currentUserId,
-        targetUserId,
-        notification
-      });
-      return;
-    }
-
-    // 只处理针对当前用户的通知
-    if (currentUserId !== targetUserId) {
-      console.warn(`Ignoring single login notification for user ${targetUserId}, current user is ${currentUserId}`);
-      return;
-    }
-
-    console.warn(`Processing single login notification for current user ${currentUserId}`);
+    // 由于使用定向发送机制，通知只会发送给目标用户
+    // 无需验证targetUserId，直接处理
+    console.warn('Processing single login notification');
     await this.forceLogout(notification.message);
   }
 
