@@ -68,15 +68,12 @@ export async function initChatService(backendBase = '') {
       console.log('[CHAT WS] Connecting...', !!token ? 'with token' : 'no token')
     }
 
-    const socketFactory = () => new SockJS(sockUrl, undefined, {
-      transports: ['websocket', 'xhr-streaming', 'xhr-polling'],
-      timeout: 10000
-    })
+    const socketFactory = () => new SockJS(sockUrl)
 
     client = new Client({
       webSocketFactory: socketFactory,
       reconnectDelay: 5000,
-      debug: import.meta.env.DEV ? (m: any) => console.log('[CHAT STOMP]', m) : undefined,
+      debug: (m: any) => console.log('[CHAT STOMP]', m),
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000
     })

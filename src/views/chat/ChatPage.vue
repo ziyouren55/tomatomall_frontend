@@ -105,7 +105,16 @@ onMounted(async () => {
 
   // 初始化聊天WebSocket服务
   try {
-    const backendBase = (import.meta.env.VITE_BACKEND_BASE_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080') as string
+    const backendBase = (() => {
+      // 生产环境使用当前域名
+      if (import.meta.env.PROD) {
+        return window.location.origin
+      }
+      // 开发环境：优先使用VITE_BACKEND_BASE_URL，其次VITE_API_BASE_URL，最后localhost:8080
+      return (import.meta.env.VITE_BACKEND_BASE_URL ||
+              import.meta.env.VITE_API_BASE_URL?.replace('/api', '') ||
+              'http://localhost:8080') as string
+    })()
     await initChatService(backendBase)
     // 从路由参数加载会话
     await loadSessionFromRoute()

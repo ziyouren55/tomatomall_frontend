@@ -46,18 +46,18 @@ try {
 
 // initialize notification service non-blocking (does not block app startup)
 try {
-  const backendBase = (import.meta.env.VITE_BACKEND_BASE_URL || 'http://localhost:8080') as string
+  // 生产环境使用当前域名，本地环境使用环境变量或默认localhost:8080
+  const backendBase = (() => {
+    if (import.meta.env.PROD) {
+      return window.location.origin
+    }
+    return (import.meta.env.VITE_BACKEND_BASE_URL || 'http://localhost:8080') as string
+  })()
+
+  // 只初始化通知服务，聊天服务在ChatPage.vue中按需初始化
   import('./services/notificationService').then(module => {
     module.initNotificationService(backendBase)
   }).catch(e => console.warn('notification service init failed', e))
-  
-  // initialize chat service non-blocking (only if user is logged in)
-  import('./services/chatService').then(module => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      module.initChatService(backendBase).catch(e => console.warn('chat service init failed', e))
-    }
-  }).catch(e => console.warn('chat service dynamic import failed', e))
 } catch (e) {
   console.warn('services dynamic import failed', e)
 }

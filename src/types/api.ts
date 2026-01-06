@@ -508,6 +508,8 @@ export interface ChatMessageVO {
     messageType: string
     status: string
     createdAt: string
+    // 临时消息标记，用于处理WebSocket推送重复问题
+    _isTemp?: boolean
 }
 
 /**

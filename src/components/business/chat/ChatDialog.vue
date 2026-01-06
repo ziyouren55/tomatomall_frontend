@@ -493,7 +493,7 @@ async function sendMessage() {
     console.log('[CHAT DEBUG] sendChatMessage returned:', messageSent)
 
     if (messageSent) {
-      // 发送成功后，立即在本地添加消息到列表（发送方能立即看到自己的消息）
+      // 发送成功后，在本地添加临时消息（发送方能立即看到自己的消息）
       const currentUser = store.state.user.userInfo
       const tempMessage: ChatMessageVO = {
         id: Date.now(), // 临时ID，后端消息会替换这个
@@ -505,14 +505,18 @@ async function sendMessage() {
         content: content,
         messageType: 'TEXT',
         status: 'SENT',
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        // 添加临时消息标记，用于重复检测
+        _isTemp: true
       }
 
-      messages.value.push(tempMessage)
+      // 清空输入框
       newMessage.value = ''
+
+      // 立即添加临时消息，但确保它会被WebSocket推送的真实消息替换
+      messages.value.push(tempMessage)
       scrollToBottom()
 
-      // 真正的后端消息会通过WebSocket推送来更新这条临时消息
       console.log('[CHAT DEBUG] Message sent successfully, added temp message')
     } else {
       console.error('[CHAT DEBUG] sendChatMessage returned false')
@@ -577,20 +581,43 @@ async function archiveSession() {
 // 监听新消息
 function onNewMessage(message: ChatMessageVO) {
   if (message.sessionId === currentSession.value?.id) {
-    // 检查是否是重复消息（发送方收到后端推送的真实消息）
-    // 查找最近5秒内发送的相同内容的消息
-    const existingIndex = messages.value.findIndex(m =>
+    console.log('[CHAT DEBUG] Received message:', {
+      id: message.id,
+      content: message.content?.substring(0, 50),
+      senderId: message.senderId,
+      senderRole: message.senderRole,
+      _isTemp: (message as any)._isTemp
+    })
+
+    // 多重策略重复消息检测
+    let existingIndex = -1
+
+    // 策略1: 查找具有相同内容和_isTemp标记的消息（刚刚发送的临时消息）
+    existingIndex = messages.value.findIndex(m =>
       m.sessionId === message.sessionId &&
       m.senderId === message.senderId &&
       m.content === message.content &&
-      Math.abs(new Date(m.createdAt).getTime() - new Date(message.createdAt).getTime()) < 5000 // 5秒内
+      m._isTemp === true
     )
+
+    if (existingIndex === -1) {
+      // 策略2: 查找最近几秒内相同内容的消息（处理时序问题）
+      const now = Date.now()
+      existingIndex = messages.value.findIndex(m =>
+        m.sessionId === message.sessionId &&
+        m.senderId === message.senderId &&
+        m.content === message.content &&
+        Math.abs(now - new Date(m.createdAt).getTime()) < 3000 // 3秒内
+      )
+    }
 
     if (existingIndex >= 0) {
       // 替换临时消息为真实消息
+      console.log('[CHAT DEBUG] Replacing temp/duplicate message with real message at index:', existingIndex)
       messages.value[existingIndex] = message
     } else {
       // 添加新消息
+      console.log('[CHAT DEBUG] Adding new message (no duplicate found)')
       messages.value.push(message)
 
       // 限制显示的消息数量，避免性能问题
