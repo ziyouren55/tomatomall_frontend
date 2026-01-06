@@ -46,27 +46,17 @@
           <div class="col-2 price">¥{{ (item.price || 0).toFixed(2) }}</div>
           <div class="col-2 quantity">
             <div class="quantity-control">
-              <button 
-                @click="getCartItemId(item) !== null && decreaseQuantity(getCartItemId(item)!, item.quantity)" 
-                :disabled="item.quantity <= 1"
-                class="quantity-btn"
-              >-</button>
               <input 
                 type="number" 
                 v-model.number="item.quantity" 
                 min="1" 
+                :max="getMaxAllowed(item) || null"
                 @change="getCartItemId(item) !== null && updateQuantity(getCartItemId(item)!, item.quantity)"
                 class="quantity-input"
               >
-              <button 
-                @click="getCartItemId(item) !== null && increaseQuantity(getCartItemId(item)!, item.quantity)" 
-                class="quantity-btn"
-                :disabled="isMaxQuantity(item)"
-              >+</button>
             </div>
-            <div class="stock-info" v-if="item.productId && getAvailableStock(item.productId) !== null">
-              <small>{{ (getAvailableStock(item.productId) ?? 0) > 0 ? '有库存' : '无库存' }}</small>
-            </div>
+            
+            
           </div>
           <div class="col-2 subtotal">¥{{ ((item.price || 0) * item.quantity).toFixed(2) }}</div>
           <div class="col-1 actions">
@@ -227,6 +217,7 @@ export default defineComponent({
         total: 0,
         totalAmount: 0
       } as Cart,
+      quantityUpdating: {} as Record<number, boolean>,
       selectedItems: [] as number[],
       selectedTotal: 0,
       loading: false,
@@ -286,6 +277,14 @@ export default defineComponent({
             totalAmount: Array.isArray(data) ? 0 : (data.totalAmount || 0)
           };
           
+          // ensure each item has maxAllowed (initially the quantity user added to cart)
+          for (const it of this.cart.items) {
+            // keep existing maxAllowed if backend provided, otherwise set to the current quantity (added amount)
+            if (it.maxAllowed === undefined || it.maxAllowed === null) {
+              // ensure numeric
+              it.maxAllowed = typeof it.quantity === 'number' ? it.quantity : parseInt(it.quantity || 0, 10);
+            }
+          }
           // 获取所有商品的库存信息
           this.fetchAllProductStockpiles();
         } else {
@@ -346,6 +345,20 @@ export default defineComponent({
     async updateQuantity(cartItemId: number, quantity: number): Promise<void> {
 
       if (quantity < 1) return;
+      // enforce maxAllowed if available
+      const localItem = this.cart.items.find(item => (item.cartItemId || item.id) === cartItemId);
+      if (localItem) {
+        const max = this.getMaxAllowed(localItem);
+        if (max !== null && quantity > max) {
+          ElMessage({ type: 'warning', message: `数量不能超过已加入购物车的最大数量 (${max})` });
+          quantity = max;
+        }
+      }
+      // prevent concurrent updates for the same cart item
+      if (this.quantityUpdating[cartItemId]) {
+        console.warn('updateQuantity skipped because update already in progress for', cartItemId)
+        return;
+      }
       
       // 查找当前购物车项
 
@@ -374,22 +387,32 @@ export default defineComponent({
           }
         }
       }
-      console.log("update");
+      console.log("updateQuantity called:", { cartItemId, quantity });
       try {
+        this.quantityUpdating[cartItemId] = true;
         this.loading = true;
-        await api.cart.updateCartItemQuantity(cartItemId, quantity);
-        console.log(cartItemId,quantity);
+        const res = await api.cart.updateCartItemQuantity(cartItemId, quantity);
+        console.log('updateQuantity response:', res);
+        // optimistic: only fetch cart if backend confirms else we optimistic update already applied
         await this.fetchCart();
         this.calculateSelectedTotal();
       } catch (error: unknown) {
         console.error('Failed to update quantity:', error);
         const axiosError = error as AxiosError
         if (axiosError.response && axiosError.response.data) {
+          console.error('API error response:', axiosError.response.data);
           ElMessage({
             type: 'error',
             message: (axiosError.response.data as any).msg || '更新数量失败'
           });
+        } else {
+          ElMessage({
+            type: 'error',
+            message: '更新数量失败',
+          });
         }
+      } finally {
+        this.quantityUpdating[cartItemId] = false;
         this.loading = false;
       }
     },
@@ -717,16 +740,46 @@ export default defineComponent({
       return parseInt(stockpile.amount || 0, 10);
     },
     
+    // get maximum allowed quantity for a cart item (prefer backend-provided maxAllowed, otherwise the originally added quantity)
+    getMaxAllowed(item: any): number | null {
+      if (!item) return null;
+      if (item.maxAllowed !== undefined && item.maxAllowed !== null) {
+        return typeof item.maxAllowed === 'number' ? item.maxAllowed : parseInt(item.maxAllowed || 0, 10);
+      }
+      // fallback to stock if provided
+      const stock = this.getAvailableStock(item.productId);
+      return stock !== null ? stock : null;
+    },
+    
     decreaseQuantity(cartItemId: number, quantity: number): void {
+      console.log("decreaseQuantity called:", { cartItemId, quantity });
+      if (this.quantityUpdating[cartItemId]) {
+        console.warn('decrease skipped, update in progress for', cartItemId);
+        return;
+      }
       if (quantity > 1) {
+        // optimistic UI update
+        const item = this.cart.items.find(item => (item.cartItemId || item.id) === cartItemId)
+        if (item) {
+          item.quantity = quantity - 1;
+        }
         this.updateQuantity(cartItemId, quantity - 1);
       }
     },
     
     increaseQuantity(cartItemId: number, quantity: number): void {
+      console.log("increaseQuantity called:", { cartItemId, quantity });
+      if (this.quantityUpdating[cartItemId]) {
+        console.warn('increase skipped, update in progress for', cartItemId);
+        return;
+      }
       const item = this.cart.items.find(item => (item.cartItemId || item.id) === cartItemId)
       if (item && !this.isMaxQuantity(item)) {
+        // optimistic UI update
+        item.quantity = quantity + 1;
         this.updateQuantity(cartItemId, quantity + 1);
+      } else if (item) {
+        ElMessage({ type: 'warning', message: '已达最大可修改数量' });
       }
     }
   }
@@ -824,6 +877,17 @@ h1 {
   text-align: center;
   border: 1px solid #ced4da;
   margin: 0 5px;
+}
+/* ensure native number spinners are visible */
+.quantity-input::-webkit-inner-spin-button,
+.quantity-input::-webkit-outer-spin-button {
+  -webkit-appearance: auto;
+  opacity: 1;
+  display: block;
+}
+.quantity-input {
+  -moz-appearance: number-input;
+  appearance: auto;
 }
 
 .remove-btn {

@@ -15,5 +15,12 @@ export default defineConfig({
             '@': fileURLToPath(new URL('./src', import.meta.url))
         },
     },
+    build: {
+        target: 'esnext', // 支持 top-level await
+        minify: 'esbuild',
+    },
+    esbuild: {
+        target: 'esnext', // 确保 esbuild 也使用最新的目标
+    },
 })
 

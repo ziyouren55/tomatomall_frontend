@@ -62,10 +62,6 @@
       </div>
 
       <div class="action-buttons">
-        <button v-if="canExchange" @click="exchangeCoupon" class="btn-exchange">
-          <i class="icon-exchange"></i> 兑换优惠券
-        </button>
-
         <button v-if="canUse" @click="useCoupon" class="btn-use">
           <i class="icon-use"></i> 立即使用
         </button>
