@@ -1,15 +1,56 @@
 <template>
   <div class="order-page">
-    <h1>我的订单
-      <button 
-        @click="refreshOrders" 
-        class="btn btn-outline-primary"
-        style="margin-left: 20px; font-size: 14px; padding: 6px 12px;"
-        :disabled="loading"
-      >
-        {{ loading ? '刷新中...' : '刷新' }}
-      </button>
-    </h1>
+    <!-- 顶部装饰背景 -->
+    <div class="page-header-bg"></div>
+
+    <div class="page-container">
+      <!-- 页面标题区域 -->
+      <div class="page-header">
+        <div class="header-content">
+          <div class="header-main">
+            <h1 class="page-title">
+              <el-icon><DocumentCopy /></el-icon>
+              我的订单
+            </h1>
+            <div class="page-subtitle">管理您的所有订单信息</div>
+          </div>
+          <div class="header-stats">
+            <div class="stat-item">
+              <div class="stat-number">{{ totalOrders }}</div>
+              <div class="stat-label">总订单</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number pending-count">{{ pendingOrders }}</div>
+              <div class="stat-label">待处理</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number">{{ completedOrders }}</div>
+              <div class="stat-label">已完成</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 操作栏 -->
+      <div class="actions-bar">
+        <div class="actions-left">
+          <button
+            @click="refreshOrders"
+            class="btn btn-outline-primary refresh-btn"
+            :disabled="loading"
+          >
+            <el-icon><RefreshRight /></el-icon>
+            {{ loading ? '刷新中...' : '刷新订单' }}
+          </button>
+        </div>
+        <div class="actions-right">
+          <div class="current-tab-info">
+            <el-icon :name="getTabIcon(selectedTab)"></el-icon>
+            <span>{{ getTabText(selectedTab) }}</span>
+            <el-badge v-if="filteredOrders.length > 0" :value="filteredOrders.length" class="tab-badge" />
+          </div>
+        </div>
+      </div>
     
     <!-- 订单筛选 Tabs -->
     <div class="order-tabs">
@@ -53,14 +94,37 @@
       </button>
     </div>
     
-    <!-- Empty Orders Message -->
-    <div v-if="!loading && filteredOrders.length === 0 && !errorMessage" class="empty-orders">
-      <p>您还没有任何订单，快去选购喜欢的商品吧！</p>
-      <router-link to="/" class="btn btn-primary">去购物</router-link>
-    </div>
+      <!-- Empty Orders Message -->
+      <div v-if="!loading && filteredOrders.length === 0 && !errorMessage" class="empty-section">
+        <div class="empty-container">
+          <el-icon class="empty-icon" :size="80">
+            <component :is="getEmptyIcon(selectedTab)" />
+          </el-icon>
+          <h3 class="empty-title">{{ getEmptyTitle(selectedTab) }}</h3>
+          <p class="empty-description">{{ getEmptyDescription(selectedTab) }}</p>
+          <div class="empty-actions">
+            <router-link to="/" class="btn btn-primary empty-action-btn">
+              <el-icon><ShoppingBag /></el-icon>
+              去购物
+            </router-link>
+            <button @click="refreshOrders" class="btn btn-outline-primary empty-refresh-btn">
+              <el-icon><RefreshRight /></el-icon>
+              刷新页面
+            </button>
+          </div>
+        </div>
+      </div>
     
-    <!-- Orders List -->
-    <div v-else-if="!loading && filteredOrders.length > 0" class="orders-container">
+      <!-- Orders List -->
+      <div v-else-if="!loading && filteredOrders.length > 0" class="orders-section">
+        <div class="section-header">
+          <h3 class="section-title">
+            <el-icon><List /></el-icon>
+            订单列表
+            <span class="order-count">({{ filteredOrders.length }})</span>
+          </h3>
+        </div>
+        <div class="orders-container">
       <div v-for="order in filteredOrders" :key="order.orderId" class="order-card">
         <div class="order-header">
           <div class="order-number">
@@ -154,7 +218,9 @@
         </div>
       </div>
     </div>
-    
+
+    </div>
+
     <!-- Payment Form Modal -->
     <div v-if="showPaymentForm" class="payment-modal">
       <div class="modal-content">
@@ -177,9 +243,10 @@
       </div>
     </div>
     
-    <!-- Loading Overlay -->
-    <div v-if="loading" class="loading-overlay">
-      <div class="spinner"></div>
+      <!-- Loading Overlay -->
+      <div v-if="loading" class="loading-overlay">
+        <div class="spinner"></div>
+      </div>
     </div>
   </div>
 </template>
@@ -187,6 +254,13 @@
 <script lang="ts">
 // 导入订单服务 - 确保路径正确
 import { defineComponent } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import {
+  DocumentCopy,
+  RefreshRight,
+  List,
+  ShoppingBag
+} from '@element-plus/icons-vue'
 import api from '@/api';
 import type { AxiosError } from 'axios';
 import type { Order, ErrorResponse } from '@/types/api';
@@ -233,6 +307,21 @@ export default defineComponent({
         return this.orders.filter(o => o.status === 'CANCELLED');
       }
       return this.orders;
+    },
+
+    // 统计数据
+    totalOrders(): number {
+      return this.orders.length;
+    },
+
+    pendingOrders(): number {
+      return this.orders.filter(o =>
+        o.status === 'PENDING' || o.status === 'SUCCESS' || o.status === 'DELIVERED'
+      ).length;
+    },
+
+    completedOrders(): number {
+      return this.orders.filter(o => o.status === 'COMPLETED').length;
     }
   },
   created() {
@@ -294,7 +383,7 @@ export default defineComponent({
             paymentWindow.document.write(response.data.paymentForm);
             paymentWindow.document.close();
           } else {
-            alert('浏览器阻止了弹出窗口，请允许弹出窗口后重试');
+            ElMessage.warning('浏览器阻止了弹出窗口，请允许弹出窗口后重试');
           }
           
           // 刷新订单状态
@@ -303,7 +392,7 @@ export default defineComponent({
           }, 3000);
         } else {
           // 处理其他情况
-          alert('支付请求失败或返回数据格式不正确');
+          ElMessage.error('支付请求失败，请稍后重试');
           console.error('支付响应数据:', response);
         }
       } catch (error: unknown) {
@@ -330,38 +419,42 @@ export default defineComponent({
       try {
         const res = await api.order.confirmReceipt(orderId);
         if (res && (res as any).code === '200') {
-          alert((res as any).data?.message || '确认收货成功');
+          ElMessage.success((res as any).data?.message || '确认收货成功');
           this.refreshOrders();
         } else {
-          alert((res as any).msg || '确认收货失败');
+          ElMessage.error((res as any).msg || '确认收货失败');
         }
       } catch (error: unknown) {
         console.error('确认收货失败', error);
         const axiosError = error as AxiosError<ErrorResponse>;
-        alert(axiosError.response?.data?.msg || axiosError.response?.data?.message || '确认收货失败');
+        ElMessage.error(axiosError.response?.data?.msg || axiosError.response?.data?.message || '确认收货失败');
       }
     },
 
     // 取消订单
     async cancelOrder(orderId: number) {
-      if (!confirm('确定要取消这个订单吗？取消后无法恢复。')) {
-        return;
-      }
-
-      this.cancelLoading = orderId;
-
       try {
+        await ElMessageBox.confirm('确定要取消这个订单吗？取消后无法恢复。', '确认取消', {
+          confirmButtonText: '确定取消',
+          cancelButtonText: '暂不取消',
+          type: 'warning'
+        });
+
+        this.cancelLoading = orderId;
+
         const res = await api.order.cancelOrder(orderId);
         if (res && (res as any).code === '200') {
-          alert((res as any).data?.message || '订单取消成功');
+          ElMessage.success((res as any).data?.message || '订单取消成功');
           this.refreshOrders();
         } else {
-          alert((res as any).msg || '订单取消失败');
+          ElMessage.error((res as any).msg || '订单取消失败');
         }
       } catch (error: unknown) {
-        console.error('取消订单失败', error);
-        const axiosError = error as AxiosError<ErrorResponse>;
-        alert(axiosError.response?.data?.msg || axiosError.response?.data?.message || '取消订单失败');
+        if (error !== 'cancel') {
+          console.error('取消订单失败', error);
+          const axiosError = error as AxiosError<ErrorResponse>;
+          ElMessage.error(axiosError.response?.data?.msg || axiosError.response?.data?.message || '取消订单失败');
+        }
       } finally {
         this.cancelLoading = null;
       }
@@ -444,11 +537,76 @@ export default defineComponent({
     handleImageError(event: Event) {
       const target = event.target as HTMLImageElement | null;
       if (!target) return;
-      
+
       // 防止无限循环
       target.onerror = null;
       // 设置占位符图片
       target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect width="100" height="100" fill="%23ddd"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999"%3E暂无图片%3C/text%3E%3C/svg%3E';
+    },
+
+    // 获取标签页图标
+    getTabIcon(tab: string) {
+      const iconMap: Record<string, string> = {
+        'all': 'List',
+        'unpaid': 'Clock',
+        'toship': 'Box',
+        'toreceive': 'Warning',
+        'tocomment': 'Star',
+        'cancelled': 'Close'
+      }
+      return iconMap[tab] || 'List'
+    },
+
+    // 获取标签页文本
+    getTabText(tab: string) {
+      const textMap: Record<string, string> = {
+        'all': '全部订单',
+        'unpaid': '待付款',
+        'toship': '待发货',
+        'toreceive': '待收货',
+        'tocomment': '待评价',
+        'cancelled': '已取消'
+      }
+      return textMap[tab] || '全部订单'
+    },
+
+    // 获取空状态图标
+    getEmptyIcon(tab: string) {
+      const iconMap: Record<string, string> = {
+        'all': 'DocumentCopy',
+        'unpaid': 'Clock',
+        'toship': 'Box',
+        'toreceive': 'Warning',
+        'tocomment': 'Star',
+        'cancelled': 'Close'
+      }
+      return iconMap[tab] || 'DocumentCopy'
+    },
+
+    // 获取空状态标题
+    getEmptyTitle(tab: string) {
+      const titleMap: Record<string, string> = {
+        'all': '暂无订单',
+        'unpaid': '暂无待付款订单',
+        'toship': '暂无待发货订单',
+        'toreceive': '暂无待收货订单',
+        'tocomment': '暂无待评价订单',
+        'cancelled': '暂无已取消订单'
+      }
+      return titleMap[tab] || '暂无订单'
+    },
+
+    // 获取空状态描述
+    getEmptyDescription(tab: string) {
+      const descMap: Record<string, string> = {
+        'all': '您还没有任何订单记录，赶紧去挑选心仪的商品吧！',
+        'unpaid': '太好了！您没有待付款的订单',
+        'toship': '当前没有需要发货的订单',
+        'toreceive': '没有正在运输中的订单',
+        'tocomment': '您已经评价完所有订单了',
+        'cancelled': '太好了！您没有已取消的订单'
+      }
+      return descMap[tab] || '暂无相关订单'
     }
   }
 });
@@ -456,11 +614,146 @@ export default defineComponent({
 
 
 <style scoped>
+/* 页面容器 */
 .order-page {
-  padding: 20px;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  position: relative;
+  padding-bottom: 40px;
+}
+
+/* 顶部装饰背景 */
+.page-header-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 200px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  z-index: 0;
+}
+
+/* 页面内容容器 */
+.page-container {
   max-width: 1200px;
   margin: 0 auto;
-  background-color: #f5f5f5;
+  position: relative;
+  z-index: 1;
+  padding: 20px;
+}
+
+/* 页面头部 */
+.page-header {
+  margin-bottom: 32px;
+}
+
+.header-content {
+  background: white;
+  border-radius: 16px;
+  padding: 32px 40px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-main {
+  flex: 1;
+}
+
+.page-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 28px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+}
+
+.page-title .el-icon {
+  color: #667eea;
+}
+
+.page-subtitle {
+  font-size: 16px;
+  color: #666;
+  margin: 0;
+}
+
+.header-stats {
+  display: flex;
+  gap: 32px;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-number {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1a1a1a;
+  line-height: 1;
+}
+
+.pending-count {
+  color: #ff5722;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #666;
+  margin-top: 4px;
+}
+
+/* 操作栏 */
+.actions-bar {
+  background: white;
+  border-radius: 16px;
+  padding: 20px 32px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s ease;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+.actions-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.current-tab-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 20px;
+  font-size: 14px;
+  color: #666;
+}
+
+.current-tab-info .el-icon {
+  color: #667eea;
+}
+
+.tab-badge {
+  margin-left: 8px;
 }
 
 .order-tabs {
@@ -494,15 +787,114 @@ h1 {
   margin-bottom: 30px;
 }
 
-.empty-orders {
+/* 空状态 */
+.empty-section {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  padding: 80px 40px;
   text-align: center;
-  padding: 20px 0;
+  margin-bottom: 24px;
+}
+
+.empty-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.empty-icon {
+  color: #ccc;
+  margin-bottom: 8px;
+}
+
+.empty-title {
+  font-size: 20px;
+  font-weight: 500;
+  color: #666;
+  margin: 0;
+}
+
+.empty-description {
+  font-size: 14px;
+  color: #999;
+  margin: 0;
+  line-height: 1.5;
+  max-width: 400px;
+}
+
+.empty-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.empty-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.empty-action-btn:hover {
+  background: linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.empty-refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s ease;
+}
+
+.empty-refresh-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+/* 订单区域 */
+.orders-section {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.section-header {
+  padding: 24px 32px 16px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.section-title .el-icon {
+  color: #667eea;
+}
+
+.order-count {
+  font-size: 14px;
+  color: #666;
+  font-weight: 400;
 }
 
 .orders-container {
+  padding: 16px 32px 32px;
   display: flex;
   flex-direction: column;
-  gap: 25px; /* 增加订单之间的间距 */
+  gap: 24px;
 }
 
 .order-card {
@@ -895,10 +1287,58 @@ h1 {
   border: 1px solid #f5c6cb;
 }
 
+/* Element Plus 样式覆盖 */
+:deep(.el-badge__content) {
+  background: #ff5722;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .order-page {
-    padding: 15px;
+  .page-container {
+    padding: 16px;
+  }
+
+  .header-content {
+    flex-direction: column;
+    gap: 24px;
+    text-align: center;
+    padding: 24px 20px;
+  }
+
+  .page-title {
+    font-size: 24px;
+  }
+
+  .header-stats {
+    justify-content: center;
+    gap: 24px;
+  }
+
+  .actions-bar {
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px 16px;
+  }
+
+  .actions-right {
+    justify-content: center;
+  }
+
+  .empty-section {
+    padding: 60px 20px;
+  }
+
+  .empty-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .section-header {
+    padding: 20px 16px 12px;
+  }
+
+  .orders-container {
+    padding: 12px 16px 24px;
   }
 
   .orders-container {

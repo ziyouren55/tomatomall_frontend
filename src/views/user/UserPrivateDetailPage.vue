@@ -642,6 +642,7 @@
     font-weight: 500;
     color: white;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    background: linear-gradient(135deg, #666666 0%, #999999 100%);
   }
 
   .role-badge.admin {
@@ -650,6 +651,14 @@
 
   .role-badge.user {
     background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  }
+
+  .role-badge.customer {
+    background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+  }
+
+  .role-badge.merchant {
+    background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
   }
 
   .verified-badge {
