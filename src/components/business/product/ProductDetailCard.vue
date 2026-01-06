@@ -4,7 +4,7 @@
       <!-- 左侧商品图片 -->
       <div class="product-image-section">
         <div class="main-image">
-          <img :src="product.cover" :alt="product.title" />
+          <img :src="getImageUrl(product.cover)" :alt="product.title" @error="handleImageError" />
         <div v-if="props.product?.priority" :class="['detail-location-badge', props.product.priority]">
           {{ props.product.priority === 'same_school' ? '同校' : props.product.priority === 'same_city' ? '同城' : '其他' }}
         </div>
@@ -12,13 +12,13 @@
         <!-- 缩略图列表（可选） -->
         <div class="thumbnail-list">
           <div class="thumbnail active">
-            <img :src="product.cover" :alt="product.title" />
+            <img :src="getImageUrl(product.cover)" :alt="product.title" @error="handleImageError" />
           </div>
           <div class="thumbnail">
-            <img :src="product.cover" :alt="product.title" />
+            <img :src="getImageUrl(product.cover)" :alt="product.title" @error="handleImageError" />
           </div>
           <div class="thumbnail">
-            <img :src="product.cover" :alt="product.title" />
+            <img :src="getImageUrl(product.cover)" :alt="product.title" @error="handleImageError" />
           </div>
         </div>
       </div>
@@ -117,6 +117,7 @@ import { useRouter } from 'vue-router'
 import type { Stockpile, CartItem } from '@/types/api'
 import type { Product } from '@/types/api'
 import UserMiniCard from '@/components/common/UserMiniCard.vue'
+import { getImageUrl } from '@/utils/image'
 
 // 接收商品数据和相关状态
 const props = defineProps<{
@@ -243,6 +244,13 @@ const goToStore = () => {
     return
   }
   router.push(`/stores/${storeId}`)
+}
+
+// 图片加载错误处理
+const handleImageError = (e: Event) => {
+  const target = e.target as HTMLImageElement
+  target.onerror = null // 防止无限循环
+  target.src = '' // 清空src，显示alt文本
 }
 
  

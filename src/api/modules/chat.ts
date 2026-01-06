@@ -33,6 +33,11 @@ const chatApi = {
     return request.post('/chat/sessions/with-customer', data)
   },
 
+  // 创建与指定用户的聊天会话（用户间直接聊天）
+  createChatSessionWithUser(data: { targetUserId: number }): Promise<ApiResponse<ChatSessionVO>> {
+    return request.post('/chat/sessions/with-user', data)
+  },
+
   // 发送消息
   sendMessage(sessionId: number, data: SendMessageRequest): Promise<ApiResponse<ChatMessageVO>> {
     return request.post(`/chat/sessions/${sessionId}/messages`, data)

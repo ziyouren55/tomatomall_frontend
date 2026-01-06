@@ -463,8 +463,13 @@ export interface City {
 export interface School {
     code: string
     name: string
+    level?: string
+    type?: string
+    supervisor?: string
     province_code?: string
     city_code?: string
+    province_name?: string
+    city_name?: string
     [key: string]: any
 }
 

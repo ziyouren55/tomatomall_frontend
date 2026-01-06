@@ -1,7 +1,7 @@
 <template>
   <div class="product-card" @click="onView" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
     <div class="product-image-container">
-      <img :src="product.cover" :alt="product.title" class="product-image" @error="handleImageError" />
+      <img :src="getImageUrl(product.cover)" :alt="product.title" class="product-image" @error="handleImageError" />
       <div v-if="product.priority" :class="['location-badge', product.priority]">
         {{ priorityLabel(product.priority) }}
       </div>
@@ -32,6 +32,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import type { Product } from '@/types/api';
+import { getImageUrl } from '@/utils/image';
 
 export default defineComponent({
   name: 'ProductCard',
@@ -40,6 +41,7 @@ export default defineComponent({
   },
   emits: ['view'],
   methods: {
+    getImageUrl,
     onView() { this.$emit('view', this.product.id); },
     handleImageError(e: Event) { const t = e.target as HTMLImageElement; t.onerror = null; t.src = ''; },
     formatPrice(p: number) { return (typeof p === 'number' ? p.toFixed(2) : '0.00'); },

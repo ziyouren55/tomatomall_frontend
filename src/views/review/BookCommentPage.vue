@@ -64,7 +64,7 @@
           >
             <div class="product-image">
               <img
-                    :src="product.cover || product.imageUrl || placeholderImg"
+                    :src="getImageUrl(product.cover || product.imageUrl)"
                     :alt="product.title || product.name"
                 @error="handleImageError"
               />
@@ -103,6 +103,7 @@ import { ElMessage } from 'element-plus'
 import NavigationBar from '@/components/business/NavigationBar.vue';
 import BookReviewList from '@/components/business/review/BookCommentList.vue';
 import api from '@/api';
+import { getImageUrl } from '@/utils/image';
 
 export default defineComponent({
   name: 'BookReviewPage',
@@ -145,6 +146,7 @@ export default defineComponent({
     }
   },
   methods: {
+    getImageUrl,
     async loadProducts(): Promise<void> {
       this.loadingProducts = true;
       try {

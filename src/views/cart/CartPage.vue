@@ -33,7 +33,7 @@
           </div>
           <div class="col-4 product-info">
             <img 
-              :src="item.cover" 
+              :src="getImageUrl(item.cover)" 
               alt="商品图片" 
               class="product-image"
               @error="handleImageError"
@@ -47,7 +47,8 @@
           <div class="col-2 quantity">
             <div class="quantity-control">
               <button 
-                @click="getCartItemId(item) !== null && decreaseQuantity(getCartItemId(item)!, item.quantity)" 
+                type="button"
+                @click="handleDecreaseQuantity(item)" 
                 :disabled="item.quantity <= 1"
                 class="quantity-btn"
               >-</button>
@@ -55,11 +56,12 @@
                 type="number" 
                 v-model.number="item.quantity" 
                 min="1" 
-                @change="getCartItemId(item) !== null && updateQuantity(getCartItemId(item)!, item.quantity)"
+                @change="handleQuantityChange(item)"
                 class="quantity-input"
               >
               <button 
-                @click="getCartItemId(item) !== null && increaseQuantity(getCartItemId(item)!, item.quantity)" 
+                type="button"
+                @click="handleIncreaseQuantity(item)" 
                 class="quantity-btn"
                 :disabled="isMaxQuantity(item)"
               >+</button>
@@ -70,7 +72,7 @@
           </div>
           <div class="col-2 subtotal">¥{{ ((item.price || 0) * item.quantity).toFixed(2) }}</div>
           <div class="col-1 actions">
-            <button @click="getCartItemId(item) !== null && removeItem(getCartItemId(item)!)" class="remove-btn">删除</button>
+            <button type="button" @click="handleRemoveItem(item)" class="remove-btn">删除</button>
           </div>
         </div>
       </div>
@@ -107,81 +109,175 @@
     
     <!-- Checkout Modal -->
     <div v-if="showCheckoutModal" class="checkout-modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>订单确认</h2>
+      <div class="modal-content checkout-content">
+        <div class="modal-header checkout-header">
+          <div class="header-title">
+            <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+            <h2>订单确认</h2>
+          </div>
           <button @click="showCheckoutModal = false" class="close-btn">&times;</button>
         </div>
-        <div class="modal-body">
-          <div class="shipping-address">
-            <h3>收货地址</h3>
-            <div class="form-group">
-              <label for="name">收货人姓名</label>
-              <input id="name" v-model="shippingAddress.receiverName" type="text" class="form-control">
+        <div class="modal-body checkout-body">
+          <!-- 收货地址 -->
+          <div class="checkout-section shipping-address">
+            <div class="section-header">
+              <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <h3>收货地址</h3>
             </div>
-            <div class="form-group">
-              <label for="phone">联系电话</label>
-              <input id="phone" v-model="shippingAddress.phone" type="text" class="form-control">
-            </div>
-            <div class="form-group">
-              <label for="zipcode">邮政编码</label>
-              <input id="zipcode" v-model="shippingAddress.zipCode" type="text" class="form-control">
-            </div>
-            <div class="form-group">
-              <label for="address">详细地址</label>
-              <textarea id="address" v-model="shippingAddress.address" class="form-control"></textarea>
+            <div class="address-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="name">
+                    <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    收货人
+                  </label>
+                  <input id="name" v-model="shippingAddress.receiverName" type="text" class="form-control" placeholder="请输入收货人姓名">
+                </div>
+                <div class="form-group">
+                  <label for="phone">
+                    <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    </svg>
+                    联系电话
+                  </label>
+                  <input id="phone" v-model="shippingAddress.phone" type="text" class="form-control" placeholder="请输入联系电话">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="zipcode">
+                  <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  邮政编码
+                </label>
+                <input id="zipcode" v-model="shippingAddress.zipCode" type="text" class="form-control" placeholder="请输入邮政编码">
+              </div>
+              <div class="form-group">
+                <label for="address">
+                  <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  详细地址
+                </label>
+                <textarea id="address" v-model="shippingAddress.address" class="form-control" rows="3" placeholder="请输入详细地址"></textarea>
+              </div>
             </div>
           </div>
           
-          <div class="order-summary">
-            <h3>订单摘要</h3>
-            <p>选中商品: {{ selectedItems.length }} 件</p>
-            <p>订单原价: ¥{{ selectedTotal.toFixed(2) }}</p>
-            <p v-if="selectedDiscount > 0">优惠减免: -¥{{ selectedDiscount.toFixed(2) }}</p>
-            <p>应付金额: ¥{{ payableTotal.toFixed(2) }}</p>
+          <!-- 订单摘要 -->
+          <div class="checkout-section order-summary">
+            <div class="section-header">
+              <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              <h3>订单摘要</h3>
+            </div>
+            <div class="summary-content">
+              <div class="summary-item">
+                <span class="summary-label">选中商品</span>
+                <span class="summary-value">{{ selectedItems.length }} 件</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">订单原价</span>
+                <span class="summary-value">¥{{ selectedTotal.toFixed(2) }}</span>
+              </div>
+              <div v-if="selectedDiscount > 0" class="summary-item discount">
+                <span class="summary-label">优惠减免</span>
+                <span class="summary-value">-¥{{ selectedDiscount.toFixed(2) }}</span>
+              </div>
+              <div class="summary-item total">
+                <span class="summary-label">应付金额</span>
+                <span class="summary-value price-highlight">¥{{ payableTotal.toFixed(2) }}</span>
+              </div>
+            </div>
           </div>
 
-          <div class="coupon-section">
-            <h3>优惠券</h3>
-            <div v-if="couponLoading" class="coupon-hint">正在加载可用优惠券...</div>
-            <div v-else>
-              <select v-model="selectedUserCouponId" class="form-control">
+          <!-- 优惠券 -->
+          <div class="checkout-section coupon-section">
+            <div class="section-header">
+              <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+              </svg>
+              <h3>优惠券</h3>
+            </div>
+            <div v-if="couponLoading" class="coupon-hint loading">
+              <svg class="loading-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              正在加载可用优惠券...
+            </div>
+            <div v-else class="coupon-selector">
+              <select v-model="selectedUserCouponId" class="form-control coupon-select">
                 <option :value="null">不使用优惠券</option>
                 <option
                   v-for="c in availableUserCoupons"
                   :key="c.id"
                   :value="c.id"
                 >
-                  {{ c.couponName || c.couponDescription || '优惠券' }}（
-                  优惠：{{ formatCouponDiscount(c) }}，
-                  门槛：满 {{ c.minimumPurchase || 0 }} 可用，
-                  有效期至：{{ formatCouponDate(c.validTo) }}）
+                  {{ c.couponName || c.couponDescription || '优惠券' }} - 
+                  优惠{{ formatCouponDiscount(c) }} (满{{ c.minimumPurchase || 0 }}可用)
                 </option>
               </select>
-              <p v-if="!availableUserCoupons.length" class="coupon-hint">
+              <p v-if="!availableUserCoupons.length" class="coupon-hint empty">
+                <svg class="hint-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
                 暂无可用优惠券
               </p>
             </div>
           </div>
           
-          <div class="payment-method">
-            <h3>支付方式</h3>
-            <div class="form-check">
-              <input 
-                class="form-check-input" 
-                type="radio" 
-                id="alipay" 
-                value="ALIPAY" 
-                v-model="paymentMethod" 
-                checked
-              >
-              <label class="form-check-label" for="alipay">支付宝</label>
+          <!-- 支付方式 -->
+          <div class="checkout-section payment-method">
+            <div class="section-header">
+              <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+              <h3>支付方式</h3>
+            </div>
+            <div class="payment-options">
+              <label class="payment-option" for="alipay">
+                <input 
+                  class="payment-radio" 
+                  type="radio" 
+                  id="alipay" 
+                  value="ALIPAY" 
+                  v-model="paymentMethod" 
+                  checked
+                >
+                <div class="payment-label">
+                  <svg class="payment-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.87 0 .53-.39 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-1.67c1.52-.29 2.72-1.16 2.73-2.77-.01-2.2-1.9-2.96-3.66-3.42z" />
+                  </svg>
+                  <span>支付宝</span>
+                </div>
+                <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+              </label>
             </div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button @click="showCheckoutModal = false" class="btn btn-secondary">取消</button>
-          <button @click="submitOrder" class="btn btn-primary">提交订单</button>
+        <div class="modal-footer checkout-footer">
+          <button @click="showCheckoutModal = false" class="btn btn-secondary cancel-btn">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            取消
+          </button>
+          <button @click="submitOrder" class="btn btn-primary submit-btn">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            提交订单
+          </button>
         </div>
       </div>
     </div>
@@ -217,6 +313,7 @@ import api from '@/api';
 import { ElMessage } from 'element-plus';
 import type { AxiosError } from 'axios';
 import type { UserCoupon, Cart, ShippingAddress, CartItem } from '@/types/api';
+import { getImageUrl } from '@/utils/image';
 
 export default defineComponent({
   name: 'CartPage',
@@ -269,6 +366,7 @@ export default defineComponent({
     this.fetchCart();
   },
   methods: {
+    getImageUrl,
     async fetchCart(): Promise<void> {
       try {
         this.loading = true;
@@ -728,6 +826,42 @@ export default defineComponent({
       if (item && !this.isMaxQuantity(item)) {
         this.updateQuantity(cartItemId, quantity + 1);
       }
+    },
+    
+    // 处理减少数量按钮点击
+    handleDecreaseQuantity(item: CartItem): void {
+      console.log('handleDecreaseQuantity called', item);
+      const cartItemId = this.getCartItemId(item);
+      console.log('cartItemId:', cartItemId);
+      if (cartItemId !== null) {
+        this.decreaseQuantity(cartItemId, item.quantity);
+      }
+    },
+    
+    // 处理增加数量按钮点击
+    handleIncreaseQuantity(item: CartItem): void {
+      console.log('handleIncreaseQuantity called', item);
+      const cartItemId = this.getCartItemId(item);
+      console.log('cartItemId:', cartItemId);
+      if (cartItemId !== null) {
+        this.increaseQuantity(cartItemId, item.quantity);
+      }
+    },
+    
+    // 处理数量输入框变化
+    handleQuantityChange(item: CartItem): void {
+      const cartItemId = this.getCartItemId(item);
+      if (cartItemId !== null) {
+        this.updateQuantity(cartItemId, item.quantity);
+      }
+    },
+    
+    // 处理删除按钮点击
+    handleRemoveItem(item: CartItem): void {
+      const cartItemId = this.getCartItemId(item);
+      if (cartItemId !== null) {
+        this.removeItem(cartItemId);
+      }
     }
   }
 });
@@ -735,127 +869,347 @@ export default defineComponent({
 
 <style scoped>
 .cart-page {
-  padding: 20px;
-  max-width: 1200px;
+  padding: 40px 20px;
+  max-width: 1400px;
   margin: 0 auto;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  min-height: 100vh;
 }
 
 h1 {
-  margin-bottom: 50px;
-  margin-top: 100px;
+  margin-bottom: 40px;
+  margin-top: 80px;
+  font-size: 36px;
+  font-weight: 700;
+  color: #2d3748;
+  text-align: center;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .empty-cart {
   text-align: center;
-  padding: 50px 0;
+  padding: 80px 20px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  margin-top: 40px;
+}
+
+.empty-cart p {
+  font-size: 18px;
+  color: #718096;
+  margin-bottom: 30px;
+}
+
+.empty-cart .btn-primary {
+  padding: 14px 40px;
+  font-size: 16px;
+  border-radius: 50px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: white;
+  text-decoration: none;
+  display: inline-block;
+  transition: all 0.3s;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.empty-cart .btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
 }
 
 .cart-container {
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  animation: slideIn 0.5s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .cart-header {
-  background-color: #f8f9fa;
-  padding: 15px;
-  font-weight: bold;
-  border-bottom: 1px solid #dee2e6;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px 30px;
+  font-weight: 600;
+  color: white;
+  border: none;
+  font-size: 15px;
+}
+
+.cart-header .row {
+  align-items: center;
 }
 
 .cart-items {
-  padding: 10px 0;
+  padding: 0;
 }
 
 .cart-item {
-  padding: 15px;
+  padding: 25px 30px;
   align-items: center;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #e2e8f0;
+  transition: all 0.3s;
+  background: white;
+}
+
+.cart-item:hover {
+  background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+  transform: translateX(5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.cart-item:last-child {
+  border-bottom: none;
 }
 
 .product-info {
   display: flex;
   align-items: center;
+  gap: 20px;
 }
 
 .product-image {
-  width: 80px;
-  height: 80px;
+  width: 100px;
+  height: 100px;
   object-fit: cover;
-  margin-right: 15px;
-  border-radius: 4px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s;
+}
+
+.product-image:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
 .product-details h4 {
-  margin: 0;
-  font-size: 16px;
+  margin: 0 0 8px 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: #2d3748;
 }
 
 .product-details p {
-  margin: 5px 0 0;
-  color: #6c757d;
+  margin: 0;
+  color: #718096;
   font-size: 14px;
+  line-height: 1.5;
 }
 
 .price, .subtotal {
-  font-weight: bold;
+  font-weight: 700;
+  font-size: 18px;
+  color: #e53e3e;
 }
 
 .quantity-control {
   display: flex;
   align-items: center;
+  gap: 8px;
+  background: #f7fafc;
+  padding: 8px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .quantity-btn {
-  width: 30px;
-  height: 30px;
-  background: #f8f9fa;
-  border: 1px solid #ced4da;
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 8px;
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.quantity-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+}
+
+.quantity-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.quantity-btn:disabled {
+  background: #cbd5e0;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 .quantity-input {
-  width: 50px;
-  height: 30px;
+  width: 60px;
+  height: 36px;
   text-align: center;
-  border: 1px solid #ced4da;
-  margin: 0 5px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d3748;
+  background: white;
+  transition: all 0.2s;
+}
+
+.quantity-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .remove-btn {
-  color: #dc3545;
-  background: none;
-  border: none;
+  color: #e53e3e;
+  background: #fff5f5;
+  border: 2px solid #feb2b2;
   cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.remove-btn:hover {
+  background: #e53e3e;
+  color: white;
+  border-color: #e53e3e;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
 }
 
 .cart-summary {
-  padding: 20px;
-  background-color: #f8f9fa;
+  padding: 30px;
+  background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
   align-items: center;
+  border-top: 3px solid #667eea;
+}
+
+.cart-summary label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d3748;
+  cursor: pointer;
+}
+
+.cart-summary input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #667eea;
 }
 
 .summary-info {
   display: inline-block;
-  margin-right: 20px;
+  margin-right: 30px;
 }
 
 .summary-info p {
-  margin: 5px 0;
+  margin: 8px 0;
+  font-size: 16px;
+  color: #4a5568;
+}
+
+.summary-info span {
+  font-weight: 700;
+  color: #2d3748;
+  margin-left: 8px;
 }
 
 .total-price {
-  font-size: 18px;
-  font-weight: bold;
-  color: #dc3545;
+  font-size: 28px;
+  font-weight: 800;
+  color: #e53e3e;
+  text-shadow: 1px 1px 2px rgba(229, 62, 62, 0.2);
 }
 
 .checkout-btn {
-  padding: 8px 30px;
+  padding: 14px 50px;
+  font-size: 17px;
+  font-weight: 700;
+  border-radius: 50px;
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  border: none;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 6px 20px rgba(245, 87, 108, 0.4);
+}
+
+.checkout-btn:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(245, 87, 108, 0.6);
+}
+
+.checkout-btn:disabled {
+  background: #cbd5e0;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-outline-danger {
+  background: white;
+  border: 2px solid #e53e3e;
+  color: #e53e3e;
+  padding: 10px 24px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-outline-danger:hover:not(:disabled) {
+  background: #e53e3e;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
+}
+
+.btn-outline-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.stock-info {
+  margin-top: 8px;
+  font-size: 13px;
+  text-align: center;
+  padding: 4px 12px;
+  border-radius: 20px;
+  display: inline-block;
+  font-weight: 600;
+}
+
+.stock-info small {
+  display: block;
+  color: #48bb78;
+  background: #f0fff4;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid #9ae6b4;
 }
 
 /* Modal styles */
@@ -865,63 +1219,491 @@ h1 {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .modal-content {
   background-color: #fff;
-  border-radius: 5px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   width: 90%;
-  max-width: 600px;
+  max-width: 700px;
   max-height: 90vh;
-  overflow-y: auto;
+  overflow: hidden;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.checkout-content {
+  max-width: 800px;
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 20px;
-  border-bottom: 1px solid #dee2e6;
+  padding: 24px 28px;
+  border-bottom: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
 }
 
-.modal-body {
-  padding: 20px;
+.checkout-header {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
 }
 
-.modal-footer {
-  padding: 15px 20px;
-  border-top: 1px solid #dee2e6;
+.header-title {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-icon {
+  width: 28px;
+  height: 28px;
+  stroke-width: 2.5;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
 }
 
 .close-btn {
-  background: none;
+  background: rgba(255, 255, 255, 0.2);
   border: none;
-  font-size: 24px;
+  font-size: 28px;
   cursor: pointer;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg);
+}
+
+.modal-body {
+  padding: 28px;
+  overflow-y: auto;
+  max-height: calc(90vh - 160px);
+}
+
+.checkout-body {
+  background: #f9fafb;
+}
+
+.checkout-section {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s;
+}
+
+.checkout-section:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.section-icon {
+  width: 24px;
+  height: 24px;
+  stroke-width: 2;
+  color: #f5576c;
+}
+
+.section-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.address-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
 .form-group {
-  margin-bottom: 15px;
+  margin-bottom: 16px;
 }
 
 .form-group label {
-  display: block;
-  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #374151;
+  font-size: 14px;
+}
+
+.input-icon {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2;
+  color: #9ca3af;
 }
 
 .form-control {
   width: 100%;
-  padding: 8px;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s;
+  background: #f9fafb;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #f5576c;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(245, 87, 108, 0.1);
+}
+
+.form-control::placeholder {
+  color: #9ca3af;
+}
+
+textarea.form-control {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.summary-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.summary-item:hover {
+  background: #f3f4f6;
+}
+
+.summary-label {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.summary-value {
+  font-size: 16px;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.summary-item.discount .summary-value {
+  color: #10b981;
+}
+
+.summary-item.total {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #fbbf24;
+  margin-top: 8px;
+}
+
+.summary-item.total .summary-label {
+  font-size: 16px;
+  color: #92400e;
+  font-weight: 600;
+}
+
+.price-highlight {
+  font-size: 24px !important;
+  color: #dc2626 !important;
+  font-weight: 700 !important;
+}
+
+.coupon-selector {
+  position: relative;
+}
+
+.coupon-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 20px;
+  padding-right: 40px;
+}
+
+.coupon-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.coupon-hint.loading {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.coupon-hint.empty {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.loading-icon {
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.hint-icon {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
+}
+
+.payment-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.payment-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #f9fafb;
+}
+
+.payment-option:hover {
+  border-color: #f5576c;
+  background: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 87, 108, 0.15);
+}
+
+.payment-option:has(.payment-radio:checked) {
+  border-color: #f5576c;
+  background: linear-gradient(135deg, #fff5f7 0%, #ffe4e9 100%);
+  box-shadow: 0 4px 12px rgba(245, 87, 108, 0.2);
+}
+
+.payment-radio {
+  display: none;
+}
+
+.payment-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.payment-icon {
+  width: 32px;
+  height: 32px;
+  color: #f5576c;
+}
+
+.payment-label span {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.check-icon {
+  width: 24px;
+  height: 24px;
+  stroke-width: 3;
+  color: #10b981;
+  opacity: 0;
+  transition: all 0.2s;
+}
+
+.payment-option:has(.payment-radio:checked) .check-icon {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.modal-footer {
+  padding: 20px 28px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  background: #f9fafb;
+}
+
+.checkout-footer {
+  background: white;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-icon {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.5;
+}
+
+.btn-secondary {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.btn-secondary:hover {
+  background: #e5e7eb;
+  transform: translateY(-1px);
+}
+
+.cancel-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(245, 87, 108, 0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .cart-page {
+    padding: 20px 10px;
+  }
+  
+  h1 {
+    font-size: 28px;
+    margin-top: 60px;
+  }
+  
+  .cart-item {
+    padding: 20px 15px;
+  }
+  
+  .product-image {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .modal-content {
+    width: 95%;
+    max-height: 95vh;
+  }
+  
+  .address-form .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .modal-header {
+    padding: 20px;
+  }
+  
+  .modal-body {
+    padding: 20px;
+  }
+  
+  .checkout-section {
+    padding: 20px;
+  }
+  
+  .modal-footer {
+    padding: 16px 20px;
+    flex-direction: column;
+  }
+  
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 /* Loading overlay */
@@ -931,7 +1713,8 @@ h1 {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -939,12 +1722,13 @@ h1 {
 }
 
 .spinner {
-  width: 50px;
-  height: 50px;
-  border: 5px solid #f3f3f3;
-  border-top: 5px solid #3498db;
+  width: 60px;
+  height: 60px;
+  border: 6px solid #f3f3f3;
+  border-top: 6px solid #667eea;
   border-radius: 50%;
   animation: spin 1s linear infinite;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 @keyframes spin {
@@ -957,10 +1741,24 @@ h1 {
   flex-wrap: wrap;
 }
 
-.col-1 { width: 8.33%; }
-.col-2 { width: 16.66%; }
-.col-4 { width: 33.33%; }
-.col-6 { width: 50%; }
+.col-1 { 
+  width: 8.33%; 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.col-2 { 
+  width: 16.66%; 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.col-4 { 
+  width: 33.33%; 
+}
+.col-6 { 
+  width: 50%; 
+}
 
 .text-end {
   text-align: right;

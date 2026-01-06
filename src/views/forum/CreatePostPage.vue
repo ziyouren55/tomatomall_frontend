@@ -1,5 +1,10 @@
 <template>
   <div class="create-post-page">
+    <!-- 返回按钮 -->
+    <div class="back-button-wrapper">
+      <BackButton text="返回" />
+    </div>
+
     <div class="card">
       <h1>发布帖子</h1>
       <p v-if="forumName" class="forum-name">所属论坛：{{ forumName }}</p>
@@ -44,6 +49,7 @@
 import { reactive, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/api'
+import BackButton from '@/components/common/BackButton.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -139,6 +145,11 @@ onMounted(fetchForum)
   margin: 0 auto;
   padding: 24px 12px;
 }
+
+.back-button-wrapper {
+  margin-bottom: 16px;
+}
+
 .card {
   background: #fff;
   padding: 18px;

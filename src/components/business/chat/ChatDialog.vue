@@ -94,6 +94,16 @@
 
       <!-- 消息输入框 -->
       <div class="message-input">
+        <div class="input-toolbar">
+          <el-button
+            class="emoji-btn"
+            @click="toggleEmojiPicker"
+            :disabled="!currentSession"
+            text
+          >
+            😊
+          </el-button>
+        </div>
         <div class="input-container">
           <el-input
             v-model="newMessage"
@@ -101,18 +111,49 @@
             :disabled="!currentSession"
             @keyup.enter="sendMessage"
             ref="messageInputRef"
+            type="textarea"
+            :rows="2"
+            resize="none"
+          />
+          <el-button
+            class="send-btn"
+            type="primary"
+            :disabled="!canSend"
+            @click="sendMessage"
+            :loading="sending"
           >
-            <template #suffix>
-              <el-button
-                type="primary"
-                :disabled="!canSend"
-                @click="sendMessage"
-                :loading="sending"
-              >
-                发送
-              </el-button>
-            </template>
-          </el-input>
+            发送
+          </el-button>
+        </div>
+        
+        <!-- Emoji选择器 -->
+        <div v-if="showEmojiPicker" class="emoji-picker" @click.stop>
+          <div class="emoji-header">
+            <span>选择表情</span>
+            <el-button text @click="showEmojiPicker = false" class="close-emoji">✕</el-button>
+          </div>
+          <div class="emoji-categories">
+            <el-button
+              v-for="category in emojiCategories"
+              :key="category.name"
+              :class="{ active: currentEmojiCategory === category.name }"
+              @click="currentEmojiCategory = category.name"
+              text
+              size="small"
+            >
+              {{ category.icon }}
+            </el-button>
+          </div>
+          <div class="emoji-list">
+            <span
+              v-for="emoji in currentEmojis"
+              :key="emoji"
+              class="emoji-item"
+              @click="insertEmoji(emoji)"
+            >
+              {{ emoji }}
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -153,6 +194,90 @@ const loadingMessages = ref(false)
 const newMessage = ref('')
 const sending = ref(false)
 const messagesContainer = ref<HTMLElement>()
+
+// Emoji相关状态
+const showEmojiPicker = ref(false)
+const currentEmojiCategory = ref('smileys')
+
+// Emoji分类数据
+const emojiCategories = [
+  { name: 'smileys', icon: '😊', label: '笑脸' },
+  { name: 'gestures', icon: '👍', label: '手势' },
+  { name: 'animals', icon: '🐱', label: '动物' },
+  { name: 'food', icon: '🍕', label: '食物' },
+  { name: 'activities', icon: '⚽', label: '活动' },
+  { name: 'objects', icon: '💡', label: '物品' },
+  { name: 'symbols', icon: '❤️', label: '符号' }
+]
+
+// Emoji数据
+const emojis = {
+  smileys: [
+    '😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂',
+    '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩',
+    '😘', '😗', '😚', '😙', '😋', '😛', '😜', '🤪',
+    '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨',
+    '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥',
+    '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕',
+    '🤢', '🤮', '🤧', '🥵', '🥶', '😵', '🤯', '🤠',
+    '🥳', '😎', '🤓', '🧐', '😕', '😟', '🙁', '☹️',
+    '😮', '😯', '😲', '😳', '🥺', '😦', '😧', '😨',
+    '😰', '😥', '😢', '😭', '😱', '😖', '😣', '😞'
+  ],
+  gestures: [
+    '👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤏', '✌️',
+    '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕',
+    '👇', '☝️', '👍', '👎', '✊', '👊', '🤛', '🤜',
+    '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️', '💪',
+    '🦾', '🦿', '🦵', '🦶', '👂', '🦻', '👃', '🧠',
+    '🦷', '🦴', '👀', '👁️', '👅', '👄', '💋', '🩸'
+  ],
+  animals: [
+    '🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼',
+    '🐨', '🐯', '🦁', '🐮', '🐷', '🐽', '🐸', '🐵',
+    '🙈', '🙉', '🙊', '🐒', '🐔', '🐧', '🐦', '🐤',
+    '🐣', '🐥', '🦆', '🦅', '🦉', '🦇', '🐺', '🐗',
+    '🐴', '🦄', '🐝', '🐛', '🦋', '🐌', '🐞', '🐜',
+    '🦟', '🦗', '🕷️', '🦂', '🐢', '🐍', '🦎', '🦖'
+  ],
+  food: [
+    '🍇', '🍈', '🍉', '🍊', '🍋', '🍌', '🍍', '🥭',
+    '🍎', '🍏', '🍐', '🍑', '🍒', '🍓', '🥝', '🍅',
+    '🥥', '🥑', '🍆', '🥔', '🥕', '🌽', '🌶️', '🥒',
+    '🥬', '🥦', '🧄', '🧅', '🍄', '🥜', '🌰', '🍞',
+    '🥐', '🥖', '🥨', '🥯', '🥞', '🧇', '🧀', '🍖',
+    '🍗', '🥩', '🥓', '🍔', '🍟', '🍕', '🌭', '🥪',
+    '🌮', '🌯', '🥙', '🧆', '🥚', '🍳', '🥘', '🍲',
+    '🥣', '🥗', '🍿', '🧈', '🧂', '🥫', '🍱', '🍘'
+  ],
+  activities: [
+    '⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉',
+    '🥏', '🎱', '🪀', '🏓', '🏸', '🏒', '🏑', '🥍',
+    '🏏', '🥅', '⛳', '🪁', '🏹', '🎣', '🤿', '🥊',
+    '🥋', '🎽', '🛹', '🛼', '🛷', '⛸️', '🥌', '🎿',
+    '⛷️', '🏂', '🪂', '🏋️', '🤼', '🤸', '🤺', '⛹️',
+    '🤾', '🏌️', '🏇', '🧘', '🏊', '🤽', '🚣', '🧗'
+  ],
+  objects: [
+    '⌚', '📱', '📲', '💻', '⌨️', '🖥️', '🖨️', '🖱️',
+    '🖲️', '🕹️', '🗜️', '💾', '💿', '📀', '📼', '📷',
+    '📸', '📹', '🎥', '📽️', '🎞️', '📞', '☎️', '📟',
+    '📠', '📺', '📻', '🎙️', '🎚️', '🎛️', '🧭', '⏱️',
+    '⏲️', '⏰', '🕰️', '⌛', '⏳', '📡', '🔋', '🔌',
+    '💡', '🔦', '🕯️', '🪔', '🧯', '🛢️', '💸', '💵',
+    '💴', '💶', '💷', '💰', '💳', '💎', '⚖️', '🧰'
+  ],
+  symbols: [
+    '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍',
+    '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖',
+    '💘', '💝', '💟', '☮️', '✝️', '☪️', '🕉️', '☸️',
+    '✡️', '🔯', '🕎', '☯️', '☦️', '🛐', '⛎', '♈',
+    '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐',
+    '♑', '♒', '♓', '🆔', '⚛️', '🉑', '☢️', '☣️',
+    '📴', '📳', '🈶', '🈚', '🈸', '🈺', '🈷️', '✴️',
+    '🆚', '💮', '🉐', '㊙️', '㊗️', '🈴', '🈵', '🈹'
+  ]
+}
 
 // 优惠券弹窗相关
 const showCouponDialog = ref(false)
@@ -198,6 +323,11 @@ const canSend = computed(() => {
   return newMessage.value.trim().length > 0 && !sending.value
 })
 
+// 当前分类的emoji列表
+const currentEmojis = computed(() => {
+  return emojis[currentEmojiCategory.value as keyof typeof emojis] || []
+})
+
 // 判断当前用户是否为商家
 const isMerchant = computed(() => {
   const currentUser = currentUserInfo.value
@@ -208,6 +338,12 @@ const isMerchant = computed(() => {
 function isOwnMessage(message: ChatMessageVO): boolean {
   const currentUser = currentUserInfo.value
   const isOwn = currentUser?.id !== undefined && message.senderId === currentUser.id
+  
+  console.log('[CHAT DEBUG] isOwnMessage check:', {
+    currentUserId: currentUser?.id,
+    messageSenderId: message.senderId,
+    isOwn: isOwn
+  })
 
   return isOwn
 }
@@ -343,12 +479,18 @@ async function sendMessage() {
   sending.value = true
 
   try {
+    console.log('[CHAT DEBUG] Attempting to send message:', content.substring(0, 50))
+    console.log('[CHAT DEBUG] Current session:', currentSession.value.id)
+    console.log('[CHAT DEBUG] WebSocket state:', chatState.connected)
+    
     // 通过WebSocket发送消息（senderRole由后端根据用户身份确定）
     const messageSent = sendChatMessage({
       sessionId: currentSession.value.id,
       content,
       messageType: 'TEXT'
     })
+
+    console.log('[CHAT DEBUG] sendChatMessage returned:', messageSent)
 
     if (messageSent) {
       // 发送成功后，立即在本地添加消息到列表（发送方能立即看到自己的消息）
@@ -371,12 +513,14 @@ async function sendMessage() {
       scrollToBottom()
 
       // 真正的后端消息会通过WebSocket推送来更新这条临时消息
+      console.log('[CHAT DEBUG] Message sent successfully, added temp message')
     } else {
-      throw new Error('发送失败')
+      console.error('[CHAT DEBUG] sendChatMessage returned false')
+      throw new Error('WebSocket未连接或发送失败')
     }
   } catch (error) {
     console.error('发送消息失败:', error)
-    ElMessage.error('发送消息失败')
+    ElMessage.error('发送消息失败: ' + (error as Error).message)
   } finally {
     sending.value = false
   }
@@ -391,6 +535,18 @@ function testConnection() {
   }
 
   ElMessage.info(`WS状态: ${status.chatStateConnected ? '已连接' : '未连接'}, 监听器: ${status.listenersCount}`)
+}
+
+// 切换Emoji选择器显示
+function toggleEmojiPicker() {
+  showEmojiPicker.value = !showEmojiPicker.value
+}
+
+// 插入Emoji到输入框
+function insertEmoji(emoji: string) {
+  newMessage.value += emoji
+  // 不关闭选择器，方便连续选择
+  // showEmojiPicker.value = false
 }
 
 // 归档会话
@@ -476,11 +632,30 @@ watch(() => currentUserInfo.value, (newUser, oldUser) => {
 
 onMounted(() => {
   addMessageListener(onNewMessage)
+  
+  // 点击外部关闭emoji选择器
+  document.addEventListener('click', handleClickOutside)
 })
 
 onUnmounted(() => {
   removeMessageListener(onNewMessage)
+  document.removeEventListener('click', handleClickOutside)
 })
+
+// 点击外部关闭emoji选择器
+function handleClickOutside(event: MouseEvent) {
+  const target = event.target as HTMLElement
+  const emojiPicker = document.querySelector('.emoji-picker')
+  const emojiBtn = document.querySelector('.emoji-btn')
+  
+  if (showEmojiPicker.value && 
+      emojiPicker && 
+      !emojiPicker.contains(target) && 
+      emojiBtn &&
+      !emojiBtn.contains(target)) {
+    showEmojiPicker.value = false
+  }
+}
 
 const emit = defineEmits<{
   'session-archived': []
@@ -694,9 +869,9 @@ function onCouponIssued() {
 }
 
 .own-bubble {
-  background: #409eff;
-  color: white;
-  border-color: #409eff;
+  background: #95ec69;
+  color: #333;
+  border-color: #95ec69;
 }
 
 .message-time {
@@ -714,18 +889,155 @@ function onCouponIssued() {
   padding: 16px;
   background: white;
   border-top: 1px solid #e5e5e5;
+  position: relative;
+}
+
+.input-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.emoji-btn {
+  font-size: 20px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.emoji-btn:hover {
+  transform: scale(1.2);
 }
 
 .input-container {
   display: flex;
   gap: 12px;
+  align-items: flex-end;
 }
 
-.input-container :deep(.el-input) {
+.input-container :deep(.el-textarea) {
   flex: 1;
 }
 
-.input-container :deep(.el-input__suffix) {
-  right: 12px;
+.input-container :deep(.el-textarea__inner) {
+  padding: 8px 12px;
+  border-radius: 8px;
+  resize: none;
+}
+
+.send-btn {
+  height: 56px;
+  padding: 0 24px;
+  border-radius: 8px;
+}
+
+/* Emoji选择器样式 */
+.emoji-picker {
+  position: absolute;
+  bottom: 100%;
+  left: 16px;
+  width: 360px;
+  max-height: 400px;
+  background: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin-bottom: 8px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+
+.emoji-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e5e5;
+  font-weight: 500;
+}
+
+.close-emoji {
+  font-size: 18px;
+  color: #999;
+  padding: 0;
+  min-height: auto;
+}
+
+.emoji-categories {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #f0f0f0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.emoji-categories :deep(.el-button) {
+  font-size: 20px;
+  padding: 6px 10px;
+  min-height: auto;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.emoji-categories :deep(.el-button.active) {
+  background-color: #e6f7ff;
+}
+
+.emoji-categories :deep(.el-button:hover) {
+  background-color: #f5f5f5;
+}
+
+.emoji-list {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+  padding: 12px;
+  overflow-y: auto;
+  max-height: 280px;
+  scrollbar-width: thin;
+}
+
+.emoji-item {
+  font-size: 24px;
+  padding: 8px;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.emoji-item:hover {
+  background-color: #f0f0f0;
+  transform: scale(1.2);
+}
+
+.emoji-item:active {
+  transform: scale(1.1);
+}
+
+/* 滚动条样式 */
+.emoji-categories::-webkit-scrollbar,
+.emoji-list::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.emoji-categories::-webkit-scrollbar-track,
+.emoji-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.emoji-categories::-webkit-scrollbar-thumb,
+.emoji-list::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.emoji-categories::-webkit-scrollbar-thumb:hover,
+.emoji-list::-webkit-scrollbar-thumb:hover {
+  background: #999;
 }
 </style>

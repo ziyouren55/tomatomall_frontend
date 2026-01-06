@@ -1,6 +1,11 @@
 <template>
   <div class="product-detail-page">
     <div class="container">
+      <!-- 返回按钮 -->
+      <div class="back-button-wrapper">
+        <BackButton text="返回" fallback-path="/" />
+      </div>
+      
       <!-- 加载状态 -->
       <div v-if="loading" class="loading-container">
         <div class="loading-spinner"></div>
@@ -51,6 +56,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import ProductDetailCard from '@/components/business/product/ProductDetailCard.vue'
 import BookCommentList from '@/components/business/review/BookCommentList.vue'
+import BackButton from '@/components/common/BackButton.vue'
 import api from '@/api'
 import type { Stockpile, CartItem } from '@/types/api'
 import type { Product } from '@/types/api'
@@ -303,6 +309,10 @@ onUnmounted(() => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
+}
+
+.back-button-wrapper {
+  margin-bottom: 16px;
 }
 
 /* 加载状态样式 */

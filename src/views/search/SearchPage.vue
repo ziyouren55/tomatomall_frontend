@@ -36,7 +36,7 @@
             @mouseleave="onMouseLeave"
           >
             <div class="product-image-container">
-              <img :src="product.cover" :alt="product.title" class="product-image" @error="handleImageError">
+              <img :src="getImageUrl(product.cover)" :alt="product.title" class="product-image" @error="handleImageError">
               <div class="product-overlay">
                 <span class="view-details">查看详情</span>
               </div>
@@ -69,6 +69,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import api from '@/api'
+import { getImageUrl } from '@/utils/image'
 
 export default defineComponent({
   name: 'SearchPage',
@@ -102,6 +103,7 @@ export default defineComponent({
     }
   },
   methods: {
+    getImageUrl,
     async performSearch(): Promise<void> {
       if (!this.searchKeyword || !this.searchKeyword.trim()) {
         this.products = []

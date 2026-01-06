@@ -1,5 +1,10 @@
 <template>
   <div class="public-profile-page">
+    <!-- 返回按钮 -->
+    <div class="back-button-wrapper">
+      <BackButton text="返回" fallback-path="/" />
+    </div>
+
     <div v-if="loading" class="loading">加载中...</div>
     <div v-else-if="error" class="error">{{ error }}</div>
     <div v-else class="profile-card">
@@ -80,6 +85,7 @@ import chatApi from '@/api/modules/chat'
 import { getRoleLabel as getRoleLabelUtil } from '@/utils/constants'
 import store from '@/store'
 import ProductCard from '@/components/business/product/ProductCard.vue'
+import BackButton from '@/components/common/BackButton.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -180,27 +186,10 @@ async function startChat() {
 
   chatLoading.value = true
   try {
-    const currentUser = store.state.user.userInfo
-    const isCurrentUserMerchant = currentUser?.role?.toUpperCase() === 'MERCHANT'
-
-    let response
-
-    if (isCurrentUserMerchant && !isMerchant.value) {
-      // 商家联系顾客 - 直接通过顾客ID创建会话
-      response = await chatApi.createChatSessionWithCustomer({ customerId: user.value.id })
-    } else if (!isCurrentUserMerchant && isMerchant.value) {
-      // 顾客联系商家 - 通过店铺ID创建会话（原有逻辑）
-      if (!stores.value || stores.value.length === 0) {
-        ElMessage.warning('该商家暂无店铺，无法发起聊天')
-        return
-      }
-      const storeId = stores.value[0].id
-      response = await chatApi.createChatSession({ storeId })
-    } else {
-      // 同角色用户间的聊天（暂时不支持）
-      ElMessage.warning('暂不支持同角色用户间的聊天')
-      return
-    }
+    // 使用新的用户间聊天API，支持任意用户间的聊天
+    const response = await chatApi.createChatSessionWithUser({ 
+      targetUserId: user.value.id 
+    })
 
     if (response && response.code === '200' && response.data) {
       // 跳转到聊天页面，并传递会话ID
@@ -208,12 +197,13 @@ async function startChat() {
         path: '/chat',
         query: { sessionId: response.data.id }
       })
+      ElMessage.success('已打开聊天窗口')
     } else {
-      ElMessage.error('创建聊天会话失败')
+      ElMessage.error(response?.msg || '创建聊天会话失败')
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('发起聊天失败:', error)
-    ElMessage.error('发起聊天失败，请稍后重试')
+    ElMessage.error(error?.response?.data?.msg || '发起聊天失败，请稍后重试')
   } finally {
     chatLoading.value = false
   }
@@ -226,6 +216,12 @@ onMounted(() => {
 
 <style scoped>
 .public-profile-page { padding: 24px; min-height: 60vh; }
+
+.back-button-wrapper {
+  max-width: 1000px;
+  margin: 0 auto 16px;
+}
+
 .profile-card { max-width: 1000px; margin: 0 auto; background:#fff; padding:20px; border-radius:8px }
 .profile-header { display:flex; gap:16px; align-items:center; justify-content: space-between; }
 .avatar { width:96px; height:96px; object-fit:cover; border-radius:8px }

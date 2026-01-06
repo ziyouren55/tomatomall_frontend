@@ -109,7 +109,7 @@
           <tr v-for="product in products" :key="product.id">
             <td>{{ product.id }}</td>
             <td class="product-image">
-              <img v-if="product.cover" :src="product.cover" :alt="product.title" @error="handleImageError" />
+              <img v-if="product.cover" :src="getImageUrl(product.cover)" :alt="product.title" @error="handleImageError" />
               <div v-else class="no-image">无图片</div>
             </td>
             <td>{{ product.title }}</td>
@@ -258,6 +258,7 @@
 import api from '@/api';
 import ProductForm from './ProductForm.vue';
 import SimpleStockpileEditor from '../stockpile/SimpleStockpileEditor.vue';
+import { getImageUrl } from '@/utils/image';
 
 export default {
   name: 'ProductManager',
@@ -332,6 +333,7 @@ export default {
     }
   },
   methods: {
+    getImageUrl,
     async fetchProducts() {
       this.loading = true;
       try {

@@ -23,6 +23,18 @@ const userRoutes: RouteRecordRaw[] = [
         meta: { requiresAuth: true }
     },
     {
+        path: '/user/private',
+        name: 'UserPrivate',
+        component: () => import('@/views/user/UserPrivateDetailPage.vue'),
+        meta: { requiresAuth: true }
+    },
+    {
+        path: '/user/school-verification',
+        name: 'SchoolVerification',
+        component: () => import('@/views/user/SchoolVerificationPage.vue'),
+        meta: { requiresAuth: true }
+    },
+    {
         path: '/cart',
         name: 'Cart',
         component: () => import('@/views/cart/CartPage.vue'),

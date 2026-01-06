@@ -245,10 +245,14 @@ export function stopChatService() {
 
 // 发送聊天消息 - 只在开发环境下输出详细信息
 export function sendChatMessage(message: ChatWebSocketMessage) {
+  console.log('[CHAT WS] sendChatMessage called')
+  console.log('[CHAT WS] client exists:', !!client)
+  console.log('[CHAT WS] connected:', connected)
+  console.log('[CHAT WS] chatState.connected:', chatState.connected)
+  
   if (!client || !connected) {
-    if (import.meta.env.DEV) {
-      console.warn('[CHAT WS] Not connected, cannot send message')
-    }
+    console.warn('[CHAT WS] Not connected, cannot send message')
+    console.warn('[CHAT WS] client:', !!client, 'connected:', connected)
     return false
   }
 
@@ -261,6 +265,7 @@ export function sendChatMessage(message: ChatWebSocketMessage) {
       destination: '/app/chat.send',
       body: JSON.stringify(message)
     })
+    console.log('[CHAT WS] Message published successfully')
     return true
   } catch (e) {
     console.error('[CHAT WS] Send failed:', e)
