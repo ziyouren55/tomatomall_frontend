@@ -860,11 +860,15 @@ export default defineComponent({
         item.quantity = max;
         input.value = String(max);
         ElMessage.warning(`库存不足，最多只能购买 ${max} 件`);
+        // 更新已选合计显示
+        this.calculateSelectedTotal();
         return;
       }
 
       // 保持本地模型与输入一致（v-model 也会同步，但这里确保为整数）
       item.quantity = value;
+      // 立即更新已选合计显示，让页面和结算金额保持同步
+      this.calculateSelectedTotal();
     },
     
     // 处理删除按钮点击
@@ -1161,6 +1165,12 @@ h1 {
   top: 50%;
   transform: translate(-50%, -50%);
   z-index: 2;
+}
+/* Prevent checkout button shifting on hover/active */
+.cart-summary .checkout-btn:hover:not(:disabled),
+.cart-summary .checkout-btn:active:not(:disabled) {
+  transform: translate(-50%, -50%) !important;
+  /* keep visual hover effects (shadow) but no movement */
 }
 
 .cart-summary label {
