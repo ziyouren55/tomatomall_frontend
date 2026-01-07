@@ -3,7 +3,7 @@
     <!-- 顶部横幅 -->
     <div class="page-banner">
       <div class="banner-content">
-        <h1>📚 书籍论坛</h1>
+        <h1>📚 商品论坛</h1>
         <p>和其他读者一起讨论、分享与发现好书</p>
       </div>
     </div>
@@ -30,7 +30,7 @@
       <div class="search-box">
         <el-input
           v-model="keyword"
-          placeholder="搜索论坛名称或书籍"
+          placeholder="搜索论坛名称或商品"
           size="large"
           clearable
           @keyup.enter="startSearch"

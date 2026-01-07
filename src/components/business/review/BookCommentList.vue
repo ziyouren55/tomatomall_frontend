@@ -1,40 +1,40 @@
 <template>
   <div class="book-review-list">
     <div class="header">
-      <h2>书评与导读</h2>
+      <h2>评论</h2>
       <button @click="showAddForm = !showAddForm" class="add-btn">
-        {{ showAddForm ? '取消' : '发布书评' }}
+        {{ showAddForm ? '取消' : '发布评论' }}
       </button>
     </div>
 
-    <!-- 发布书评表单 -->
+    <!-- 发布评论表单 -->
     <div v-if="showAddForm" class="add-form">
-      <h3>发布书评</h3>
+      <h3>发布评论</h3>
       <form @submit.prevent="submitReview">
         <div class="form-group">
-          <label>书评内容：</label>
+          <label>评论内容：</label>
           <textarea 
             v-model="newReview.commentText" 
-            placeholder="请输入书评内容..."
+            placeholder="请输入评论内容..."
             rows="6"
             required
           ></textarea>
         </div>
         <div class="form-actions">
           <button type="submit" class="submit-btn" :disabled="isSubmitting">
-            {{ isSubmitting ? '发布中...' : '发布书评' }}
+            {{ isSubmitting ? '发布中...' : '发布评论' }}
           </button>
           <button type="button" @click="cancelForm" class="cancel-btn">取消</button>
         </div>
       </form>
     </div>
 
-    <!-- 书评列表 -->
+    <!-- 评论列表 -->
     <div class="reviews-container">
       <div v-if="loading" class="loading">加载中...</div>
       
       <div v-else-if="reviews.length === 0" class="no-reviews">
-        暂无书评，快来发布第一条书评吧！
+        暂无评论，快来发布第一条评论吧！
       </div>
       
       <div v-else class="reviews-list">
@@ -113,8 +113,8 @@ export default defineComponent({
         this.reviews = pageData?.content || [];
         this.total = pageData?.totalElements || this.reviews.length;
       } catch (error: unknown) {
-        console.error('加载书评失败:', error);
-        ElMessage.error('加载书评失败');
+        console.error('加载评论失败:', error);
+        ElMessage.error('加载评论失败');
       } finally {
         this.loading = false;
       }
@@ -122,19 +122,19 @@ export default defineComponent({
     
     async submitReview(): Promise<void> {
       if (!this.newReview.commentText.trim()) {
-        ElMessage.warning('请填写书评内容');
+        ElMessage.warning('请填写评论内容');
         return;
       }
       
       this.isSubmitting = true;
       try {
         await api.review.addBookComment(this.productId, this.newReview);
-        ElMessage.success('书评发布成功');
+        ElMessage.success('评论发布成功');
         this.cancelForm();
         this.loadReviews();
       } catch (error: unknown) {
-        console.error('发布书评失败:', error);
-        ElMessage.error('发布书评失败');
+        console.error('发布评论失败:', error);
+        ElMessage.error('发布评论失败');
       } finally {
         this.isSubmitting = false;
       }
@@ -148,7 +148,7 @@ export default defineComponent({
     },
     
     async deleteReview(reviewId: number): Promise<void> {
-      if (!confirm('确定要删除这条书评吗？')) {
+      if (!confirm('确定要删除这条评论吗？')) {
         return;
       }
       
@@ -157,13 +157,13 @@ export default defineComponent({
         ElMessage.success('删除成功');
         this.loadReviews();
       } catch (error: unknown) {
-        console.error('删除书评失败:', error);
+        console.error('删除评论失败:', error);
         ElMessage.error('删除失败');
       }
     },
     
     canDeleteReview(review: BookComment): boolean {
-      // 这里可以根据实际业务逻辑判断用户是否可以删除书评
+      // 这里可以根据实际业务逻辑判断用户是否可以删除评论
       // 例如：只有发布者本人或管理员可以删除
       const currentUserName = this.getCurrentUserName();
       return review.name === currentUserName;

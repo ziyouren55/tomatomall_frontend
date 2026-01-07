@@ -5,9 +5,9 @@
     <div class="container">
       <header class="hero">
         <div class="hero-text">
-          <p class="eyebrow">书评中心</p>
-          <h1>发现好书 · 分享观点</h1>
-          <p class="subtitle">选择图书，查看并发布对应的书评</p>
+          <p class="eyebrow">评论中心</p>
+          <h1>发现优品 · 分享观点</h1>
+          <p class="subtitle">选择商品，查看并发布对应的评论</p>
       </div>
         <div class="hero-actions">
           <router-link class="cta ghost" to="/">返回首页</router-link>
@@ -15,45 +15,45 @@
       </header>
 
       <div class="main-grid">
-        <!-- 左侧：书评列表 -->
+        <!-- 左侧：评论列表 -->
         <section class="panel review-panel">
           <div class="panel-head">
             <div>
-            <h3 v-if="selectedProduct">《{{ selectedProduct?.title || selectedProduct?.name }}》的书评</h3>
-            <h3 v-else>请选择图书</h3>
+            <h3 v-if="selectedProduct">《{{ selectedProduct?.title || selectedProduct?.name }}》的评论</h3>
+            <h3 v-else>请选择商品</h3>
               <p class="hint" v-if="selectedProduct?.author">作者：{{ selectedProduct?.author }}</p>
-              <p class="hint" v-else>点击右侧列表选择图书查看书评</p>
+              <p class="hint" v-else>点击右侧列表选择商品查看评论</p>
             </div>
-            <router-link v-if="selectedProductId" :to="`/bookcomment?productId=${selectedProductId}`" class="more-link">在书评中心打开</router-link>
+            <router-link v-if="selectedProductId" :to="`/bookcomment?productId=${selectedProductId}`" class="more-link">在评论中心打开</router-link>
           </div>
           <div class="review-body">
             <BookReviewList v-if="selectedProductId" :product-id="selectedProductId" :key="selectedProductId" />
             <div v-else class="empty-state">
-              <h4>未选择图书</h4>
-              <p>请从右侧选择图书后查看书评</p>
+              <h4>未选择商品</h4>
+              <p>请从右侧选择商品后查看评论</p>
             </div>
           </div>
         </section>
 
-        <!-- 右侧：图书选择 -->
+        <!-- 右侧：商品选择 -->
         <section class="panel selector-panel">
           <div class="panel-head">
             <div>
-              <h3>选择图书</h3>
-              <p class="hint">点击卡片以查看该书书评</p>
+              <h3>选择商品</h3>
+              <p class="hint">点击卡片以查看该商品评论</p>
             </div>
             <div class="search-box">
           <input
             type="email"
             v-model="searchKeyword"
-            placeholder="搜索图书名称..."
+            placeholder="搜索商品名称..."
             @input="searchProducts"
           />
             </div>
         </div>
 
           <div class="products-grid" :class="{ loading: loadingProducts }">
-            <div v-if="loadingProducts" class="loading">正在加载图书列表...</div>
+            <div v-if="loadingProducts" class="loading">正在加载商品列表...</div>
             <template v-else>
           <div
             v-for="product in filteredProducts"
@@ -75,7 +75,7 @@
                   <p class="product-price" v-if="product.price">¥{{ product.price }}</p>
                 </div>
             </div>
-              <div v-if="filteredProducts.length === 0" class="no-products">暂无图书数据</div>
+              <div v-if="filteredProducts.length === 0" class="no-products">暂无商品数据</div>
             </template>
         </div>
 
@@ -155,7 +155,7 @@ export default defineComponent({
         await this.fetchPage(0);
       } catch (error) {
         console.error('加载产品列表失败:', error);
-        ElMessage.error('加载图书列表失败');
+        ElMessage.error('加载商品列表失败');
       } finally {
         this.loadingProducts = false;
       }
@@ -182,7 +182,7 @@ export default defineComponent({
         this.filteredProducts = [...this.products];
       } catch (error) {
         console.error('加载产品列表失败:', error);
-        ElMessage.error('加载图书列表失败');
+        ElMessage.error('加载商品列表失败');
       } finally {
         this.loadingProducts = false;
       }

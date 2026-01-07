@@ -595,14 +595,14 @@ export interface Notification {
 }
 
 /**
- * 书评数据
+ * 评论数据
  */
 export interface BookCommentData {
     commentText: string
 }
 
 /**
- * 书评
+ * 评论
  */
 export interface BookComment {
     id: number

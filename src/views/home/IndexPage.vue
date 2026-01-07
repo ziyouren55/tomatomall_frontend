@@ -132,7 +132,7 @@ export default defineComponent({
         },
         {
           title: '🔥 热门新品上架',
-          subtitle: '最新图书，第一时间抢购',
+          subtitle: '最新商品，第一时间抢购',
           buttonText: '查看详情',
           gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
           icon: '⭐'
@@ -144,7 +144,7 @@ export default defineComponent({
         { name: '我的订单', icon: 'ShoppingBag', path: '/order', color: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
         { name: '客服咨询', icon: 'ChatDotRound', path: '/chat', color: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' },
         { name: '优惠券', icon: 'Discount', path: '/coupon-center', color: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' },
-        { name: '书评中心', icon: 'EditPen', path: '/bookcomment', color: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)' }
+        { name: '评论中心', icon: 'EditPen', path: '/bookcomment', color: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)' }
       ],
       tabs: [
         { key: 'hot', label: '热门推荐', icon: 'TrendCharts' },

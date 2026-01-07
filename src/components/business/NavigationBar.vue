@@ -47,7 +47,7 @@
               <span v-if="chatUnreadCount > 0" class="unread-badge">{{ chatUnreadCount }}</span>
             </router-link>
 
-            <router-link to="/bookcomment" class="nav-link desktop-link">书评</router-link>
+            <router-link to="/bookcomment" class="nav-link desktop-link">评论</router-link>
             <router-link to="/coupon-center" class="nav-link desktop-link">领券中心</router-link>
             <!-- 用户名下拉菜单 -->
             <el-dropdown @command="handleUserCommand" trigger="hover" class="user-dropdown">

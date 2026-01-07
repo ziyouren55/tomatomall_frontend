@@ -22,7 +22,7 @@ const forumApi = {
         return request.get(`/forums/${forumId}`)
     },
 
-    // 根据书籍获取论坛
+    // 根据商品获取论坛
     getForumByBookId(bookId: number): Promise<ApiResponse<Forum>> {
         return request.get(`/forums/book/${bookId}`)
     },

@@ -21,7 +21,7 @@
         </div>
       </div>
 
-      <!-- 商品详情与书评 -->
+      <!-- 商品详情与评论 -->
       <template v-else-if="product">
       <ProductDetailCard
         :product="product"
@@ -33,8 +33,8 @@
 
         <section class="product-review-container">
           <div class="section-header">
-            <h2>书评</h2>
-            <router-link :to="`/bookcomment?productId=${product.id}`" class="more-link">去书评中心</router-link>
+            <h2>评论</h2>
+            <router-link :to="`/bookcomment?productId=${product.id}`" class="more-link">去评论中心</router-link>
           </div>
           <BookCommentList v-if="product?.id" :product-id="product.id" />
         </section>
