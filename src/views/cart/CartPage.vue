@@ -69,7 +69,7 @@
       
       <!-- Cart Summary -->
       <div class="cart-summary row">
-        <div class="col-6">
+        <div class="col-6 summary-left">
           <label>
             <input 
               type="checkbox" 
@@ -81,7 +81,7 @@
             删除选中
           </button>
         </div>
-        <div class="col-6 text-end">
+        <div class="col-6 text-end summary-right">
           <div class="summary-info">
             <p>已选商品 <span>{{ selectedItems.length }}</span> 件</p>
             <p>合计: <span class="total-price">¥{{ selectedTotal.toFixed(2) }}</span></p>
@@ -1132,6 +1132,35 @@ h1 {
   background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
   align-items: center;
   border-top: 3px solid #667eea;
+  position: relative; /* allow absolute centering of checkout button */
+}
+
+/* Align left and right summary controls */
+.cart-summary .summary-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cart-summary .summary-right {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center; /* center children horizontally */
+  gap: 8px;
+}
+/* Make the summary text stretch full width and stay right-aligned */
+.cart-summary .summary-right .summary-info {
+  align-self: stretch;
+  text-align: right;
+}
+.cart-summary .summary-right .checkout-btn {
+  margin: 0; /* centered by parent align-items */
+  /* absolute center across the whole cart-summary */
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
 }
 
 .cart-summary label {
