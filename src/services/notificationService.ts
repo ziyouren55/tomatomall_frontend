@@ -9,9 +9,11 @@ async function registerBuiltinComponents() {
     const paid = (await import('@/components/business/notifications/OrderPaidNotification.vue')).default
     const shipped = (await import('@/components/business/notifications/OrderShippedNotification.vue')).default
     const completed = (await import('@/components/business/notifications/OrderCompletedNotification.vue')).default
+    const couponIssued = (await import('@/components/business/notifications/CouponIssuedNotification.vue')).default
     registerNotificationComponent('ORDER_PAID', paid)
     registerNotificationComponent('ORDER_SHIPPED', shipped)
     registerNotificationComponent('ORDER_COMPLETED', completed)
+    registerNotificationComponent('COUPON_ISSUED', couponIssued)
   } catch (e) {
     console.warn('registerBuiltinComponents failed', e)
   }
