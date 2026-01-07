@@ -9,7 +9,13 @@
               <div class="carousel-content">
                 <h2 class="carousel-title">{{ banner.title }}</h2>
                 <p class="carousel-subtitle">{{ banner.subtitle }}</p>
-                <el-button type="primary" size="large" round class="carousel-btn">
+                <el-button
+                  type="primary"
+                  size="large"
+                  round
+                  class="carousel-btn"
+                  @click="handleBannerAction(banner)"
+                >
                   {{ banner.buttonText }}
                 </el-button>
               </div>
@@ -159,6 +165,18 @@ export default defineComponent({
     handleQuickEntry(path: string) {
       this.$router.push(path);
     },
+      // 处理轮播按钮动作（例如去认证）
+      handleBannerAction(banner: any) {
+        if (!banner || !banner.buttonText) return;
+        if (banner.buttonText === '去认证') {
+          this.$router.push('/user/school-verification');
+          return;
+        }
+        // 默认动作：如果 banner 包含 path，则跳转
+        if (banner.path) {
+          this.$router.push(banner.path);
+        }
+      },
     clearSearch() {
       this.$router.push('/');
     }
