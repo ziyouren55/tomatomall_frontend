@@ -46,25 +46,15 @@
           <div class="col-2 price">¥{{ (item.price || 0).toFixed(2) }}</div>
           <div class="col-2 quantity">
             <div class="quantity-control">
-              <button 
-                type="button"
-                @click="handleDecreaseQuantity(item)" 
-                :disabled="item.quantity <= 1"
-                class="quantity-btn"
-              >-</button>
               <input 
                 type="number" 
                 v-model.number="item.quantity" 
                 min="1" 
+                :max="getAvailableStock(item.productId) ?? undefined"
+                @input="handleQuantityInput(item, $event)"
                 @change="handleQuantityChange(item)"
-                class="quantity-input"
+                class="quantity-input quantity-with-spinner"
               >
-              <button 
-                type="button"
-                @click="handleIncreaseQuantity(item)" 
-                class="quantity-btn"
-                :disabled="isMaxQuantity(item)"
-              >+</button>
             </div>
             <div class="stock-info" v-if="item.productId && getAvailableStock(item.productId) !== null">
               <small>{{ (getAvailableStock(item.productId) ?? 0) > 0 ? '有库存' : '无库存' }}</small>
@@ -856,6 +846,27 @@ export default defineComponent({
       }
     },
     
+    // 在输入/箭头改变时即时限制本地数量，不立即调用后端（后端更新在 change 事件触发时执行）
+    handleQuantityInput(item: CartItem, event: Event): void {
+      const input = event.target as HTMLInputElement;
+      let value = parseInt(input.value, 10);
+      if (isNaN(value) || value < 1) {
+        value = 1;
+      }
+
+      const max = this.getAvailableStock(item.productId);
+      if (max !== null && typeof max === 'number' && value > max) {
+        // 限制到最大可用库存并提示
+        item.quantity = max;
+        input.value = String(max);
+        ElMessage.warning(`库存不足，最多只能购买 ${max} 件`);
+        return;
+      }
+
+      // 保持本地模型与输入一致（v-model 也会同步，但这里确保为整数）
+      item.quantity = value;
+    },
+    
     // 处理删除按钮点击
     handleRemoveItem(item: CartItem): void {
       const cartItemId = this.getCartItemId(item);
@@ -1070,6 +1081,24 @@ h1 {
   color: #2d3748;
   background: white;
   transition: all 0.2s;
+}
+
+/* Keep native number input spinner visible and usable */
+.quantity-with-spinner {
+  /* provide some room so native spinner doesn't overlap text on some browsers */
+  padding-right: 8px;
+}
+.quantity-input::-webkit-outer-spin-button,
+.quantity-input::-webkit-inner-spin-button {
+  -webkit-appearance: inner-spin-button;
+  display: block;
+  opacity: 1;
+  margin: 0;
+}
+.quantity-input[type="number"] {
+  /* ensure appearance respects native spinner where supported */
+  -moz-appearance: number-input;
+  appearance: number-input;
 }
 
 .quantity-input:focus {
