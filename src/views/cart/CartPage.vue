@@ -1151,22 +1151,11 @@ h1 {
   transition: all 0.2s;
 }
 
-/* Keep native number input spinner visible and usable */
-.quantity-with-spinner {
-  /* provide some room so native spinner doesn't overlap text on some browsers */
-  padding-right: 8px;
-}
-.quantity-input::-webkit-outer-spin-button,
-.quantity-input::-webkit-inner-spin-button {
-  -webkit-appearance: inner-spin-button;
-  display: block;
-  opacity: 1;
-  margin: 0;
-}
+/* 使用原生数字输入框外观和行为 */
 .quantity-input[type="number"] {
-  /* ensure appearance respects native spinner where supported */
-  -moz-appearance: number-input;
-  appearance: number-input;
+  /* 让浏览器决定最佳的外观，包括数字输入的微调按钮 */
+  appearance: auto;
+  /* 移除自定义的appearance设置，让浏览器使用原生样式 */
 }
 
 .quantity-input:focus {
@@ -1248,10 +1237,11 @@ h1 {
 }
 
 .cart-summary input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
+  /* 使用原生复选框外观，移除自定义尺寸和颜色 */
+  appearance: auto;
   cursor: pointer;
-  accent-color: #667eea;
+  /* 移除自定义尺寸，让浏览器使用默认大小 */
+  /* 移除accent-color，让浏览器使用默认主题色 */
 }
 
 .summary-info {
@@ -1607,12 +1597,10 @@ textarea.form-control {
 }
 
 .coupon-select {
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  background-size: 20px;
-  padding-right: 40px;
+  /* 使用原生选择器外观，包括原生的下拉箭头 */
+  appearance: auto;
+  /* 移除自定义背景图片和额外内边距 */
+  padding-right: 12px; /* 减少内边距，因为不需要为自定义箭头留空间 */
 }
 
 .coupon-hint {
@@ -1673,6 +1661,7 @@ textarea.form-control {
   cursor: pointer;
   transition: all 0.2s;
   background: #f9fafb;
+  /* 由于现在显示原生单选按钮，点击整个区域仍然有效 */
 }
 
 .payment-option:hover {
@@ -1689,7 +1678,10 @@ textarea.form-control {
 }
 
 .payment-radio {
-  display: none;
+  /* 显示原生单选按钮，让它使用原生外观 */
+  display: inline-block;
+  appearance: auto;
+  margin-right: 8px;
 }
 
 .payment-label {
