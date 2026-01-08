@@ -160,7 +160,7 @@
             快速发货 - 订单 #{{ shipOrderId }}
           </h3>
           <el-button
-            type="text"
+            type="link"
             size="small"
             @click="closeQuickShip"
             class="close-btn"

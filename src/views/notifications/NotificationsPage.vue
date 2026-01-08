@@ -83,9 +83,9 @@
             </h3>
             <div class="filter-tabs">
               <el-radio-group v-model="filterType" size="small">
-                <el-radio-button label="all">全部</el-radio-button>
-                <el-radio-button label="unread">未读</el-radio-button>
-                <el-radio-button label="read">已读</el-radio-button>
+                <el-radio-button value="all">全部</el-radio-button>
+                <el-radio-button value="unread">未读</el-radio-button>
+                <el-radio-button value="read">已读</el-radio-button>
               </el-radio-group>
             </div>
           </div>
@@ -136,7 +136,7 @@
               <div class="notification-actions">
                 <el-button
                   v-if="!item.readFlag"
-                  type="text"
+                  type="link"
                   size="small"
                   @click.stop="markAsRead(item)"
                   class="mark-read-action"

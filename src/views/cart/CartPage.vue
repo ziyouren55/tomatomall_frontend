@@ -298,7 +298,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, onBeforeUnmount } from 'vue'
 import api from '@/api';
 import { ElMessage } from 'element-plus';
 import type { AxiosError } from 'axios';
@@ -332,7 +332,10 @@ export default defineComponent({
       availableUserCoupons: [] as UserCoupon[],
       selectedUserCouponId: null as number | null,
       couponLoading: false,
-      selectedDiscount: 0
+      selectedDiscount: 0,
+      // 优化相关属性
+      quantityUpdateQueue: {} as Record<number, { quantity: number; timeoutId: number }>, // 防抖队列
+      pendingUpdates: new Set<number>() // 正在更新的商品ID
     };
   },
   computed: {
@@ -354,6 +357,22 @@ export default defineComponent({
   },
   created() {
     this.fetchCart();
+  },
+  activated() {
+    // 当从其他页面回到购物车页面时，刷新数据确保显示最新状态
+    this.fetchCart();
+  },
+  mounted() {
+    // 组件销毁前，执行所有待处理的更新
+    onBeforeUnmount(() => {
+      Object.keys(this.quantityUpdateQueue).forEach(cartItemId => {
+        const item = this.quantityUpdateQueue[parseInt(cartItemId)];
+        if (item) {
+          clearTimeout(item.timeoutId);
+          this.executeQuantityUpdate(parseInt(cartItemId), item.quantity);
+        }
+      });
+    });
   },
   methods: {
     getImageUrl,
@@ -430,19 +449,62 @@ export default defineComponent({
         // console.error('获取商品库存信息失败:', error);
       }
     },
-    
-    async updateQuantity(cartItemId: number, quantity: number): Promise<void> {
 
+    // 防抖更新数量 - 乐观更新策略
+    debouncedUpdateQuantity(cartItemId: number, quantity: number): void {
+      // 取消之前的更新
+      if (this.quantityUpdateQueue[cartItemId]) {
+        clearTimeout(this.quantityUpdateQueue[cartItemId].timeoutId);
+      }
+
+      // 记录新值
+      this.quantityUpdateQueue[cartItemId] = {
+        quantity,
+        timeoutId: setTimeout(() => {
+          this.executeQuantityUpdate(cartItemId, quantity);
+        }, 500) // 500ms 防抖延迟
+      };
+    },
+
+    // 执行实际的API更新
+    async executeQuantityUpdate(cartItemId: number, quantity: number): Promise<void> {
+      if (this.pendingUpdates.has(cartItemId)) {
+        return; // 如果正在更新，跳过
+      }
+
+      this.pendingUpdates.add(cartItemId);
+
+      try {
+        await api.cart.updateCartItemQuantity(cartItemId, quantity);
+        // 更新成功，移除队列
+        delete this.quantityUpdateQueue[cartItemId];
+      } catch (error: unknown) {
+        console.error('Failed to update quantity:', error);
+        const axiosError = error as AxiosError;
+        if (axiosError.response && axiosError.response.data) {
+          ElMessage({
+            type: 'error',
+            message: (axiosError.response.data as any).msg || '更新数量失败'
+          });
+        }
+        // 失败时重新获取购物车数据，恢复正确状态
+        await this.fetchCart();
+      } finally {
+        this.pendingUpdates.delete(cartItemId);
+      }
+    },
+
+    // 乐观更新数量（立即更新UI）
+    optimisticUpdateQuantity(cartItemId: number, quantity: number): void {
       if (quantity < 1) return;
-      
-      // 查找当前购物车项
 
+      // 查找当前购物车项
       const cartItem = this.cart.items.find(item => (item.cartItemId || item.id) === cartItemId);
       if (!cartItem) return;
 
       // 检查是否是增加数量的操作
       const isIncreasing = quantity > cartItem.quantity;
-      
+
       // 只有在增加数量且库存为0时才拒绝操作
       if (isIncreasing) {
         const stockpile = this.productStockpiles[cartItem.productId];
@@ -450,7 +512,7 @@ export default defineComponent({
           // 将amount转换为数字进行比较
           const amount = parseInt(stockpile.amount || 0, 10);
           // console.log(`更新数量 - 商品 ${cartItem.productId} 库存: ${amount}, 类型: ${typeof amount}`);
-          
+
           if (amount <= 0) {
             ElMessage({
               type: 'warning',
@@ -462,24 +524,13 @@ export default defineComponent({
           }
         }
       }
-      console.log("update");
-      try {
-        this.loading = true;
-        await api.cart.updateCartItemQuantity(cartItemId, quantity);
-        console.log(cartItemId,quantity);
-        await this.fetchCart();
-        this.calculateSelectedTotal();
-      } catch (error: unknown) {
-        console.error('Failed to update quantity:', error);
-        const axiosError = error as AxiosError
-        if (axiosError.response && axiosError.response.data) {
-          ElMessage({
-            type: 'error',
-            message: (axiosError.response.data as any).msg || '更新数量失败'
-          });
-        }
-        this.loading = false;
-      }
+
+      // 乐观更新：立即更新前端显示
+      cartItem.quantity = quantity;
+      this.calculateSelectedTotal();
+
+      // 防抖调用后端更新
+      this.debouncedUpdateQuantity(cartItemId, quantity);
     },
     
     getCartItemId(item: CartItem): number | null {
@@ -634,6 +685,13 @@ export default defineComponent({
         if (orderId) {
           await this.initiatePayment(orderId);
         }
+
+        // 订单提交成功后延迟刷新购物车数据，给用户足够的时间完成支付
+        setTimeout(async () => {
+          await this.fetchCart();
+          this.selectedItems = []; // 清空选中的商品
+          this.selectedTotal = 0; // 重置选中总价
+        }, 2000); // 2秒后刷新，避免在支付过程中显示空白页面
       } catch (error: unknown) {
         console.error('Failed to create order:', error);
         const axiosError = error as AxiosError
@@ -807,14 +865,14 @@ export default defineComponent({
     
     decreaseQuantity(cartItemId: number, quantity: number): void {
       if (quantity > 1) {
-        this.updateQuantity(cartItemId, quantity - 1);
+        this.optimisticUpdateQuantity(cartItemId, quantity - 1);
       }
     },
-    
+
     increaseQuantity(cartItemId: number, quantity: number): void {
       const item = this.cart.items.find(item => (item.cartItemId || item.id) === cartItemId)
       if (item && !this.isMaxQuantity(item)) {
-        this.updateQuantity(cartItemId, quantity + 1);
+        this.optimisticUpdateQuantity(cartItemId, quantity + 1);
       }
     },
     
@@ -838,15 +896,15 @@ export default defineComponent({
       }
     },
     
-    // 处理数量输入框变化
+    // 处理数量输入框变化（失去焦点时）
     handleQuantityChange(item: CartItem): void {
       const cartItemId = this.getCartItemId(item);
       if (cartItemId !== null) {
-        this.updateQuantity(cartItemId, item.quantity);
+        this.debouncedUpdateQuantity(cartItemId, item.quantity);
       }
     },
     
-    // 在输入/箭头改变时即时限制本地数量，不立即调用后端（后端更新在 change 事件触发时执行）
+    // 在输入/箭头改变时即时限制本地数量，并调用后端更新
     handleQuantityInput(item: CartItem, event: Event): void {
       const input = event.target as HTMLInputElement;
       let value = parseInt(input.value, 10);
@@ -869,6 +927,12 @@ export default defineComponent({
       item.quantity = value;
       // 立即更新已选合计显示，让页面和结算金额保持同步
       this.calculateSelectedTotal();
+
+      // 防抖调用后端更新
+      const cartItemId = this.getCartItemId(item);
+      if (cartItemId !== null) {
+        this.debouncedUpdateQuantity(cartItemId, value);
+      }
     },
     
     // 处理删除按钮点击

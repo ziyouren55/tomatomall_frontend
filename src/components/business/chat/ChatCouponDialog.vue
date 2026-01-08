@@ -45,8 +45,8 @@
         <!-- 优惠类型 -->
         <el-form-item label="优惠类型" prop="discountType">
           <el-radio-group v-model="couponForm.discountType">
-            <el-radio label="amount">固定金额</el-radio>
-            <el-radio label="percentage">百分比折扣</el-radio>
+            <el-radio value="amount">固定金额</el-radio>
+            <el-radio value="percentage">百分比折扣</el-radio>
           </el-radio-group>
         </el-form-item>
 

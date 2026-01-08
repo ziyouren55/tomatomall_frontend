@@ -267,6 +267,12 @@ import type { Order, ErrorResponse } from '@/types/api';
 
 export default defineComponent({
   name: 'OrderPage',
+  components: {
+    DocumentCopy,
+    RefreshRight,
+    List,
+    ShoppingBag
+  },
   data() {
     return {
       orders: [] as Order[],
