@@ -76,7 +76,9 @@ export async function initChatService(backendBase = '') {
     client = new Client({
       webSocketFactory: socketFactory,
       reconnectDelay: 5000,
-      debug: import.meta.env.DEV ? (m: any) => console.log('[CHAT STOMP]', m) : undefined,
+        debug: (m: any) => {
+            if (import.meta.env.DEV) console.log('[CHAT STOMP]', m)
+        },
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000
     })
