@@ -166,6 +166,20 @@
                     学校认证审核
                   </span>
                 </el-dropdown-item>
+                <el-dropdown-item command="admin-api-statistics" v-if="isAdmin">
+                  <span class="menu-item">
+                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <rect x="3" y="4" width="18" height="12" rx="1"></rect>
+                      <path d="M7 20h10"></path>
+                      <path d="M9 16v4"></path>
+                      <path d="M15 16v4"></path>
+                      <path d="M8 12h.01"></path>
+                      <path d="M16 12h.01"></path>
+                      <path d="M12 12h.01"></path>
+                    </svg>
+                    API统计
+                  </span>
+                </el-dropdown-item>
                   <el-dropdown-item command="logout" divided>
                     <span class="menu-item">
                       <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -234,6 +248,7 @@ const unreadCount = ref<number>(0);
 const chatUnreadCount = ref<number>(0);
 let cartPollingInterval: ReturnType<typeof setInterval> | null = null;
 let chatPollingInterval: ReturnType<typeof setInterval> | null = null;
+let tokenCheckInterval: ReturnType<typeof setInterval> | null = null;
 
 // 监听路由变化，在搜索页面时同步搜索关键词
 watch(() => route.path, () => {
@@ -281,48 +296,98 @@ const performSearch = (): void => {
   }
 };
 
-const checkLoginStatus = () => {
+const checkLoginStatus = async () => {
   // Check if user is logged in based on token presence
   const token = localStorage.getItem('token');
-  isLoggedIn.value = !!token;
 
-  // Check if user is admin - 优先从 userInfo 获取，否则从 isAdmin flag 获取
-  let adminCheck = false;
-  const userInfoStr = localStorage.getItem('userInfo');
-  
-  if (userInfoStr) {
-    try {
-      const userInfo = JSON.parse(userInfoStr);
-      // 使用枚举检查角色
-      adminCheck = userInfo.role === UserRole.ADMIN || userInfo.role === 'ADMIN';
-      // merchant check
-      isMerchant.value = userInfo.role === UserRole.MERCHANT || userInfo.role === 'MERCHANT';
-    } catch (e) {
-      console.error('Failed to parse userInfo:', e);
-    }
+  if (!token) {
+    // 没有token，直接设置为未登录状态
+    isLoggedIn.value = false;
+    isAdmin.value = false;
+    isMerchant.value = false;
+    username.value = '';
+    userAvatar.value = '';
+    return;
   }
-  
-  // 如果没有从 userInfo 获取到，尝试从 isAdmin flag（向后兼容）
-  if (!adminCheck) {
-    adminCheck = localStorage.getItem('isAdmin') === 'true';
-  }
-  
-  isAdmin.value = adminCheck;
-  
-  // Get username
-  username.value = localStorage.getItem('username') || '';
-  
-  // Get user avatar from userInfo
-  userAvatar.value = '';
-  if (userInfoStr) {
-    try {
-      const userInfo = JSON.parse(userInfoStr);
-      if (userInfo.avatar) {
-        userAvatar.value = userInfo.avatar;
+
+      try {
+        // 验证token是否仍然有效
+        const validateResponse = await api.user.validateToken();
+
+        if (validateResponse && validateResponse.code === '200' && validateResponse.data === true) {
+          // token有效，设置为登录状态
+          isLoggedIn.value = true;
+
+          // 重新初始化WebSocket连接，确保带token连接
+          try {
+            const { reinitializeNotificationService } = await import('@/services/notificationService')
+            await reinitializeNotificationService()
+            console.log('WebSocket connection reinitialized with token')
+          } catch (wsError) {
+            console.warn('Failed to reinitialize WebSocket connection:', wsError)
+          }
+
+          // 启动token定期检查
+          startTokenCheck();
+
+      // 获取最新的用户信息
+      try {
+        // 优先使用本地存储的用户信息，避免频繁API调用
+        const userInfoStr = localStorage.getItem('userInfo');
+        if (userInfoStr) {
+          const userInfo = JSON.parse(userInfoStr);
+
+          // 检查角色
+          isAdmin.value = userInfo.role === UserRole.ADMIN || userInfo.role === 'ADMIN';
+          isMerchant.value = userInfo.role === UserRole.MERCHANT || userInfo.role === 'MERCHANT';
+          username.value = userInfo.username || '';
+
+          // 获取头像
+          userAvatar.value = userInfo.avatar || '';
+        } else {
+          // 如果本地没有用户信息，调用API获取当前用户信息
+          const userResponse = await api.user.getCurrentUser();
+          if (userResponse && userResponse.code === '200') {
+            const userInfo = userResponse.data;
+
+            // 更新本地存储的用户信息
+            localStorage.setItem('userInfo', JSON.stringify(userInfo));
+
+            // 检查角色
+            isAdmin.value = userInfo.role === UserRole.ADMIN || userInfo.role === 'ADMIN';
+            isMerchant.value = userInfo.role === UserRole.MERCHANT || userInfo.role === 'MERCHANT';
+            username.value = userInfo.username || '';
+
+            // 获取头像
+            userAvatar.value = userInfo.avatar || '';
+          } else {
+            throw new Error('Failed to fetch current user info');
+          }
+        }
+      } catch (userError) {
+        console.warn('Failed to process user details:', userError);
+        // 如果处理用户信息失败，使用本地存储的信息
+        fallbackToLocalStorage();
       }
-    } catch (e) {
-      // Already handled above
+    } else {
+      throw new Error('Token validation failed');
     }
+
+  } catch (error) {
+    console.warn('Token validation failed, clearing login state:', error);
+
+    // token无效，清除登录状态
+    isLoggedIn.value = false;
+    isAdmin.value = false;
+    isMerchant.value = false;
+    username.value = '';
+    userAvatar.value = '';
+
+    // 清除本地存储
+    localStorage.removeItem('token');
+    localStorage.removeItem('isAdmin');
+    localStorage.removeItem('username');
+    localStorage.removeItem('userInfo');
   }
 
   // Update cart count and chat unread count if logged in
@@ -341,6 +406,34 @@ const checkLoginStatus = () => {
     userAvatar.value = '';
     isAdmin.value = false;
     isMerchant.value = false;
+  }
+};
+
+// 备用方案：使用本地存储的信息（当API调用失败时）
+const fallbackToLocalStorage = () => {
+  const userInfoStr = localStorage.getItem('userInfo');
+
+  if (userInfoStr) {
+    try {
+      const userInfo = JSON.parse(userInfoStr);
+      // 使用枚举检查角色
+      isAdmin.value = userInfo.role === UserRole.ADMIN || userInfo.role === 'ADMIN';
+      isMerchant.value = userInfo.role === UserRole.MERCHANT || userInfo.role === 'MERCHANT';
+      username.value = userInfo.username || '';
+      userAvatar.value = userInfo.avatar || '';
+    } catch (e) {
+      console.error('Failed to parse userInfo:', e);
+    }
+  }
+
+  // 如果没有从 userInfo 获取到，尝试从 isAdmin flag（向后兼容）
+  if (!isAdmin.value) {
+    isAdmin.value = localStorage.getItem('isAdmin') === 'true';
+  }
+
+  // Get username if not set
+  if (!username.value) {
+    username.value = localStorage.getItem('username') || '';
   }
 };
 
@@ -428,6 +521,70 @@ const stopChatPolling = () => {
   }
 };
 
+const startTokenCheck = () => {
+  // 每30秒检查一次token有效性，作为WebSocket通知的补充
+  tokenCheckInterval = setInterval(async () => {
+    if (!isLoggedIn.value) return;
+
+    try {
+      const response = await api.user.validateToken();
+      if (!response || response.code !== '200' || response.data !== true) {
+        console.warn('Token validation failed during periodic check, forcing logout');
+        // token无效，执行登出逻辑
+        await performLogout();
+      }
+    } catch (error) {
+      console.warn('Token check failed:', error);
+      // 如果检查失败，可能是网络问题，先不处理
+    }
+  }, 30000); // 30秒检查一次
+};
+
+const stopTokenCheck = () => {
+  if (tokenCheckInterval) {
+    clearInterval(tokenCheckInterval);
+    tokenCheckInterval = null;
+  }
+};
+
+// 执行登出逻辑（用于token检查失败时）
+const performLogout = async () => {
+  try {
+    // 尝试调用登出API（可能失败，但不影响本地清理）
+    await api.user.logout().catch(() => {});
+  } catch (error) {
+    // 忽略API调用错误
+  }
+
+  // 清除本地状态
+  removeToken();
+  localStorage.removeItem('isAdmin');
+  localStorage.removeItem('username');
+  localStorage.removeItem('userInfo');
+
+  // 更新UI状态
+  isLoggedIn.value = false;
+  isAdmin.value = false;
+  isMerchant.value = false;
+  username.value = '';
+  userAvatar.value = '';
+
+    // 停止所有轮询
+    stopCartPolling();
+    stopChatPolling();
+    stopTokenCheck();
+  stopTokenCheck();
+
+  // 显示提示信息
+  const { ElMessage } = await import('element-plus');
+  ElMessage.warning('登录已过期，请重新登录');
+
+  // 跳转到登录页
+  setTimeout(() => {
+    router.push('/login');
+  }, 1000);
+};
+
 const handleUserCommand = async (command: string) => {
   switch (command) {
     case 'profile':
@@ -459,6 +616,9 @@ const handleUserCommand = async (command: string) => {
       break;
     case 'admin-stores':
       router.push('/admin/stores');
+      break;
+    case 'admin-api-statistics':
+      router.push('/admin/api-statistics');
       break;
     case 'merchant-stores':
       router.push('/merchant/stores');
@@ -498,12 +658,30 @@ const handleUserCommand = async (command: string) => {
 
 const logout = async () => {
   try {
+    // 调用后端登出API
+    await api.user.logout();
+
     // 清除本地存储
     removeToken();
     localStorage.removeItem('isAdmin');
     localStorage.removeItem('username');
+    localStorage.removeItem('userInfo');
+
+    // 重新初始化WebSocket连接（不带token）
+    try {
+      const { reinitializeNotificationService } = await import('@/services/notificationService')
+      await reinitializeNotificationService()
+      console.log('WebSocket connection reinitialized after logout')
+    } catch (wsError) {
+      console.warn('Failed to reinitialize WebSocket after logout:', wsError)
+    }
   } catch (error: unknown) {
     console.error('Logout error:', error);
+    // 即使后端登出失败，也要清除本地状态
+    removeToken();
+    localStorage.removeItem('isAdmin');
+    localStorage.removeItem('username');
+    localStorage.removeItem('userInfo');
   } finally {
     // Update component state
     isLoggedIn.value = false;
@@ -526,14 +704,14 @@ const logout = async () => {
       router.push('/');
     } else {
       // 否则刷新当前页面状态
-      checkLoginStatus();
+      checkLoginStatus().catch(console.error);
     }
   }
 };
 
-onMounted(() => {
+onMounted(async () => {
   // Check login status when component is created
-  checkLoginStatus();
+  await checkLoginStatus();
 
   // 初始化同步聊天未读数状态
   chatUnreadCount.value = chatState.unreadCount;
@@ -561,6 +739,7 @@ onBeforeUnmount(() => {
   // Clear intervals when component is destroyed
   stopCartPolling();
   stopChatPolling();
+  stopTokenCheck();
 
   // 移除事件监听
   window.removeEventListener('loginStatusChanged', checkLoginStatus);
@@ -568,9 +747,9 @@ onBeforeUnmount(() => {
   window.removeEventListener('notificationChanged', fetchUnreadCount);
 });
 
-watch(() => route.path, () => {
+watch(() => route.path, async () => {
   // Watch for route changes to update login status
-  checkLoginStatus();
+  await checkLoginStatus();
 });
 </script>
 

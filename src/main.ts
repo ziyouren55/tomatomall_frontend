@@ -9,6 +9,7 @@ import AppComponent from './App.vue'
 import router from './router'
 import store from './store'
 import { registerNotificationComponents } from './services/notificationComponentInit'
+import api from './api'
 
 const app: App = createApp(AppComponent)
 app.use(ElementPlus)
@@ -16,24 +17,54 @@ app.use(router)
 // Vuex 4 的 Store 类型与 Vue 3 的 Plugin 类型兼容，但 TypeScript 需要类型断言
 app.use(store as any)
 
-// 恢复用户状态（从localStorage）
-try {
-  const token = localStorage.getItem('token')
-  const userInfoStr = localStorage.getItem('userInfo')
-
-  if (token && userInfoStr) {
-    const userInfo = JSON.parse(userInfoStr)
-    console.log('Restoring user state:', { token: token.substring(0, 10) + '...', userInfo })
-    store.commit('user/SET_TOKEN', token)
-    store.commit('user/SET_USER_INFO', userInfo)
-
-    // 验证store状态
-    console.log('Store state after restore:', store.state.user)
-  } else {
-    console.log('No stored user state found')
+// Token验证函数
+const validateTokenOnStartup = async (token: string): Promise<boolean> => {
+  try {
+    const response = await api.user.validateToken()
+    return response.code === '200' && response.data === true
+  } catch (error) {
+    console.warn('Token validation failed on startup:', error)
+    return false
   }
-} catch (e) {
-  console.warn('Failed to restore user state:', e)
+}
+
+// 恢复用户状态（从localStorage）
+const restoreUserState = async () => {
+  try {
+    const token = localStorage.getItem('token')
+    const userInfoStr = localStorage.getItem('userInfo')
+
+    if (token && userInfoStr) {
+      // 先验证token是否仍然有效
+      const isTokenValid = await validateTokenOnStartup(token)
+
+      if (isTokenValid) {
+        const userInfo = JSON.parse(userInfoStr)
+        console.log('Restoring user state:', { token: token.substring(0, 10) + '...', userInfo })
+        store.commit('user/SET_TOKEN', token)
+        store.commit('user/SET_USER_INFO', userInfo)
+
+        // 验证store状态
+        console.log('Store state after restore:', store.state.user)
+      } else {
+        // token无效，清除本地状态
+        console.warn('Stored token is invalid, clearing local state')
+        localStorage.removeItem('token')
+        localStorage.removeItem('isAdmin')
+        localStorage.removeItem('username')
+        localStorage.removeItem('userInfo')
+      }
+    } else {
+      console.log('No stored user state found')
+    }
+  } catch (e) {
+    console.warn('Failed to restore user state:', e)
+    // 出错时清除所有本地状态
+    localStorage.removeItem('token')
+    localStorage.removeItem('isAdmin')
+    localStorage.removeItem('username')
+    localStorage.removeItem('userInfo')
+  }
 }
 
 // Register notification components at startup so pages can render history without waiting for websocket init
@@ -61,6 +92,9 @@ try {
 } catch (e) {
   console.warn('services dynamic import failed', e)
 }
+
+// 在应用挂载前验证并恢复用户状态
+await restoreUserState()
 
 app.mount('#app')
 

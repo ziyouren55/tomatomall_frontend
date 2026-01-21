@@ -49,5 +49,8 @@ export const removeAdminFlag = (): void => localStorage.removeItem(ADMIN_KEY)
 export const clearAuth = (): void => {
     removeToken()
     removeAdminFlag()
+    // 清除其他认证相关数据
+    localStorage.removeItem('username')
+    localStorage.removeItem('userInfo')
 }
 

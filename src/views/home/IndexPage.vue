@@ -32,8 +32,8 @@
     <div class="quick-entry-section">
       <div class="container">
         <div class="quick-entry-grid">
-          <div 
-            v-for="entry in quickEntries" 
+          <div
+            v-for="entry in quickEntries"
             :key="entry.name"
             class="quick-entry-item"
             @click="handleQuickEntry(entry.path)"
@@ -53,8 +53,8 @@
         <!-- 分类标签栏 -->
         <div class="category-tabs">
           <div class="tabs-wrapper">
-            <button 
-              v-for="tab in tabs" 
+            <button
+              v-for="tab in tabs"
               :key="tab.key"
               :class="['tab-item', { active: currentTab === tab.key }]"
               @click="switchTab(tab.key)"
@@ -74,40 +74,33 @@
             <el-button text @click="clearSearch">清除搜索</el-button>
           </div>
 
-          <!-- 商品列表 -->
-          <div class="products-content">
-            <ProductList v-if="searchKeyword || currentTab === 'hot'" :searchKeyword="searchKeyword" />
-            <NearbyRecommendations v-if="!searchKeyword && currentTab === 'nearby'" />
-          </div>
-        </div>
+      <div class="tab-content">
+        <ProductList v-if="searchKeyword" :searchKeyword="searchKeyword" />
+        <HotRecommendations v-if="!searchKeyword && currentTab === 'hot'" />
+        <NearbyRecommendations v-if="!searchKeyword && currentTab === 'nearby'" />
       </div>
     </div>
-
-    <!-- 底部装饰 -->
-    <div class="footer-decoration">
-      <div class="container">
-        <div class="decoration-content">
-          <el-icon :size="48" class="decoration-icon"><ShoppingBag /></el-icon>
-          <p class="decoration-text">发现更多精彩商品</p>
-        </div>
-      </div>
+  </div>
     </div>
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { 
-  ShoppingBag, ShoppingCart, User, ChatDotRound, 
+import {
+  ShoppingBag, ShoppingCart, User, ChatDotRound,
   TrendCharts, Location, Search, Discount, EditPen
 } from '@element-plus/icons-vue'
 import ProductList from '@/components/business/product/ProductList.vue'
 import NearbyRecommendations from '@/components/business/product/NearbyRecommendations.vue'
+import HotRecommendations from '@/components/business/product/HotRecommendations.vue'
 
 export default defineComponent({
   name: 'IndexPage',
   components: {
     ProductList,
+    NearbyRecommendations,
+    HotRecommendations,
     NearbyRecommendations,
     ShoppingBag, ShoppingCart, User, ChatDotRound,
     TrendCharts, Location, Search, Discount, EditPen

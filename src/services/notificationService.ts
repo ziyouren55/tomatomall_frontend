@@ -1,6 +1,8 @@
 import { ref } from 'vue'
 import { getToken } from '@/utils/storage'
 import { h } from 'vue'
+import { authService } from './authService'
+import { generateFallbackMessage, getFallbackTitle } from '@/utils/notificationFallbackFormatter'
 import { registerNotificationComponent, getNotificationComponent } from './notificationComponentRegistry'
 
 // register built-in components (lazy-import to keep bundle reasonable)
@@ -23,15 +25,36 @@ export const notifications = ref<any[]>([])
 
 let client: any = null
 let connected = false
+let currentBackendBase = ''
+
+
+// 重新初始化WebSocket连接（用于登录状态变化时）
+export async function reinitializeNotificationService() {
+  if (connected && client) {
+    // 如果已经连接，先断开
+    try {
+      await client.deactivate()
+    } catch (e) {
+      console.warn('Failed to deactivate existing connection:', e)
+    }
+    connected = false
+  }
+
+  // 使用当前的后端地址重新初始化
+  if (currentBackendBase) {
+    await initNotificationService(currentBackendBase)
+  }
+}
 
 export async function initNotificationService(backendBase = '') {
+  currentBackendBase = backendBase // 保存后端地址用于重新初始化
   if (connected) return
   try {
     const SockJS = (await import('sockjs-client')).default
     const { Client } = await import('@stomp/stompjs')
     const { ElNotification } = await import('element-plus')
-    // ensure built-in formatters/components are registered
-    registerBuiltinComponents().catch(()=>{})
+    // 初始化认证服务
+    authService.init().catch(()=>{})
 
     // if token exists, attach as query param so server-side HandshakeHandler can read it during HTTP handshake
     const token = (() => {
@@ -55,10 +78,21 @@ export async function initNotificationService(backendBase = '') {
     client.onConnect = () => {
       console.log('[WS] connected (notificationService)')
       connected = true
+      // 标记WebSocket连接已建立，用于过滤误报的单点登录通知
+      authService.markWebSocketConnected()
       const handleMsg = async (msg: any, label = '') => {
         try {
           const body = msg.body ? JSON.parse(msg.body) : {}
           console.log('[WS] received', label, body)
+
+          // 特殊处理：单点登录强制登出
+          if (body.type === 'FORCE_LOGOUT') {
+            console.warn('Single login detected, delegating to auth service...')
+            // 将单点登录处理委托给认证服务
+            await authService.handleSingleLoginNotification(body)
+            return // 不继续处理普通通知逻辑
+          }
+
           notifications.value.unshift(body)
           // 通知全局：有新消息，导航栏可刷新未读数或 badge
           try {
@@ -95,18 +129,14 @@ export async function initNotificationService(backendBase = '') {
               showClose: true,
             })
           } else {
-            // fallback simple text notification
-            const orderId = body.orderId
+            // fallback simple text notification using generic formatter
             ElNotification({
-              title: '新消息',
-              message: `
-                <div>订单 <strong>#${orderId}</strong> 已收到一条新消息。</div>
-              `,
+              title: getFallbackTitle(body),
+              message: generateFallbackMessage(body),
               dangerouslyUseHTMLString: true,
               duration: 8000,
               showClose: true,
               onClick: async () => {
-                if (!orderId) return
                 await handleNotificationClickShared(body)
               }
             })
@@ -120,6 +150,24 @@ export async function initNotificationService(backendBase = '') {
       client.subscribe('/topic/merchant/notifications', (msg: any) => handleMsg(msg, 'merchant'))
       client.subscribe('/topic/notifications', (msg: any) => handleMsg(msg, 'general'))
       client.subscribe('/user/queue/notifications', (msg: any) => handleMsg(msg, 'user'))
+
+      // 订阅单点登录专用队列（只接收发送给自己的通知）
+      client.subscribe('/user/queue/single-login', (msg: any) => {
+        try {
+          const body = msg.body ? JSON.parse(msg.body) : {}
+          console.log('[WS] single-login notification received:', body)
+
+          // 处理单点登录通知（消息只发送给自己，无需验证targetUserId）
+          if (body.type === 'FORCE_LOGOUT') {
+            console.warn('Single login notification received, forcing logout...')
+            authService.handleSingleLoginNotification(body).catch(e => {
+              console.warn('[WS] Failed to handle single-login notification:', e)
+            })
+          }
+        } catch (e) {
+          console.warn('[WS] Failed to process single-login notification:', e)
+        }
+      })
     }
 
     // attach token for handshake / CONNECT headers so server can assign Principal

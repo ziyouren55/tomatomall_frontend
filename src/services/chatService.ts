@@ -246,7 +246,7 @@ export function sendChatMessage(message: ChatWebSocketMessage) {
   console.log('[CHAT WS] client exists:', !!client)
   console.log('[CHAT WS] connected:', connected)
   console.log('[CHAT WS] chatState.connected:', chatState.connected)
-  
+
   if (!client || !connected) {
     console.warn('[CHAT WS] Not connected, cannot send message')
     console.warn('[CHAT WS] client:', !!client, 'connected:', connected)

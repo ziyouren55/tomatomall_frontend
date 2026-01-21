@@ -4,6 +4,7 @@ import OrderPaid from '@/components/business/notifications/OrderPaidNotification
 import OrderShipped from '@/components/business/notifications/OrderShippedNotification.vue'
 import OrderCompleted from '@/components/business/notifications/OrderCompletedNotification.vue'
 import CouponIssued from '@/components/business/notifications/CouponIssuedNotification.vue'
+import SingleLoginNotification from '@/components/business/notifications/SingleLoginNotification.vue'
 import { resolveNotificationPath } from '@/utils/notificationRouteResolver'
 
 // Register built-in notification components and default navigators synchronously at app startup
@@ -13,6 +14,7 @@ export function registerNotificationComponents() {
     registerNotificationComponent('ORDER_SHIPPED', (OrderShipped as any).default || OrderShipped)
     registerNotificationComponent('ORDER_COMPLETED', (OrderCompleted as any).default || OrderCompleted)
     registerNotificationComponent('COUPON_ISSUED', (CouponIssued as any).default || CouponIssued)
+    registerNotificationComponent('FORCE_LOGOUT', (SingleLoginNotification as any).default || SingleLoginNotification)
 
     // default navigator: use resolver to get path then router.push
     const navigatorForPayload = async (payload: any) => {

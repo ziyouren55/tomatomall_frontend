@@ -77,6 +77,13 @@ const adminRoutes: RouteRecordRaw[] = [
         component: () => import('@/components/business/admin/stockpile/AdminStockPileManager.vue'),
         meta: { requiresAuth: true, requiresAdmin: true }
     }
+    ,
+    {
+        path: '/admin/api-statistics',
+        name: 'ApiStatistics',
+        component: () => import('@/views/admin/ApiStatisticsPage.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+    }
 ]
 
 export default adminRoutes
